@@ -10,11 +10,50 @@ It's a companion for the whole campaign, not a one-time sheet builder. So, when 
 - **Deferred choices come back** as to-dos on the character until they're done.
 - **Natural next steps** in the same spirit: session/level history, resource tracking (slots, sorcery points, rests), in-play reminders and tips.
 
-## UI rule (from the user, 2026-11-11 — keep following this)
+## UI rules (from the user, 2026-11-11 — follow these for every screen)
 
-**Don't overwhelm the user when we don't need to.** Show what matters now; put detail one step
-away (hover, expand, "more"). Keep the current dark/gold/crimson look, but avoid plain, bland
-screens. A full UI rulebook will be written here once the user picks from the style mockups.
+The user picked style **"D · Hero Sidebar"** for the whole app (mockups: the "Sorcerer Progression
+Tree" canvas artifact, artboards StyleD / AppLibrary / AppSheet / AppCreate).
+
+**Calm first: don't overwhelm the user when we don't need to.**
+1. One main action per screen (the crimson button). Everything else is quieter.
+2. Show what matters now; detail is one step away (hover card, expand, "Show all"), at most 2–3
+   layers deep, with an obvious "more" link.
+3. Choices: suggest 2–3 good picks (tag "Popular" / "Beginner-friendly"), the rest behind "Show all".
+   Show progress as counters ("1 of 2 chosen", "0/2").
+4. Secondary actions (export, duplicate, PDF, delete) live in a "⋯" menu, not as visible buttons.
+5. Squint test: in 3 seconds you can tell the main information and the main action. If not, cut.
+6. Explain at the moment it matters: a short tooltip when a feature unlocks or is offered;
+   no walls of text, no forced tutorials. Plain words, short sentences, "Tip ·" for advice.
+
+**Layout**
+7. Character screens have a left **hero sidebar**: portrait crest with a level ring, name,
+   race · class, 3–4 key numbers (AC, HP, Speed, Init), resource pips (sorcery points, slots…),
+   a "To do" box for pending choices, and the main action (Level up) at the bottom.
+   The library and creation use the same sidebar idea (brand + New character / the hero taking shape + steps).
+8. The main area has tabs across the top (active = crimson underline; a gold dot marks a tab with a to-do).
+9. No horizontal page scroll. At phone width the sidebar becomes a compact top bar.
+
+**Look**
+10. Dark warm base (#110e0c–#1c1815) with texture, never flat: a faint diagonal pattern
+    (repeating 45° lines, ~1.5% white) plus a soft crimson radial glow. Panels #1c1815 / #251f1a,
+    borders #3b3027 / #5a4636, radius 10–16 px, soft deep shadows.
+11. Colour has meaning: **gold = you can act / progress**, **crimson = current / main action**,
+    green = gained/new, plus fixed category colours: core #e8d3a6, origin/subclass #e0485e,
+    growth #6fbf73, spells #8fb6e3, class options/metamagic #d4a64a, cantrips/concentration #b9a3e8.
+12. **Glow means "act on this now"** and nothing else glows. Filled = you have it; dim outline =
+    later ("Lv 6"); faded = not chosen.
+13. Type: Cinzel for headings and names, Inter for text. Section labels are small uppercase with
+    letter-spacing (11–12 px, #a3927f). Numbers big and bold.
+14. Icons: simple line icons (stroke 1.6–2), drawn inline; no emoji.
+
+**Hover cards** (every game term and feature has one)
+15. Card: category-coloured top border, title, status line ("You have this" / "Unlocks at level 6" /
+    "Choose now"), 1–2 plain sentences, optional "Tip". They must also open on keyboard focus and tap.
+
+**Accessibility**
+16. Text contrast ≥ 4.5:1; touch targets ≥ 44 px; real buttons and links; colours that must be told
+    apart also differ in lightness or shape.
 
 ## Plan in progress (approved by the user 2026-11-10)
 
