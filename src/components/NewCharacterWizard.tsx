@@ -2,7 +2,7 @@ import { useState } from "react";
 import { SYSTEMS } from "../systems/registry";
 import type { AnySystem, BaseCharacter } from "../systems/types";
 import { newRecordId, type StoredCharacter, type Theme } from "../storage";
-import { Brand, ThemeButton } from "./Brand";
+import { Brand, SkinPicker } from "./Brand";
 import { Card, Field } from "./ui";
 import { BookChecklist, normalizeBooks } from "./BookChecklist";
 import { CreationStepper } from "./CreationStepper";
@@ -14,12 +14,12 @@ import { CreationStepper } from "./CreationStepper";
  */
 export function NewCharacterWizard({
   theme,
-  onToggleTheme,
+  onTheme,
   onCancel,
   onCreate,
 }: {
   theme: Theme;
-  onToggleTheme: () => void;
+  onTheme: (t: Theme) => void;
   onCancel: () => void;
   onCreate: (rec: StoredCharacter) => void;
 }) {
@@ -59,7 +59,7 @@ export function NewCharacterWizard({
         <h1 className="page-title">New character{building && system ? ` · ${system.short}` : ""}</h1>
       </div>
       <div className="actions">
-        <ThemeButton theme={theme} onToggle={onToggleTheme} />
+        <SkinPicker theme={theme} onChange={onTheme} />
         <button type="button" className="btn ghost" onClick={onCancel}>
           Cancel
         </button>

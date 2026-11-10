@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Library } from "./components/Library";
 import { NewCharacterWizard } from "./components/NewCharacterWizard";
 import { Editor } from "./components/Editor";
+import { skinOf } from "./skins";
 import { loadLastOpen, loadLibrary, loadTheme, saveLastOpen, saveLibrary, saveTheme, type StoredCharacter, type Theme } from "./storage";
 
 type View = { kind: "library" } | { kind: "new" } | { kind: "edit"; id: string };
@@ -27,6 +28,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.layout = skinOf(theme).layout;
     saveTheme(theme);
   }, [theme]);
 
@@ -34,14 +36,13 @@ export default function App() {
     saveLastOpen(view.kind === "edit" ? view.id : null);
   }, [view]);
 
-  const toggleTheme = () => setTheme((t) => (t === "dark" ? "parchment" : "dark"));
   const upsert = (rec: StoredCharacter) => setLib((l) => (l.some((r) => r.id === rec.id) ? l.map((r) => (r.id === rec.id ? rec : r)) : [rec, ...l]));
 
   if (view.kind === "new")
     return (
       <NewCharacterWizard
         theme={theme}
-        onToggleTheme={toggleTheme}
+        onTheme={setTheme}
         onCancel={() => setView({ kind: "library" })}
         onCreate={(rec) => {
           upsert(rec);
@@ -58,7 +59,7 @@ export default function App() {
         rec={open}
         theme={theme}
         saveOk={saveOk}
-        onToggleTheme={toggleTheme}
+        onTheme={setTheme}
         onUpdate={(patch) => upsert({ ...open, ...patch, updated: Date.now() })}
         onBack={() => setView({ kind: "library" })}
       />
@@ -68,7 +69,7 @@ export default function App() {
     <Library
       lib={lib}
       theme={theme}
-      onToggleTheme={toggleTheme}
+      onTheme={setTheme}
       onOpen={(id) => setView({ kind: "edit", id })}
       onNew={() => setView({ kind: "new" })}
       onImport={(rec) => upsert(rec)}

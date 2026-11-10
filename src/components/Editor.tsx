@@ -2,23 +2,25 @@ import { useMemo, useState } from "react";
 import { getSystem } from "../systems/registry";
 import { bookName, type BaseCharacter, type Warning } from "../systems/types";
 import { downloadBlob, exportJson, fileSafe, type StoredCharacter, type Theme } from "../storage";
-import { Brand, ThemeButton } from "./Brand";
+import { Brand, SkinPicker } from "./Brand";
 import { Warnings } from "./Warnings";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
+import { Crest, MoreMenu, SHORT } from "./Hero";
+import { skinOf } from "../skins";
 
 export function Editor({
   rec,
   theme,
   saveOk,
-  onToggleTheme,
+  onTheme,
   onUpdate,
   onBack,
 }: {
   rec: StoredCharacter;
   theme: Theme;
   saveOk: boolean;
-  onToggleTheme: () => void;
+  onTheme: (t: Theme) => void;
   onUpdate: (patch: Partial<StoredCharacter>) => void;
   onBack: () => void;
 }) {
@@ -61,6 +63,177 @@ export function Editor({
   const tabErrors = (id: string) => (d.warnings as Warning[]).filter((w) => w.tab === id && w.level !== "info").length;
   const Active = system.tabs.find((t) => t.id === tab)?.Component ?? system.tabs[0].Component;
   const Summary = system.Summary;
+  const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
+  const levelOptions = Array.from({ length: maxLevel }, (_, i) => i + 1);
+  const dismiss = (id: string) => {
+    const p = pending.filter((x) => x !== id);
+    setPending(p);
+    onUpdate({ pending: p });
+  };
+
+  const tabsNav = (
+    <nav className="tabs" role="tablist">
+      {system.tabs.map((t) => (
+        <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
+          {t.label}
+          {tabErrors(t.id) > 0 && <span className="badge">{tabErrors(t.id)}</span>}
+        </button>
+      ))}
+    </nav>
+  );
+  const dialogs = (
+    <>
+      {booksOpen && (
+        <BooksDialog
+          system={system}
+          books={rec.books}
+          inUse={(b) => (system.derive(char, b).warnings as Warning[]).filter((w) => w.level !== "info").map((w) => w.text)}
+          onSave={(b) => {
+            onUpdate({ books: b });
+            setBooksOpen(false);
+          }}
+          onClose={() => setBooksOpen(false)}
+        />
+      )}
+      {dialog && (
+        <LevelChangeDialog
+          key={dialog.kind === "change" ? `c${dialog.target}` : `r${dialog.ids.join()}`}
+          system={system}
+          char={char}
+          books={rec.books}
+          pending={pending}
+          mode={dialog}
+          onCommit={commitFromDialog}
+          onClose={() => setDialog(null)}
+        />
+      )}
+    </>
+  );
+
+  // ---------- "Hero" skin: the character in a sidebar on the left (UI rules in CLAUDE.md) ----------
+  if (skinOf(theme).layout === "hero") {
+    const stats = system.progression.snapshot(d);
+    const books = rec.books.map((b) => bookName(system, b)).join(", ");
+    return (
+      <div className="hero-shell">
+        <aside className="hero-side">
+          <button type="button" className="hero-back" onClick={onBack}>
+            ‹ My characters
+          </button>
+          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} />
+          <div className="hero-id">
+            <input className="hero-name" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" placeholder="Name your hero" />
+            <span className="hero-sub">{d.identity}</span>
+            {hasOptionalBooks(system) ? (
+              <button type="button" className="hero-system" title={`Rules fixed at creation. Books: ${books}. Click to change the books.`} onClick={() => setBooksOpen(true)}>
+                {system.short} · {rec.books.length} book{rec.books.length > 1 ? "s" : ""}
+              </button>
+            ) : (
+              <span className="hero-system" title={`Rules fixed at creation. Books: ${books}.`}>
+                {system.short} · {rec.books.length} book{rec.books.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <div className="hero-stats">
+            {stats.slice(0, 4).map((s) => (
+              <div className="hero-stat" key={s.label} title={s.label}>
+                <span>{SHORT[s.label] ?? s.label}</span>
+                <strong>{s.value}</strong>
+              </div>
+            ))}
+          </div>
+          {stats.length > 4 && (
+            <details className="hero-more-stats">
+              <summary>More numbers</summary>
+              <dl>
+                {stats.slice(4).map((s) => (
+                  <div key={s.label}>
+                    <dt>{s.label}</dt>
+                    <dd>{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          )}
+          <section className={`hero-todo ${waiting.length ? "has" : ""}`} aria-label="To do">
+            <span className="hero-label">To do</span>
+            {waiting.length === 0 ? (
+              <span className="muted">Nothing to choose right now.</span>
+            ) : (
+              <>
+                <ul>
+                  {waiting.map((u) => (
+                    <li key={u.id}>
+                      <button type="button" className="link" onClick={() => setDialog({ kind: "resume", ids: [u.id] })}>
+                        {u.title}
+                      </button>
+                      <button type="button" className="hero-dismiss" title="Remove from the list (it may still show as a warning)" aria-label={`Dismiss ${u.title}`} onClick={() => dismiss(u.id)}>
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="btn small" onClick={() => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) })}>
+                  Choose now
+                </button>
+              </>
+            )}
+          </section>
+          <details className="hero-summary">
+            <summary>Full summary</summary>
+            <Summary c={char} d={d} />
+          </details>
+          <div className="hero-foot">
+            {char.level < maxLevel && (
+              <button type="button" className="btn primary hero-levelup" onClick={() => setDialog({ kind: "change", target: char.level + 1 })}>
+                Level up to {char.level + 1}
+              </button>
+            )}
+            <div className="hero-foot-row">
+              <label className="level-pick">
+                <span>Level</span>
+                <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && setDialog({ kind: "change", target: Number(e.target.value) })}>
+                  {levelOptions.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <MoreMenu>
+                <button type="button" onClick={onPdf} disabled={pdfBusy}>
+                  {pdfBusy ? "Making PDF…" : "Download PDF"}
+                </button>
+                <button type="button" onClick={() => exportJson({ ...rec, data: char, pending })}>
+                  Export as file
+                </button>
+                {hasOptionalBooks(system) && (
+                  <button type="button" onClick={() => setBooksOpen(true)}>
+                    Change books
+                  </button>
+                )}
+                <div className="more-row">
+                  <SkinPicker theme={theme} onChange={onTheme} />
+                </div>
+              </MoreMenu>
+            </div>
+            <span className="hero-saved" aria-live="polite">
+              {saveOk ? "Saved in this browser" : "Couldn't save (browser storage blocked)"}
+            </span>
+          </div>
+        </aside>
+        <main className="hero-main">
+          {tabsNav}
+          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} />
+          <div className="tab-body">
+            <Active c={char} d={d} set={set} books={rec.books} />
+          </div>
+          <p className="credits muted">{system.credits}</p>
+        </main>
+        {dialogs}
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -87,7 +260,7 @@ export function Editor({
         <label className="level-pick">
           <span>Level</span>
           <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && setDialog({ kind: "change", target: Number(e.target.value) })}>
-            {Array.from({ length: system.maxLevelFor?.(char) ?? system.maxLevel }, (_, i) => i + 1).map((l) => (
+            {levelOptions.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
@@ -98,7 +271,7 @@ export function Editor({
           <button type="button" className="btn ghost" onClick={onBack}>
             ← My characters
           </button>
-          <ThemeButton theme={theme} onToggle={onToggleTheme} />
+          <SkinPicker theme={theme} onChange={onTheme} />
           <button type="button" className="btn ghost" onClick={() => exportJson({ ...rec, data: char, pending })}>
             Export JSON
           </button>
@@ -113,14 +286,7 @@ export function Editor({
 
       <div className="layout">
         <main className="main">
-          <nav className="tabs" role="tablist">
-            {system.tabs.map((t) => (
-              <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
-                {t.label}
-                {tabErrors(t.id) > 0 && <span className="badge">{tabErrors(t.id)}</span>}
-              </button>
-            ))}
-          </nav>
+          {tabsNav}
           {waiting.length > 0 && (
             <div className="todo-banner">
               <div className="todo-head">
@@ -143,11 +309,7 @@ export function Editor({
                       type="button"
                       className="link muted-link"
                       title="Remove from the list (it may still show as a warning)"
-                      onClick={() => {
-                        const p = pending.filter((x) => x !== u.id);
-                        setPending(p);
-                        onUpdate({ pending: p });
-                      }}
+                      onClick={() => dismiss(u.id)}
                     >
                       Dismiss
                     </button>
@@ -166,30 +328,7 @@ export function Editor({
           <Summary c={char} d={d} />
         </aside>
       </div>
-      {booksOpen && (
-        <BooksDialog
-          system={system}
-          books={rec.books}
-          inUse={(b) => (system.derive(char, b).warnings as Warning[]).filter((w) => w.level !== "info").map((w) => w.text)}
-          onSave={(b) => {
-            onUpdate({ books: b });
-            setBooksOpen(false);
-          }}
-          onClose={() => setBooksOpen(false)}
-        />
-      )}
-      {dialog && (
-        <LevelChangeDialog
-          key={dialog.kind === "change" ? `c${dialog.target}` : `r${dialog.ids.join()}`}
-          system={system}
-          char={char}
-          books={rec.books}
-          pending={pending}
-          mode={dialog}
-          onCommit={commitFromDialog}
-          onClose={() => setDialog(null)}
-        />
-      )}
+      {dialogs}
     </div>
   );
 }

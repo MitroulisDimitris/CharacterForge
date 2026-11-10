@@ -1,3 +1,4 @@
+import { skinOf, type SkinId } from "./skins";
 // Browser storage for the character library, plus JSON import/export.
 import { getSystem, isSystemId } from "./systems/registry";
 import type { SystemId } from "./systems/types";
@@ -19,7 +20,7 @@ const OLD_KEY = "character-forge:character";
 const LAST_KEY = "character-forge:last-open";
 const THEME_KEY = "character-forge:theme";
 
-export type Theme = "dark" | "parchment";
+export type Theme = SkinId;
 
 let idCounter = 0;
 export const newRecordId = () => `c${Date.now().toString(36)}${(idCounter++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -82,7 +83,7 @@ export const loadLastOpen = () => safeGet(LAST_KEY);
 export const saveLastOpen = (id: string | null) => (id ? safeSet(LAST_KEY, id) : safeSet(LAST_KEY, ""));
 
 export function loadTheme(): Theme {
-  return safeGet(THEME_KEY) === "parchment" ? "parchment" : "dark";
+  return skinOf(safeGet(THEME_KEY)).id;
 }
 export const saveTheme = (t: Theme) => safeSet(THEME_KEY, t);
 

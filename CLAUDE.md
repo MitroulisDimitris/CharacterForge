@@ -15,6 +15,12 @@ It's a companion for the whole campaign, not a one-time sheet builder. So, when 
 The user picked style **"D · Hero Sidebar"** for the whole app (mockups: the "Sorcerer Progression
 Tree" canvas artifact, artboards StyleD / AppLibrary / AppSheet / AppCreate).
 
+**Skins** (`src/skins.ts`): Hero, Dark, Parchment, picked from the "Skin" menu; more may be added.
+A skin = CSS tokens under `:root[data-theme="<id>"]` + a layout (`data-layout`): "classic" (top bar)
+or "hero" (left sidebar: `Editor.tsx` / `Library.tsx` hero branches, `components/Hero.tsx`).
+Keep Dark and Parchment working when changing screens. New screens follow the rules below in
+every skin; the Hero skin is the reference look.
+
 **Calm first: don't overwhelm the user when we don't need to.**
 1. One main action per screen (the crimson button). Everything else is quieter.
 2. Show what matters now; detail is one step away (hover card, expand, "Show all"), at most 2–3

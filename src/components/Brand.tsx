@@ -1,4 +1,5 @@
 import type { Theme } from "../storage";
+import { SKINS } from "../skins";
 
 export function Brand({ onClick }: { onClick?: () => void }) {
   const inner = (
@@ -19,10 +20,18 @@ export function Brand({ onClick }: { onClick?: () => void }) {
   );
 }
 
-export function ThemeButton({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+/** Skin picker (how the app looks). More skins can be added in skins.ts. */
+export function SkinPicker({ theme, onChange }: { theme: Theme; onChange: (t: Theme) => void }) {
   return (
-    <button type="button" className="btn ghost" onClick={onToggle} title="Switch theme">
-      {theme === "dark" ? "☀ Parchment" : "☾ Dark"}
-    </button>
+    <label className="skin-pick" title="Change how the app looks">
+      <span>Skin</span>
+      <select value={theme} onChange={(e) => onChange(e.target.value as Theme)}>
+        {SKINS.map((s) => (
+          <option key={s.id} value={s.id} title={s.description}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

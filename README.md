@@ -39,7 +39,7 @@ allow aren't offered. To play the same hero under other rules, create another ch
 | D&D 3.5 | Player's Handbook v3.5 | Core races, skill points and ranks (with synergies), feats, BAB and saves, spells per day with bonus spells, familiars |
 | Pathfinder 2e | Player Core + Player Core 2 | 16 ancestries with heritages, versatile heritages, 17 backgrounds, 10 bloodlines, attribute boosts (with partial boosts), proficiency ranks, repertoire and signature spells |
 
-Every system has rule checks (a warnings panel), JSON export/import, a 5-page PDF, and both themes.
+Every system has rule checks (a warnings panel), JSON export/import, a 5-page PDF, and three skins (Hero, Dark, Parchment; pick one from the "Skin" menu).
 
 ## Leveling up (and down)
 
