@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { AnySystem, BaseCharacter, Warning } from "../systems/types";
 import { Card } from "./ui";
 import { Warnings } from "./Warnings";
+import { Crest, SHORT } from "./Hero";
 
 /** Guided, step-by-step creation of a new character (systems with `creation`). */
 export function CreationStepper({
@@ -9,11 +10,14 @@ export function CreationStepper({
   books,
   onBack,
   onCreate,
+  hero,
 }: {
   system: AnySystem;
   books: string[];
   onBack: () => void;
   onCreate: (char: BaseCharacter) => void;
+  /** Hero skin: show the character taking shape in a left sidebar (with these extras). */
+  hero?: { onCancel: () => void; footer: ReactNode };
 }) {
   const steps = system.creation!.steps;
   const [char, setChar] = useState<BaseCharacter>(() => system.creation!.fresh());
@@ -34,109 +38,154 @@ export function CreationStepper({
   const Summary = system.Summary;
   const Step = step?.Component;
 
-  return (
-    <div className="creation">
-      <nav className="steps" aria-label="Creation steps">
-        {[...steps.map((s) => s.title), "Review"].map((t, k) => {
-          const n = k < steps.length ? open(k) : 0;
-          // Any step can be opened once nothing before it blocks (e.g. a class is chosen).
-          const reachable = k <= i || visited.has(k) || !steps.slice(0, k).some((s) => s.blocker?.(char, d));
-          return (
-            <button
-              type="button"
-              key={t}
-              className={`step ${k === i ? "on" : ""} ${visited.has(k) && k !== i ? (n ? "todo" : "done") : ""}`}
-              disabled={!reachable}
-              aria-current={k === i ? "step" : undefined}
-              onClick={() => go(k)}
-            >
-              <span className="step-n">{visited.has(k) && k !== i && !n && k < steps.length ? "✓" : k + 1}</span>
-              <span>{t}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="layout">
-        <main className="main">
-          {!review ? (
-            <>
-              <div className="step-intro">
-                <h2>
-                  {i + 1}. {step.title}
-                </h2>
-                <p>{step.intro(char, d)}</p>
-              </div>
-              <Step c={char} d={d} set={set} books={books} />
-              <Warnings
-                warnings={warnings.filter((w) => step.tabs.includes(w.tab ?? ""))}
-                onJump={(t) => {
-                  const k = steps.findIndex((s) => s.tabs.includes(t));
-                  if (k >= 0 && k !== i) go(k);
-                }}
-              />
-            </>
+  const stepsNav = (
+    <nav className="steps" aria-label="Creation steps">
+      {[...steps.map((s) => s.title), "Review"].map((t, k) => {
+        const n = k < steps.length ? open(k) : 0;
+        // Any step can be opened once nothing before it blocks (e.g. a class is chosen).
+        const reachable = k <= i || visited.has(k) || !steps.slice(0, k).some((s) => s.blocker?.(char, d));
+        return (
+          <button
+            type="button"
+            key={t}
+            className={`step ${k === i ? "on" : ""} ${visited.has(k) && k !== i ? (n ? "todo" : "done") : ""}`}
+            disabled={!reachable}
+            aria-current={k === i ? "step" : undefined}
+            onClick={() => go(k)}
+          >
+            <span className="step-n">{visited.has(k) && k !== i && !n && k < steps.length ? "✓" : k + 1}</span>
+            <span>{t}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+  const content = (
+    <>
+      {!review ? (
+        <>
+          <div className="step-intro">
+            <h2>
+              {i + 1}. {step.title}
+            </h2>
+            <p>{step.intro(char, d)}</p>
+          </div>
+          <Step c={char} d={d} set={set} books={books} />
+          <Warnings
+            warnings={warnings.filter((w) => step.tabs.includes(w.tab ?? ""))}
+            onJump={(t) => {
+              const k = steps.findIndex((s) => s.tabs.includes(t));
+              if (k >= 0 && k !== i) go(k);
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <div className="step-intro">
+            <h2>Review</h2>
+            <p>
+              Here's your character. Anything left open is listed below; you can create the character now and finish those later, since they stay as warnings on the sheet until they're done.
+            </p>
+          </div>
+          <Card title="Name">
+            <input className="name-input big" value={char.name} placeholder="Character name" onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
+            <p className="muted">{d.identity}</p>
+          </Card>
+          {warnings.filter((w) => w.level !== "info").length === 0 ? (
+            <Card title="All set">
+              <p>Every choice is made. Have fun!</p>
+            </Card>
           ) : (
-            <>
-              <div className="step-intro">
-                <h2>Review</h2>
-                <p>
-                  Here's your character. Anything left open is listed below; you can create the character now and finish those later, since they stay as warnings on the sheet until they're done.
-                </p>
-              </div>
-              <Card title="Name">
-                <input className="name-input big" value={char.name} placeholder="Character name" onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
-                <p className="muted">{d.identity}</p>
-              </Card>
-              {warnings.filter((w) => w.level !== "info").length === 0 ? (
-                <Card title="All set">
-                  <p>Every choice is made. Have fun!</p>
-                </Card>
-              ) : (
-                <Card title="Still open">
-                  <ul className="todo-list">
-                    {steps.map((s, k) =>
-                      warnings
-                        .filter((w) => w.level !== "info" && s.tabs.includes(w.tab ?? ""))
-                        .map((w) => (
-                          <li key={k + w.text}>
-                            <span className="pill">{s.title}</span> {w.text}{" "}
-                            <button type="button" className="link" onClick={() => go(k)}>
-                              Go there
-                            </button>
-                          </li>
-                        )),
-                    )}
-                  </ul>
-                </Card>
-              )}
-            </>
-          )}
-
-          <div className="step-foot">
-            <button type="button" className="btn ghost" onClick={() => (i === 0 ? onBack() : go(i - 1))}>
-              ← {i === 0 ? "Books" : "Back"}
-            </button>
-            <span className="spacer" />
-            {!review && (
-              <>
-                {blocker && <span className="muted">{blocker}</span>}
-                {!blocker && open(i) > 0 && (
-                  <button type="button" className="btn ghost" onClick={() => go(i + 1)} title="Leave the open choices for later; they stay on the sheet as to-dos">
-                    Skip for now
-                  </button>
+            <Card title="Still open">
+              <ul className="todo-list">
+                {steps.map((s, k) =>
+                  warnings
+                    .filter((w) => w.level !== "info" && s.tabs.includes(w.tab ?? ""))
+                    .map((w) => (
+                      <li key={k + w.text}>
+                        <span className="pill">{s.title}</span> {w.text}{" "}
+                        <button type="button" className="link" onClick={() => go(k)}>
+                          Go there
+                        </button>
+                      </li>
+                    )),
                 )}
-                <button type="button" className="btn primary" disabled={!!blocker} onClick={() => go(i + 1)}>
-                  {i === steps.length - 1 ? "Review →" : "Next →"}
-                </button>
-              </>
-            )}
-            {review && (
-              <button type="button" className="btn primary" onClick={() => onCreate({ ...char, name: char.name.trim() || "Unnamed hero" })}>
-                Create character
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
+
+      <div className="step-foot">
+        <button type="button" className="btn ghost" onClick={() => (i === 0 ? onBack() : go(i - 1))}>
+          ← {i === 0 ? "Books" : "Back"}
+        </button>
+        <span className="spacer" />
+        {!review && (
+          <>
+            {blocker && <span className="muted">{blocker}</span>}
+            {!blocker && open(i) > 0 && (
+              <button type="button" className="btn ghost" onClick={() => go(i + 1)} title="Leave the open choices for later; they stay on the sheet as to-dos">
+                Skip for now
               </button>
             )}
+            <button type="button" className="btn primary" disabled={!!blocker} onClick={() => go(i + 1)}>
+              {i === steps.length - 1 ? "Review →" : "Next →"}
+            </button>
+          </>
+        )}
+        {review && (
+          <button type="button" className="btn primary" onClick={() => onCreate({ ...char, name: char.name.trim() || "Unnamed hero" })}>
+            Create character
+          </button>
+        )}
+      </div>
+    </>
+  );
+
+  // ---------- Hero skin: the character taking shape on the left ----------
+  if (hero) {
+    const stats = system.progression.snapshot(d);
+    return (
+      <div className="hero-shell">
+        <aside className="hero-side">
+          <button type="button" className="hero-back" onClick={hero.onCancel}>
+            ‹ Cancel
+          </button>
+          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} size={112} badge={false} />
+          <div className="hero-id">
+            <input className="hero-name" value={char.name} placeholder="Unnamed hero" onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
+            <span className="hero-sub">{d.identity}</span>
+            <span className="hero-system" title={books.join(", ")}>
+              {system.short} · {books.length} book{books.length > 1 ? "s" : ""}
+            </span>
           </div>
+          {stepsNav}
+          <div className="hero-stats">
+            {stats.slice(0, 4).map((x) => (
+              <div className="hero-stat" key={x.label} title={x.label}>
+                <span>{SHORT[x.label] ?? x.label}</span>
+                <strong>{x.value}</strong>
+              </div>
+            ))}
+          </div>
+          <details className="hero-summary">
+            <summary>Full summary</summary>
+            <Summary c={char} d={d} />
+          </details>
+          <div className="hero-foot">{hero.footer}</div>
+        </aside>
+        <main className="hero-main creation-main">{content}</main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="creation">
+      {stepsNav}
+      <div className="layout">
+        <main className="main">
+          {content}
         </main>
         <aside className="side">
           <Summary c={char} d={d} />

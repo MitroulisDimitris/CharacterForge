@@ -1,5 +1,6 @@
 // D&D 5th edition plugins: one engine, two rule sets (2024 and 2014).
 import type { GameSystem } from "../types";
+import { resources5e } from "./resources";
 import { blankCharacter, defaultCharacter, freshCharacter2014, normalizeCharacter, type Character } from "./character";
 import { RULES, classOf } from "./rules";
 import { CREATION_STEPS_2014 } from "./creation";
@@ -52,6 +53,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   tabs: tabs("Species"),
   Summary,
   progression: progression5e,
+  resources: resources5e,
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2024),
   credits: CREDITS_2024,
 };
@@ -78,6 +80,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   tabs: tabs("Race"),
   Summary,
   progression: progression5e,
+  resources: resources5e,
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2014),
   credits: CREDITS_2014,
 };

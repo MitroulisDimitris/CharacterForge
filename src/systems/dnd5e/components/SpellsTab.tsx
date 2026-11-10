@@ -5,6 +5,8 @@ import type { TabProps } from "../../types";
 import type { Character } from "../character";
 import type { Derived, SpellRow } from "../derive";
 import { Card, Counter } from "../../../components/ui";
+import { ResourcePips } from "../../../components/ResourcePips";
+import { resources5e } from "../resources";
 
 export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
   const core = c.edition === "2014" ? "PHB14" : "PHB24";
@@ -91,6 +93,12 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
             <Counter count={c.prepared.length} max={d.preparedLimit} label={d.spellsKind} />
           </div>
         </div>
+        {resources5e(c, d).length > 0 && (
+          <div className="in-play">
+            <span className="hero-label">In play · tap to use</span>
+            <ResourcePips c={c} pools={resources5e(c, d)} set={set} />
+          </div>
+        )}
       </Card>
 
       {always.length > 0 && (

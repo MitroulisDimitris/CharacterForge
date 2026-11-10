@@ -60,6 +60,8 @@ export interface Details {
 }
 
 export interface Character {
+  /** Resources used since the last rest, by pool id (see resources.ts). */
+  spent?: Record<string, number>;
   schema: number;
   /** Fixed by the game system chosen at creation. */
   edition: Edition;

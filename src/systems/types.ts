@@ -25,6 +25,18 @@ export interface BaseCharacter {
   name: string;
   playerName: string;
   level: number;
+  /** Resources used since the last rest, by pool id (see resources.ts). */
+  spent?: Record<string, number>;
+}
+
+/** Something used up in play that a rest gives back (spell slots, sorcery points, ki…). */
+export interface ResourcePool {
+  id: string;
+  label: string;
+  max: number;
+  /** Which rest refills it. */
+  refresh: "short" | "long";
+  kind: "slot" | "points";
 }
 
 export interface DerivedBase {
@@ -122,6 +134,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   derive(c: C, books: string[]): D;
   tabs: { id: string; label: string; Component: FC<TabProps<C, D>> }[];
   Summary: FC<{ c: C; d: D }>;
+  /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
+  resources?: (c: C, d: D) => ResourcePool[];
   buildPdf(c: C, d: D, books: string[]): Promise<Uint8Array>;
   /** Licensing/credits line shown in the app and on the PDF. */
   credits: string;

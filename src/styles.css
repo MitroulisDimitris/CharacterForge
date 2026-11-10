@@ -2370,3 +2370,162 @@ button.hero-system:hover {
     position: static;
   }
 }
+
+/* ---------- In-play resources: tappable pips (components/ResourcePips.tsx), all skins ---------- */
+.in-play {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pool {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, auto) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.pools.compact .pool {
+  grid-template-columns: 1fr auto;
+}
+.pools.compact .pool-label {
+  grid-column: 1 / -1;
+}
+.pool-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pool-label.slot {
+  color: #8fb6e3;
+}
+.pool-label.points {
+  color: var(--gold);
+}
+.pool-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pip {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 2px solid var(--border-strong);
+}
+.pip.slot.on {
+  background: #8fb6e3;
+  border-color: #8fb6e3;
+  box-shadow: 0 0 8px rgba(143, 182, 227, 0.45);
+}
+.pip.points {
+  border-radius: 50%;
+}
+.pip.points.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(212, 166, 74, 0.45);
+}
+:root[data-theme="parchment"] .pip.slot.on {
+  background: #3f6fa3;
+  border-color: #3f6fa3;
+  box-shadow: none;
+}
+:root[data-theme="parchment"] .pool-label.slot {
+  color: #2f5c8c;
+}
+.pip:hover {
+  border-color: var(--text);
+}
+.pool-count {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pool-rests {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.hero-pools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ---------- warnings start folded on the sheet: one-line preview ---------- */
+.warnings-head {
+  align-items: center;
+  gap: 12px;
+}
+.warnings-preview {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- creation in the hero sidebar ---------- */
+.hero-side .steps {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 0;
+  background: none;
+  border: 0;
+  position: static;
+}
+.hero-side .step {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  justify-content: flex-start;
+  padding: 7px 10px;
+  color: var(--text);
+}
+.hero-side .step:hover:not(:disabled) {
+  background: var(--surface);
+}
+.hero-side .step.on {
+  background: var(--gold-soft);
+  border-color: rgba(212, 166, 74, 0.45);
+  color: #ecc46e;
+  font-weight: 700;
+}
+.hero-side .step.on .step-n {
+  background: var(--gold);
+  color: #1c1815;
+  box-shadow: 0 0 12px rgba(212, 166, 74, 0.6);
+}
+.creation-main .step-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0;
+  background: linear-gradient(180deg, transparent, var(--bg) 35%);
+}
+/* keep the step buttons clear of the floating Feedback button */
+.creation-main .step-foot {
+  padding-right: 150px;
+}
+@media (max-width: 860px) {
+  .creation-main .step-foot {
+    padding-right: 0;
+    padding-bottom: 64px;
+  }
+}

@@ -6,6 +6,7 @@ import { Brand, SkinPicker } from "./Brand";
 import { Card, Field } from "./ui";
 import { BookChecklist, normalizeBooks } from "./BookChecklist";
 import { CreationStepper } from "./CreationStepper";
+import { skinOf } from "../skins";
 
 /**
  * New character: pick the rules and allowed books, then either build the character step by
@@ -66,6 +67,17 @@ export function NewCharacterWizard({
       </div>
     </header>
   );
+
+  if (building && system?.creation && skinOf(theme).layout === "hero")
+    return (
+      <CreationStepper
+        system={system}
+        books={normalizeBooks(system, books)}
+        onBack={() => setBuilding(false)}
+        onCreate={save}
+        hero={{ onCancel, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
+      />
+    );
 
   if (building && system?.creation)
     return (

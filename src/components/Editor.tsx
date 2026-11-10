@@ -7,6 +7,7 @@ import { Warnings } from "./Warnings";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
 import { Crest, MoreMenu, SHORT } from "./Hero";
+import { ResourcePips } from "./ResourcePips";
 import { skinOf } from "../skins";
 
 export function Editor({
@@ -113,6 +114,7 @@ export function Editor({
   // ---------- "Hero" skin: the character in a sidebar on the left (UI rules in CLAUDE.md) ----------
   if (skinOf(theme).layout === "hero") {
     const stats = system.progression.snapshot(d);
+    const pools = system.resources?.(char, d) ?? [];
     const books = rec.books.map((b) => bookName(system, b)).join(", ");
     return (
       <div className="hero-shell">
@@ -154,6 +156,12 @@ export function Editor({
                 ))}
               </dl>
             </details>
+          )}
+          {pools.length > 0 && (
+            <section className="hero-pools" aria-label="In play">
+              <span className="hero-label">In play · tap to use</span>
+              <ResourcePips c={char} pools={pools} set={set} compact />
+            </section>
           )}
           <section className={`hero-todo ${waiting.length ? "has" : ""}`} aria-label="To do">
             <span className="hero-label">To do</span>
@@ -224,7 +232,7 @@ export function Editor({
         </aside>
         <main className="hero-main">
           {tabsNav}
-          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} />
+          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
           <div className="tab-body">
             <Active c={char} d={d} set={set} books={rec.books} />
           </div>
@@ -318,7 +326,7 @@ export function Editor({
               </ul>
             </div>
           )}
-          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} />
+          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
           <div className="tab-body">
             <Active c={char} d={d} set={set} books={rec.books} />
           </div>

@@ -18,6 +18,11 @@ Tree" canvas artifact, artboards StyleD / AppLibrary / AppSheet / AppCreate).
 **Skins** (`src/skins.ts`): Hero, Dark, Parchment, picked from the "Skin" menu; more may be added.
 A skin = CSS tokens under `:root[data-theme="<id>"]` + a layout (`data-layout`): "classic" (top bar)
 or "hero" (left sidebar: `Editor.tsx` / `Library.tsx` hero branches, `components/Hero.tsx`).
+Creation in Hero uses `CreationStepper`'s `hero` prop (the character taking shape on the left).
+In-play tracking: systems declare `resources(c, d)` pools (5e: spell slots, pact slots refill on a
+short rest, sorcery points; `systems/dnd5e/resources.ts`); used amounts live in `character.spent`;
+`components/ResourcePips.tsx` shows tappable pips + Short/Long rest (Hero sidebar and 5e Spells tab).
+Warnings on the sheet start folded to one line (`startOpen={false}`).
 Keep Dark and Parchment working when changing screens. New screens follow the rules below in
 every skin; the Hero skin is the reference look.
 
