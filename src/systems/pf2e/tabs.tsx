@@ -275,9 +275,11 @@ export function AttributesTab({ c, d, set }: P) {
       <Card title="Level 1: four free boosts" aside={<Counter count={c.boosts1.length} max={4} label="Chosen" />}>
         <BoostPicker value={c.boosts1} count={4} onChange={(boosts1) => set({ boosts1 })} />
       </Card>
-      <Card title="Level 5: four free boosts" aside={c.level < 5 ? <span className="muted">Unlocks at level 5</span> : <Counter count={c.boosts5.length} max={4} label="Chosen" />}>
-        <BoostPicker value={c.boosts5} count={4} onChange={(boosts5) => set({ boosts5 })} />
-      </Card>
+      {c.level >= 5 && (
+        <Card title="Level 5: four free boosts" aside={<Counter count={c.boosts5.length} max={4} label="Chosen" />}>
+          <BoostPicker value={c.boosts5} count={4} onChange={(boosts5) => set({ boosts5 })} />
+        </Card>
+      )}
     </div>
   );
 }
@@ -298,16 +300,20 @@ export function SkillsTabPF2({ c, d, set }: P) {
           onChange={(classSkills) => set({ classSkills })}
         />
       </Card>
-      <Card title="Skill increases">
-        <div className="grid-3">
-          <Field label="Level 3 (trained → expert)">
-            <Select value={c.skillIncrease3} options={[{ value: "", label: c.level >= 3 ? "Choose…" : "Unlocks at 3" }, ...trained.map((s) => ({ value: s, label: skillNamePF2(s) }))]} onChange={(skillIncrease3) => set({ skillIncrease3 })} />
-          </Field>
-          <Field label="Level 5 (trained → expert)">
-            <Select value={c.skillIncrease5} options={[{ value: "", label: c.level >= 5 ? "Choose…" : "Unlocks at 5" }, ...trained.filter((s) => s !== c.skillIncrease3).map((s) => ({ value: s, label: skillNamePF2(s) }))]} onChange={(skillIncrease5) => set({ skillIncrease5 })} />
-          </Field>
-        </div>
-      </Card>
+      {c.level >= 3 && (
+        <Card title="Skill increases">
+          <div className="grid-3">
+            <Field label="Level 3 (trained → expert)">
+              <Select value={c.skillIncrease3} options={[{ value: "", label: "Choose…" }, ...trained.map((s) => ({ value: s, label: skillNamePF2(s) }))]} onChange={(skillIncrease3) => set({ skillIncrease3 })} />
+            </Field>
+            {c.level >= 5 && (
+              <Field label="Level 5 (trained → expert)">
+                <Select value={c.skillIncrease5} options={[{ value: "", label: "Choose…" }, ...trained.filter((s) => s !== c.skillIncrease3).map((s) => ({ value: s, label: skillNamePF2(s) }))]} onChange={(skillIncrease5) => set({ skillIncrease5 })} />
+              </Field>
+            )}
+          </div>
+        </Card>
+      )}
       <Card title="All skills">
         <table className="skill-table">
           <thead>
@@ -353,11 +359,13 @@ export function SkillsTabPF2({ c, d, set }: P) {
 
 export function FeatsTabPF2({ c, d, set }: P) {
   const general = GENERAL_FEATS_PF2.find((f) => f.id === c.generalFeat3);
-  const text = (label: string, key: keyof CharacterPF2, lvl: number, hint: string) => (
-    <Field label={`${label} (level ${lvl})`} hint={c.level < lvl ? `Unlocks at level ${lvl}` : hint}>
-      <input value={c[key] as string} disabled={c.level < lvl} onChange={(e) => set({ [key]: e.target.value } as Partial<CharacterPF2>)} placeholder="Type the feat's name" />
-    </Field>
-  );
+  // Feats appear once their level is reached (UI rules: show only what's available now).
+  const text = (label: string, key: keyof CharacterPF2, lvl: number, hint: string) =>
+    c.level < lvl ? null : (
+      <Field label={`${label} (level ${lvl})`} hint={hint}>
+        <input value={c[key] as string} onChange={(e) => set({ [key]: e.target.value } as Partial<CharacterPF2>)} placeholder="Type the feat's name" />
+      </Field>
+    );
   return (
     <div className="stack">
       <Card title="Feats" aside={<a className="link" href={`${AON}Feats.aspx`} target="_blank" rel="noreferrer">Browse feats on Archives of Nethys ↗</a>}>
@@ -369,10 +377,12 @@ export function FeatsTabPF2({ c, d, set }: P) {
           </Field>
           {text("Sorcerer feat", "classFeat2", 2, "A sorcerer feat of level 2 or lower")}
           {text("Skill feat", "skillFeat2", 2, "A skill feat for a skill you're trained in")}
-          <Field label="General feat (level 3)" hint={c.level < 3 ? "Unlocks at level 3" : general?.text}>
-            <Select value={c.generalFeat3} options={GENERAL_FEATS_PF2.map((f) => ({ value: f.id, label: f.name }))} onChange={(generalFeat3) => set({ generalFeat3 })} />
-          </Field>
-          {c.generalFeat3 === "other" && (
+          {c.level >= 3 && (
+            <Field label="General feat (level 3)" hint={general?.text}>
+              <Select value={c.generalFeat3} options={GENERAL_FEATS_PF2.map((f) => ({ value: f.id, label: f.name }))} onChange={(generalFeat3) => set({ generalFeat3 })} />
+            </Field>
+          )}
+          {c.level >= 3 && c.generalFeat3 === "other" && (
             <Field label="General feat name">
               <input value={c.generalFeatOther} onChange={(e) => set({ generalFeatOther: e.target.value })} />
             </Field>

@@ -2662,3 +2662,19 @@ button.hero-system:hover {
     padding-left: 14px;
   }
 }
+
+/* "Coming later" line and the folded level table (show only what is available now) */
+.coming-later {
+  margin: 0;
+  padding: 0.2rem 0.25rem;
+  font-size: 0.9rem;
+}
+.level-table-wrap {
+  margin-top: 0.75rem;
+}
+.level-table-wrap > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}

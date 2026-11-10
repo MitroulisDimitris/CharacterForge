@@ -238,13 +238,15 @@ export function AbilitiesTab35({ c, d, set }: P) {
           </tbody>
         </table>
       </Card>
-      <Card title="Ability increase at 4th level" aside={c.level < 4 ? <span className="muted">Unlocks at level 4</span> : undefined}>
-        <div className="grid-3">
-          <Field label="+1 to">
-            <Select<Ability> value={c.level4Ability} options={ABILITIES.map((a) => ({ value: a, label: ABILITY_NAMES[a] }))} onChange={(level4Ability) => set({ level4Ability })} />
-          </Field>
-        </div>
-      </Card>
+      {c.level >= 4 && (
+        <Card title="Ability increase at 4th level">
+          <div className="grid-3">
+            <Field label="+1 to">
+              <Select<Ability> value={c.level4Ability} options={ABILITIES.map((a) => ({ value: a, label: ABILITY_NAMES[a] }))} onChange={(level4Ability) => set({ level4Ability })} />
+            </Field>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

@@ -103,6 +103,8 @@ export function ClassTab(props: TabProps<Character, Derived>) {
           <dt>Raise first</dt>
           <dd>{CL.primary}</dd>
         </dl>
+        <details className="level-table-wrap">
+          <summary>What you get at each level</summary>
         <table className="level-table">
           <thead>
             <tr>
@@ -129,6 +131,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
             ))}
           </tbody>
         </table>
+        </details>
         {CL.maxLevel < 5 && <p className="muted note">Levels above {CL.maxLevel} for the {CL.name} are coming with level-up support. Until then the character stays at level {CL.maxLevel}.</p>}
       </Card>
 
@@ -156,11 +159,11 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.fightingStyle && (
-        <Card title="Fighting Style" aside={<span className="muted">{c.level < CL.fightingStyle.level ? `At level ${CL.fightingStyle.level}` : "Pick one"}</span>}>
-          <div className={`option-grid compact ${c.level < CL.fightingStyle.level ? "disabled" : ""}`}>
+      {CL.fightingStyle && c.level >= CL.fightingStyle.level && (
+        <Card title="Fighting Style" aside={<span className="muted">Pick one</span>}>
+          <div className="option-grid compact">
             {stylesFor(CL).filter((s) => inBooks(books, s.book)).map((s) => (
-              <button type="button" key={s.id} disabled={c.level < CL.fightingStyle!.level} className={`option ${c.fightingStyle === s.id ? "on" : ""}`} aria-pressed={c.fightingStyle === s.id} onClick={() => set({ fightingStyle: s.id, styleCantrips: [] })}>
+              <button type="button" key={s.id} className={`option ${c.fightingStyle === s.id ? "on" : ""}`} aria-pressed={c.fightingStyle === s.id} onClick={() => set({ fightingStyle: s.id, styleCantrips: [] })}>
                 <strong>
                   {s.name} {s.book !== "PHB14" && <span className="pill">{s.book}</span>}
                 </strong>
@@ -182,8 +185,8 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.expertise && (
-        <Card title="Expertise" aside={c.level >= CL.expertise.level ? <Counter count={c.expertise.length} max={CL.expertise.count} label="Chosen" /> : <span className="muted">At level {CL.expertise.level}</span>}>
+      {CL.expertise && c.level >= CL.expertise.level && (
+        <Card title="Expertise" aside={<Counter count={c.expertise.length} max={CL.expertise.count} label="Chosen" />}>
           <p className="muted">
             Double your Proficiency Bonus for {CL.expertise.count} of your skill proficiencies{CL.expertise.thieves ? ", or one skill and thieves' tools" : ""}. Pick your skills first.
           </p>
@@ -198,9 +201,9 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.invocations && (
-        <Card title="Eldritch Invocations" aside={c.level >= 2 ? <Counter count={c.invocations.length} max={CL.invocations[c.level]} label="Known" /> : <span className="muted">At level 2</span>}>
-          <div className={`option-grid compact ${c.level < 2 ? "disabled" : ""}`}>
+      {CL.invocations && (CL.invocations[c.level] ?? 0) > 0 && (
+        <Card title="Eldritch Invocations" aside={<Counter count={c.invocations.length} max={CL.invocations[c.level]} label="Known" />}>
+          <div className="option-grid compact">
             {INVOCATIONS.filter((x) => inBooks(books, x.book)).map((x) => {
               const on = c.invocations.includes(x.id);
               const needs = [x.level && `warlock ${x.level}`, x.eldritchBlast && "Eldritch Blast", x.pact && `Pact of the ${x.pact[0].toUpperCase() + x.pact.slice(1)}`, x.hex && "Hex or a curse feature"].filter(Boolean).join(", ");
@@ -226,11 +229,11 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.pactBoonLevel && (
-        <Card title="Pact Boon" aside={c.level < CL.pactBoonLevel ? <span className="muted">At level {CL.pactBoonLevel}</span> : undefined}>
-          <div className={`option-grid compact ${c.level < CL.pactBoonLevel ? "disabled" : ""}`}>
+      {CL.pactBoonLevel && c.level >= CL.pactBoonLevel && (
+        <Card title="Pact Boon">
+          <div className="option-grid compact">
             {PACT_BOONS.filter((b) => inBooks(books, b.book)).map((b) => (
-              <button type="button" key={b.id} disabled={c.level < CL.pactBoonLevel!} className={`option ${c.pactBoon === b.id ? "on" : ""}`} aria-pressed={c.pactBoon === b.id} onClick={() => set({ pactBoon: b.id })}>
+              <button type="button" key={b.id} className={`option ${c.pactBoon === b.id ? "on" : ""}`} aria-pressed={c.pactBoon === b.id} onClick={() => set({ pactBoon: b.id })}>
                 <strong>{b.name}</strong>
                 <span>{b.text}</span>
               </button>
@@ -245,9 +248,9 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.infusions && (
-        <Card title="Infusions" aside={c.level >= 2 ? <Counter count={c.infusions.length} max={CL.infusions[c.level]} label="Known" /> : <span className="muted">At level 2</span>}>
-          <div className={`option-grid compact ${c.level < 2 ? "disabled" : ""}`}>
+      {CL.infusions && (CL.infusions[c.level] ?? 0) > 0 && (
+        <Card title="Infusions" aside={<Counter count={c.infusions.length} max={CL.infusions[c.level]} label="Known" />}>
+          <div className="option-grid compact">
             {INFUSIONS.map((x) => {
               const on = c.infusions.includes(x.id);
               return (
@@ -287,9 +290,8 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      {CL.subclasses.length > 0 || c.level < CL.subclassLevel ? (
-        <Card title={CL.subclassLabel} aside={c.level < CL.subclassLevel ? <span className="muted">Chosen at level {CL.subclassLevel}</span> : undefined}>
-          {c.level < CL.subclassLevel && <p className="muted">You choose your {CL.subclassLabel.toLowerCase()} at level {CL.subclassLevel}; here's a preview of the options.</p>}
+      {CL.subclasses.length > 0 && c.level >= CL.subclassLevel ? (
+        <Card title={CL.subclassLabel}>
           {subclasses.length === 0 ? null : (
             <div className="option-grid">
               {subclasses.map((s) => (
@@ -376,12 +378,12 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       ) : null}
 
-      {CL.sorcery && (
+      {CL.sorcery && c.level >= d.metamagicLevel && (
         <Card
           title="Metamagic"
-          aside={c.level >= d.metamagicLevel ? <Counter count={c.metamagic.length} max={d.metamagicLimit} label="Known" /> : <span className="muted">Unlocks at level {d.metamagicLevel}</span>}
+          aside={<Counter count={c.metamagic.length} max={d.metamagicLimit} label="Known" />}
         >
-          <div className={`option-grid compact ${c.level < d.metamagicLevel ? "disabled" : ""}`}>
+          <div className="option-grid compact">
             {metamagic.map((m) => {
               const on = c.metamagic.includes(m.id);
               const full = c.metamagic.length >= d.metamagicLimit;
@@ -454,6 +456,26 @@ export function ClassTab(props: TabProps<Character, Derived>) {
           ))}
         </div>
       </Card>
+      <ComingLater c={c} d={d} />
     </div>
   );
+}
+
+/** One quiet line about choices that unlock later (UI rules: show only what's available now). */
+function ComingLater({ c, d }: { c: Character; d: Derived }) {
+  const CL = d.cls;
+  const firstLevel = (table: number[] | undefined) => (table ? table.findIndex((n) => n > 0) : -1);
+  const later: [string, number][] = [];
+  if (CL.subclasses.length && c.level < CL.subclassLevel) later.push([CL.subclassLabel, CL.subclassLevel]);
+  if (CL.fightingStyle && c.level < CL.fightingStyle.level) later.push(["Fighting Style", CL.fightingStyle.level]);
+  if (CL.expertise && c.level < CL.expertise.level) later.push(["Expertise", CL.expertise.level]);
+  const inv = firstLevel(CL.invocations);
+  if (inv > c.level) later.push(["Eldritch Invocations", inv]);
+  if (CL.pactBoonLevel && c.level < CL.pactBoonLevel) later.push(["Pact Boon", CL.pactBoonLevel]);
+  const inf = firstLevel(CL.infusions);
+  if (inf > c.level) later.push(["Infusions", inf]);
+  if (CL.sorcery && c.level < d.metamagicLevel) later.push(["Metamagic", d.metamagicLevel]);
+  if (!later.length) return null;
+  later.sort((a, b) => a[1] - b[1]);
+  return <p className="muted coming-later">Coming later: {later.map(([name, lv]) => `${name} at level ${lv}`).join(" · ")}</p>;
 }
