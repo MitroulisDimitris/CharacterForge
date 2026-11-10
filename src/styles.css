@@ -2529,3 +2529,136 @@ button.hero-system:hover {
     padding-bottom: 64px;
   }
 }
+
+/* ---------- Spells tab: "Your spells" compact rows (all skins) ---------- */
+.spell-views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.spell-views > .muted {
+  flex: 1 1 280px;
+  font-size: 0.9rem;
+}
+.spell-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.spell-group > h3.hero-label,
+.spell-group > summary.hero-label {
+  margin: 0;
+  padding-left: 4px;
+  color: #8fb6e3;
+}
+:root[data-theme="parchment"] .spell-group > h3.hero-label,
+:root[data-theme="parchment"] .spell-group > summary.hero-label {
+  color: #2f5c8c;
+}
+.spellbook-rest > summary {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.spell-row {
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.spell-row[open] {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.spell-row > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.spell-row > summary::-webkit-details-marker {
+  display: none;
+}
+.spell-chip {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8fb6e3;
+  border: 2px solid #8fb6e3;
+}
+:root[data-theme="parchment"] .spell-chip {
+  color: #2f5c8c;
+  border-color: #2f5c8c;
+}
+.spell-row-name {
+  font-weight: 600;
+}
+.spell-row-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  cursor: help;
+}
+.tag.conc {
+  color: #b9a3e8;
+  border-color: #b9a3e8;
+}
+:root[data-theme="parchment"] .tag.conc {
+  color: #5b3f9a;
+  border-color: #5b3f9a;
+}
+.tag.granted {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.spell-chev {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.spell-row[open] .spell-chev {
+  transform: rotate(90deg);
+}
+.spell-row-body {
+  padding: 0 14px 12px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.spell-row-body p {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .spell-row > summary {
+    flex-wrap: wrap;
+  }
+  .spell-row-meta {
+    flex-basis: 100%;
+    order: 5;
+    padding-left: 42px;
+  }
+  .spell-row-body {
+    padding-left: 14px;
+  }
+}

@@ -4,37 +4,23 @@ import { castingTimeLabel, cantripDamage, levelLabel, type Spell } from "../data
 import type { TabProps } from "../../types";
 import type { Character } from "../character";
 import type { Derived, SpellRow } from "../derive";
-import { Card, Counter } from "../../../components/ui";
+import { Card, Counter, Segmented } from "../../../components/ui";
 import { ResourcePips } from "../../../components/ResourcePips";
 import { resources5e } from "../resources";
 
+/**
+ * Spells tab, two views (UI rules: calm first):
+ *  - "Your spells": only the spells you have, one short line each; click a row for details.
+ *  - "Learn or change": the full class list with tick boxes. Opens first while picks are still open
+ *    (creation, level-up), otherwise one click away.
+ */
 export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
   const core = c.edition === "2014" ? "PHB14" : "PHB24";
-  const classSpells = d.rules.spells.filter((s) => d.onList(s));
   const SP = d.spell;
   const wizard = !!SP?.spellbook;
-  const [query, setQuery] = useState("");
-  const [onlyChosen, setOnlyChosen] = useState(false);
   const always = d.spellRows.filter((r) => r.kind === "Always" || r.kind === "Innate");
-  const alwaysNames = new Set(always.map((r) => r.name));
-
-  const matches = (s: Spell) =>
-    (!query || `${s.name} ${s.school} ${s.desc}`.toLowerCase().includes(query.toLowerCase())) &&
-    (!onlyChosen || c.cantrips.includes(s.name) || c.prepared.includes(s.name) || c.spellbook.includes(s.name));
-
-  const toggle = (s: Spell) => {
-    if (s.level === 0) {
-      const on = c.cantrips.includes(s.name);
-      set({ cantrips: on ? c.cantrips.filter((n) => n !== s.name) : [...c.cantrips, s.name] });
-    } else {
-      const on = c.prepared.includes(s.name);
-      set({ prepared: on ? c.prepared.filter((n) => n !== s.name) : [...c.prepared, s.name] });
-    }
-  };
-  const toggleBook = (s: Spell) => {
-    const on = c.spellbook.includes(s.name);
-    set(on ? { spellbook: c.spellbook.filter((n) => n !== s.name), prepared: c.prepared.filter((n) => n !== s.name) } : { spellbook: [...c.spellbook, s.name] });
-  };
+  const picksOpen = c.cantrips.length < d.cantripLimit || c.prepared.length < d.preparedLimit || (wizard && c.spellbook.length < d.spellbookLimit);
+  const [view, setView] = useState<"mine" | "learn">(picksOpen ? "learn" : "mine");
 
   if (!d.caster) {
     return (
@@ -49,31 +35,22 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
             {d.spellRows.length ? " Spells from your race or feats are listed below." : ""}
           </p>
         </Card>
-        {always.length > 0 && (
-          <Card title="Granted spells (race & feats)">
-            <ul className="spell-list">
-              {always.map((r) => (
-                <GrantedRow key={`${r.source}-${r.name}`} r={r} level={c.level} core={core} />
-              ))}
-            </ul>
-          </Card>
-        )}
+        {always.length > 0 && <MySpells c={c} d={d} core={core} onLearn={null} />}
       </div>
     );
   }
+
   const howTo =
     SP?.label === "Known"
       ? `You know a fixed set of ${SP?.list ?? d.cls.name.toLowerCase()} spells: pick them carefully, you can swap only one when you gain a level.`
       : wizard
         ? "First write spells into your spellbook, then tick the ones you prepare today. You can change prepared spells after each Long Rest."
         : `You prepare spells from the whole ${d.cls.name.toLowerCase()} list after each Long Rest: pick today's set, you can change it tomorrow.`;
-
-  const levels = Array.from({ length: d.maxSpellLevel + 1 }, (_, i) => i);
+  const pools = resources5e(c, d);
 
   return (
     <div className="stack">
       <Card title="Spellcasting" aside={<span className="muted">{ABILITY_NAMES[d.castAbility]} · {SP?.focus}</span>}>
-        <p className="muted">{howTo}</p>
         <div className="spell-stats">
           <div>
             <strong>{d.spellDc}</strong>
@@ -84,40 +61,180 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
             <span>Spell attack</span>
           </div>
           <div>
-            <strong>{d.slots.length ? d.slots.map((n, i) => (n ? `${n}×${i + 1}` : "")).filter(Boolean).join("  ") + (d.pact ? " (pact)" : "") : "—"}</strong>
-            <span>Slots</span>
-          </div>
-          <div>
             <Counter count={c.cantrips.length} max={d.cantripLimit} label="Cantrips" />
             {wizard && <Counter count={c.spellbook.length} max={d.spellbookLimit} label="Spellbook" />}
             <Counter count={c.prepared.length} max={d.preparedLimit} label={d.spellsKind} />
           </div>
         </div>
-        {resources5e(c, d).length > 0 && (
+        {pools.length > 0 && (
           <div className="in-play">
             <span className="hero-label">In play · tap to use</span>
-            <ResourcePips c={c} pools={resources5e(c, d)} set={set} />
+            <ResourcePips c={c} pools={pools} set={set} />
           </div>
         )}
       </Card>
 
-      {always.length > 0 && (
-        <Card title={c.edition === "2014" ? "Granted spells (subclass & race)" : "Always prepared & innate"} aside={<span className="muted">Don't count against your limits</span>}>
-          <ul className="spell-list">
-            {always.map((r) => (
-              <GrantedRow key={`${r.source}-${r.name}`} r={r} level={c.level} core={core} />
-            ))}
-          </ul>
-        </Card>
-      )}
+      <div className="spell-views">
+        <Segmented
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "mine", label: "Your spells" },
+            { value: "learn", label: picksOpen ? "Learn spells •" : "Learn or change spells" },
+          ]}
+        />
+        {view === "learn" && <span className="muted">{howTo}</span>}
+      </div>
 
+      {view === "mine" ? <MySpells c={c} d={d} core={core} onLearn={() => setView("learn")} /> : <LearnSpells c={c} d={d} set={set} core={core} always={always} />}
+    </div>
+  );
+}
+
+// ---------- "Your spells": compact rows, details on click ----------
+function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: string; onLearn: (() => void) | null }) {
+  const get = (n: string) => d.rules.getSpell(n);
+  type Row = { key: string; s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean };
+  const rows: Row[] = [];
+  const seen = new Set<string>();
+  const add = (r: Row) => {
+    if (seen.has(r.name)) return;
+    seen.add(r.name);
+    rows.push(r);
+  };
+  c.cantrips.forEach((n) => add({ key: "c" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }));
+  c.prepared.forEach((n) => add({ key: "p" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }));
+  d.spellRows
+    .filter((r) => r.kind === "Always" || r.kind === "Innate")
+    .forEach((r) => add({ key: "g" + r.source + r.name, s: r.spell, name: r.name, source: r.source, note: r.note, dc: r.saveDc, atk: r.attackBonus, granted: true }));
+  const bookOnly = d.spell?.spellbook ? c.spellbook.filter((n) => !c.prepared.includes(n)) : [];
+
+  if (!rows.length && !bookOnly.length)
+    return (
+      <Card title="Your spells">
+        <p className="muted">You haven't picked any spells yet.</p>
+        {onLearn && (
+          <button type="button" className="btn primary" onClick={onLearn}>
+            Learn spells
+          </button>
+        )}
+      </Card>
+    );
+
+  const levelOf = (r: Row) => r.s?.level ?? 1;
+  const levels = [...new Set(rows.map(levelOf))].sort((a, b) => a - b);
+  return (
+    <div className="stack">
+      {levels.map((lvl) => (
+        <section key={lvl} className="spell-group">
+          <h3 className="hero-label">
+            {lvl === 0 ? "Cantrips · at will" : `${levelLabel(lvl)} · ${d.slots[lvl - 1] ? `${d.slots[lvl - 1]} slot${d.slots[lvl - 1] > 1 ? "s" : ""}` : "no slots yet"}`}
+          </h3>
+          {rows
+            .filter((r) => levelOf(r) === lvl)
+            .map((r) => (
+              <SpellRowItem key={r.key} r={r} level={c.level} core={core} />
+            ))}
+        </section>
+      ))}
+      {bookOnly.length > 0 && (
+        <details className="spell-group spellbook-rest">
+          <summary className="hero-label">In your spellbook, not prepared today ({bookOnly.length})</summary>
+          {bookOnly.map((n) => (
+            <SpellRowItem key={"b" + n} r={{ s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }} level={c.level} core={core} />
+          ))}
+        </details>
+      )}
+    </div>
+  );
+}
+
+function shortMeta(s: Spell, level: number, dc: number, atk: number) {
+  const dmg = s.level === 0 ? cantripDamage(s, level) : s.damage;
+  const time = castingTimeLabel(s.time);
+  return [time !== "Action" ? time : "", s.range, s.save ? `${s.save} save` : s.attack ? `attack ${signed(atk)}` : "", dmg ?? ""].filter(Boolean).join(" · ") || `DC ${dc}`;
+}
+
+function SpellRowItem({ r, level, core }: { r: { s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean }; level: number; core: string }) {
+  const s = r.s;
+  return (
+    <details className="spell-row">
+      <summary>
+        <span className="spell-chip">{s ? (s.level === 0 ? "C" : s.level) : "?"}</span>
+        <span className="spell-row-name">{r.name}</span>
+        <span className="spell-row-meta">{s ? shortMeta(s, level, r.dc, r.atk) : ""}</span>
+        {s?.concentration && (
+          <span className="tag conc" title="Concentration: you can keep only one such spell going; taking damage means a CON save to keep it.">
+            Concentration
+          </span>
+        )}
+        {s?.ritual && (
+          <span className="tag" title="Ritual: you can cast it 10 minutes slower without using a spell slot.">
+            Ritual
+          </span>
+        )}
+        {r.granted && (
+          <span className="tag granted" title={`Granted by ${r.source}${r.note ? ` · ${r.note}` : ""}. Doesn't count against your limits.`}>
+            {r.source}
+          </span>
+        )}
+        <span className="spell-chev" aria-hidden="true">
+          ›
+        </span>
+      </summary>
+      <div className="spell-row-body">
+        {s ? (
+          <>
+            <p>{s.desc}</p>
+            <p className="muted">
+              {s.school} · {castingTimeLabel(s.time)} · {s.range} · {s.components}
+              {s.material ? ` (${s.material})` : ""} · {s.duration}
+              {s.save ? ` · ${s.save} save DC ${r.dc}` : s.attack ? ` · spell attack ${signed(r.atk)}` : ""}
+              {s.book !== core ? ` · ${s.book}` : ""}
+            </p>
+            {r.granted && r.note && <p className="muted">{r.note}</p>}
+          </>
+        ) : (
+          <p className="muted">Not in this app's spell list — check your book for details. DC {r.dc}, attack {signed(r.atk)}.</p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+// ---------- "Learn or change": the full class list with tick boxes ----------
+function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; set: TabProps<Character, Derived>["set"]; core: string; always: SpellRow[] }) {
+  const classSpells = d.rules.spells.filter((s) => d.onList(s));
+  const wizard = !!d.spell?.spellbook;
+  const [query, setQuery] = useState("");
+  const [onlyChosen, setOnlyChosen] = useState(false);
+  const alwaysNames = new Set(always.map((r) => r.name));
+  const matches = (s: Spell) =>
+    (!query || `${s.name} ${s.school} ${s.desc}`.toLowerCase().includes(query.toLowerCase())) &&
+    (!onlyChosen || c.cantrips.includes(s.name) || c.prepared.includes(s.name) || c.spellbook.includes(s.name));
+  const toggle = (s: Spell) => {
+    if (s.level === 0) {
+      const on = c.cantrips.includes(s.name);
+      set({ cantrips: on ? c.cantrips.filter((n) => n !== s.name) : [...c.cantrips, s.name] });
+    } else {
+      const on = c.prepared.includes(s.name);
+      set({ prepared: on ? c.prepared.filter((n) => n !== s.name) : [...c.prepared, s.name] });
+    }
+  };
+  const toggleBook = (s: Spell) => {
+    const on = c.spellbook.includes(s.name);
+    set(on ? { spellbook: c.spellbook.filter((n) => n !== s.name), prepared: c.prepared.filter((n) => n !== s.name) } : { spellbook: [...c.spellbook, s.name] });
+  };
+  const levels = Array.from({ length: d.maxSpellLevel + 1 }, (_, i) => i);
+
+  return (
+    <>
       <div className="spell-filter">
         <input type="search" placeholder="Search spells…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search spells" />
         <label className="check">
           <input type="checkbox" checked={onlyChosen} onChange={(e) => setOnlyChosen(e.target.checked)} /> Only chosen
         </label>
       </div>
-
       {levels.map((lvl) => {
         const list = classSpells.filter((s) => s.level === lvl && matches(s));
         if (!list.length) return null;
@@ -162,7 +279,7 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
         );
       })}
       {d.maxSpellLevel < 3 && <p className="muted center">Higher-level spells unlock as you level up.</p>}
-    </div>
+    </>
   );
 }
 
@@ -185,29 +302,5 @@ function SpellLine({ s, level, dc, atk, core }: { s: Spell; level: number; dc: n
       </span>
       <span className="spell-desc">{s.desc}</span>
     </span>
-  );
-}
-
-function GrantedRow({ r, level, core }: { r: SpellRow; level: number; core: string }) {
-  return (
-    <li>
-      <span className="spell-pick">
-        <span className="granted-mark" aria-hidden="true">
-          ◆
-        </span>
-        {r.spell ? (
-          <SpellLine s={r.spell} level={level} dc={r.saveDc} atk={r.attackBonus} core={core} />
-        ) : (
-          <span className="spell-line">
-            <span className="spell-name">{r.name}</span>
-            <span className="spell-meta">Not in this app's spell list — check your book for details. DC {r.saveDc}, attack {signed(r.attackBonus)}.</span>
-          </span>
-        )}
-      </span>
-      <span className="pill">
-        {r.source}
-        {r.note ? ` · ${r.note}` : ""}
-      </span>
-    </li>
   );
 }
