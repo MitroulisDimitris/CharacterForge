@@ -1,0 +1,42 @@
+// Backgrounds (2014 Player's Handbook, with its variants and the custom-background rule).
+// Features summarized in our own words. `kit` + `gp` are the starting equipment.
+import type { Background } from "../data/backgrounds";
+import type { KitItem } from "../data/equipment";
+
+const F = (name: string, text: string) => ({ name, source: "Background", text });
+const K = (name: string, qty = 1): KitItem => ({ name, qty });
+
+export const BACKGROUNDS_2014: Background[] = [
+  { id: "acolyte14", book: "PHB14", name: "Acolyte", skills: ["insight", "religion"], tools: "", languages: 2, feature: F("Shelter of the Faithful", "You and your companions can get free healing and care at temples of your faith."), equipment: "Holy symbol, prayer book, 5 sticks of incense, vestments, common clothes, 15 GP", kit: [K("Holy Symbol (Amulet)"), K("Book"), K("Incense (block)", 5), K("Vestments"), K("Common Clothes")], gp: 15 },
+  { id: "charlatan14", book: "PHB14", name: "Charlatan", skills: ["deception", "sleightOfHand"], tools: "Disguise Kit, Forgery Kit", feature: F("False Identity", "You have a second, documented identity and can forge papers you've seen."), equipment: "Fine clothes, disguise kit, con tools, 15 GP", kit: [K("Fine Clothes"), K("Disguise Kit"), K("Con tools (weighted dice or similar)")], gp: 15 },
+  { id: "criminalSpy2014", book: "PHB14", name: "Criminal / Spy", skills: ["deception", "stealth"], tools: "Thieves' Tools, one kind of Gaming Set", feature: F("Criminal Contact", "You have a reliable contact who links you to a network of criminals and passes messages for you."), equipment: "Crowbar, dark common clothes with a hood, 15 GP", kit: [K("Crowbar"), K("Common Clothes")], gp: 15 },
+  { id: "entertainer14", book: "PHB14", name: "Entertainer", skills: ["acrobatics", "performance"], tools: "Disguise Kit, one Musical Instrument", feature: F("By Popular Demand", "You can always find a place to perform in exchange for food and lodging."), equipment: "Musical instrument, favor of an admirer, costume, 15 GP", kit: [K("Musical instrument (your choice)"), K("Favor of an admirer"), K("Costume")], gp: 15 },
+  { id: "gladiator14", book: "PHB14", variantOf: "Entertainer", name: "Gladiator (Entertainer variant)", skills: ["acrobatics", "performance"], tools: "Disguise Kit, one Musical Instrument", feature: F("By Popular Demand", "You can always find an arena or pit fight to perform in, with food and lodging."), equipment: "An inexpensive but unusual weapon (e.g. trident or net), favor of an admirer, costume, 15 GP", kit: [K("Trident"), K("Favor of an admirer"), K("Costume")], gp: 15 },
+  { id: "folkHero14", book: "PHB14", name: "Folk Hero", skills: ["animalHandling", "survival"], tools: "One kind of Artisan's Tools, Vehicles (land)", feature: F("Rustic Hospitality", "Common folk will shelter and hide you, as long as you don't endanger them."), equipment: "Artisan's tools, shovel, iron pot, common clothes, 10 GP", kit: [K("Artisan's tools (your choice)"), K("Shovel"), K("Iron Pot"), K("Common Clothes")], gp: 10 },
+  { id: "guildArtisan14", book: "PHB14", name: "Guild Artisan", skills: ["insight", "persuasion"], tools: "One kind of Artisan's Tools", languages: 1, feature: F("Guild Membership", "Your guild offers lodging, legal help and political connections."), equipment: "Artisan's tools, letter of introduction, traveler's clothes, 15 GP", kit: [K("Artisan's tools (your choice)"), K("Letter of introduction from your guild"), K("Traveler's Clothes")], gp: 15 },
+  { id: "guildMerchant14", book: "PHB14", variantOf: "Guild Artisan", name: "Guild Merchant (Guild Artisan variant)", skills: ["insight", "persuasion"], tools: "Navigator's Tools (or one more language instead)", languages: 1, feature: F("Guild Membership", "Your merchants' guild offers lodging, legal help and trade connections."), equipment: "A mule and cart instead of artisan's tools, letter of introduction, traveler's clothes, 15 GP", kit: [K("Mule and cart"), K("Letter of introduction from your guild"), K("Traveler's Clothes")], gp: 15 },
+  { id: "hermit14", book: "PHB14", name: "Hermit", skills: ["medicine", "religion"], tools: "Herbalism Kit", languages: 1, feature: F("Discovery", "Your seclusion revealed a unique and powerful secret (work it out with your DM)."), equipment: "Scroll case of notes, winter blanket, common clothes, herbalism kit, 5 GP", kit: [K("Map or Scroll Case"), K("Blanket"), K("Common Clothes"), K("Herbalism Kit")], gp: 5 },
+  { id: "noble14", book: "PHB14", name: "Noble", skills: ["history", "persuasion"], tools: "One kind of Gaming Set", languages: 1, feature: F("Position of Privilege", "High society welcomes you and common folk try to accommodate you."), equipment: "Fine clothes, signet ring, scroll of pedigree, 25 GP", kit: [K("Fine Clothes"), K("Signet ring"), K("Scroll of pedigree")], gp: 25 },
+  { id: "knight14", book: "PHB14", variantOf: "Noble", name: "Knight (Noble variant)", skills: ["history", "persuasion"], tools: "One kind of Gaming Set", languages: 1, feature: F("Retainers", "Three loyal commoner retainers attend you: they do mundane tasks but won't fight for you."), equipment: "Fine clothes, signet ring, scroll of pedigree, 25 GP", kit: [K("Fine Clothes"), K("Signet ring"), K("Scroll of pedigree")], gp: 25 },
+  { id: "outlander14", book: "PHB14", name: "Outlander", skills: ["athletics", "survival"], tools: "One Musical Instrument", languages: 1, feature: F("Wanderer", "You remember maps and geography and can find food and water for up to five people."), equipment: "Staff, hunting trap, animal trophy, traveler's clothes, 10 GP", kit: [K("Quarterstaff"), K("Hunting Trap"), K("Animal trophy"), K("Traveler's Clothes")], gp: 10 },
+  { id: "sage14", book: "PHB14", name: "Sage", skills: ["arcana", "history"], tools: "", languages: 2, feature: F("Researcher", "When you don't know something, you often know where to find it out."), equipment: "Ink, quill, small knife, letter from a dead colleague, common clothes, 10 GP", kit: [K("Ink (1 ounce bottle)"), K("Ink Pen"), K("Small Knife"), K("Letter from a dead colleague"), K("Common Clothes")], gp: 10 },
+  { id: "sailor14", book: "PHB14", name: "Sailor", skills: ["athletics", "perception"], tools: "Navigator's Tools, Vehicles (water)", feature: F("Ship's Passage", "You can get free passage on sailing ships for yourself and companions."), equipment: "Belaying pin (club), 50 ft silk rope, lucky charm, common clothes, 10 GP", kit: [K("Club"), K("Silk Rope (50 ft)"), K("Lucky charm"), K("Common Clothes")], gp: 10 },
+  { id: "pirate14", book: "PHB14", variantOf: "Sailor", name: "Pirate (Sailor variant)", skills: ["athletics", "perception"], tools: "Navigator's Tools, Vehicles (water)", feature: F("Bad Reputation", "People in civilized places fear you; you can get away with minor crimes like refusing to pay for food."), equipment: "Belaying pin (club), 50 ft silk rope, lucky charm, common clothes, 10 GP", kit: [K("Club"), K("Silk Rope (50 ft)"), K("Lucky charm"), K("Common Clothes")], gp: 10 },
+  { id: "soldier14", book: "PHB14", name: "Soldier", skills: ["athletics", "intimidation"], tools: "One kind of Gaming Set, Vehicles (land)", feature: F("Military Rank", "Soldiers loyal to your old organization recognize your rank and authority."), equipment: "Insignia of rank, war trophy, gaming set, common clothes, 10 GP", kit: [K("Insignia of rank"), K("War trophy"), K("Dice Set"), K("Common Clothes")], gp: 10 },
+  { id: "urchin14", book: "PHB14", name: "Urchin", skills: ["sleightOfHand", "stealth"], tools: "Disguise Kit, Thieves' Tools", feature: F("City Secrets", "You know secret routes through cities and travel twice as fast through them."), equipment: "Small knife, map of your home city, pet mouse, token of your parents, common clothes, 10 GP", kit: [K("Small Knife"), K("Map of your home city"), K("Pet mouse"), K("Token of your parents"), K("Common Clothes")], gp: 10 },
+  {
+    id: "custom14",
+    book: "PHB14",
+    name: "Custom background",
+    custom: true,
+    skills: [],
+    tools: "",
+    feature: F("Feature (from any background)", "Pick the feature of any background with your DM."),
+    equipment: "A pack's worth of gear fitting your story (ask your DM), 10–15 GP",
+    kit: [K("Common Clothes")],
+    gp: 10,
+  },
+];
+
+/** Features a custom background can borrow. */
+export const BACKGROUND_FEATURES = BACKGROUNDS_2014.filter((b) => !b.custom && b.feature).map((b) => ({ id: b.id, name: b.feature!.name, from: b.name, text: b.feature!.text }));
