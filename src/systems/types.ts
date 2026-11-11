@@ -29,6 +29,15 @@ export interface BaseCharacter {
   spent?: Record<string, number>;
 }
 
+/** One line of "what changes" (a preview, or what a pick just did). */
+export interface ChangeLine {
+  label: string;
+  from?: string;
+  to?: string;
+  /** up = better, down = worse, info = neutral / something to sort out. */
+  tone: "up" | "down" | "info";
+}
+
 /** Something used up in play that a rest gives back (spell slots, sorcery points, ki…). */
 export interface ResourcePool {
   id: string;
@@ -136,6 +145,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   Summary: FC<{ c: C; d: D }>;
   /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
   resources?: (c: C, d: D) => ResourcePool[];
+  /** What changed between two derived states (shown as a short note after each pick). */
+  describeChange?: (before: D, after: D) => ChangeLine[];
   buildPdf(c: C, d: D, books: string[]): Promise<Uint8Array>;
   /** Licensing/credits line shown in the app and on the PDF. */
   credits: string;

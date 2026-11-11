@@ -6,6 +6,8 @@ import { featIn, inBooks } from "../rules";
 import type { TabProps } from "../../types";
 import { FeatChoicesEditor } from "./FeatChoicesEditor";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
+import { AbilityPreview, ChangePreview, WithPreview, useHover } from "./Preview";
+import { deriveWith } from "../preview";
 
 export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>) {
   const R = d.rules;
@@ -14,7 +16,9 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
   const takenSkills = d.skills.filter((s) => s.proficient).map((s) => s.id);
   const list = R.backgrounds.filter((b) => inBooks(books, b.book));
 
-  const pick = (id: string) => {
+  const { hover, bind } = useHover<string>();
+  /** The patch for choosing a background (also used to preview it on hover). */
+  const bgPatch = (id: string) => {
     const next = R.backgrounds.find((b) => b.id === id)!;
     const patch: Partial<Character> = { background: id };
     if (next.abilities) {
@@ -23,16 +27,30 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
       patch.bgPlus2 = p2;
       patch.bgPlus1 = next.abilities.find((a) => a !== p2 && a === "CON") ?? next.abilities.find((a) => a !== p2)!;
     }
-    set(patch);
+    return patch;
   };
+  const pick = (id: string) => set(bgPatch(id));
+  const main = d.cls.recommended[0];
+  const previewId = hover && hover !== c.background ? hover : null;
+  const after = previewId ? deriveWith(c, bgPatch(previewId), books) : c.background ? d : null;
+  const before = previewId ? d : c.background ? deriveWith(c, { background: "" }, books) : d;
+  const shownBg = R.backgrounds.find((b) => b.id === (previewId ?? c.background));
+  const bgChips = shownBg ? [...(shownBg.feature ? [shownBg.feature.name] : []), ...(shownBg.feat ? [featIn(R, shownBg.feat).name] : []), ...(shownBg.tools ? [shownBg.tools] : [])] : [];
+  const Panel = shownBg?.abilities ? AbilityPreview : ChangePreview;
 
   return (
     <div className="stack">
       <Card title="Background">
+        <WithPreview
+          panel={<Panel before={before} after={after} title={shownBg ? shownBg.name : "Your background"} previewing={!!previewId} chips={bgChips} empty="Hover a background to see the skills and extras it gives you." />}
+        >
         <div className="option-grid">
           {list.map((b) => (
-            <button type="button" key={b.id} className={`option ${c.background === b.id ? "on" : ""}`} aria-pressed={c.background === b.id} onClick={() => pick(b.id)}>
-              <strong>{b.name}</strong>
+            <button type="button" key={b.id} className={`option ${c.background === b.id ? "on" : ""}`} aria-pressed={c.background === b.id} onClick={() => pick(b.id)} {...bind(b.id)}>
+              <strong>
+                {b.name}
+                {!is2014 && b.abilities?.includes(main) && <span className="fit-tag">Good for {d.cls.name}</span>}
+              </strong>
               <span>{b.custom ? "Any two skills, two tools or languages, and a feature from any background" : b.skills.map(skillName).join(", ")}</span>
               <small className="muted">
                 {b.abilities ? `${b.abilities.join(" / ")} · ${featIn(R, b.feat!).name}` : is2014 ? (b.feature?.name ?? "") : "No ability increases or feat"}
@@ -40,6 +58,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
             </button>
           ))}
         </div>
+        </WithPreview>
       </Card>
 
       {bg.abilities && !is2014 ? (

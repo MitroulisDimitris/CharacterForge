@@ -122,7 +122,7 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
       <Card title="Level 4 feat">
         <fieldset className="plain">
           <Field label="Feat" hint={l4.text}>
-            <Select<FeatId> value={c.level4Feat} options={R.level4Feats.filter((f) => inBooks(books, f.book)).map((f) => ({ value: f.id, label: `${f.name}${f.category === "origin" ? " (origin)" : ""}` }))} onChange={(level4Feat) => set({ level4Feat })} />
+            <Select<FeatId> value={c.level4Feat} options={R.level4Feats.filter((f) => inBooks(books, f.book)).map((f) => ({ value: f.id, label: `${f.name}${f.category === "origin" ? " (origin)" : ""}${f.plusOne?.includes(d.cls.recommended[0]) && f.plusOne.length < 6 ? ` ★ good for ${d.cls.name}` : ""}` }))} onChange={(level4Feat) => set({ level4Feat })} />
           </Field>
           {c.level4Feat === "asi" && (
             <div className="grid-3">

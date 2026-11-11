@@ -39,6 +39,11 @@ every skin; the Hero skin is the reference look.
 6. Squint test: in 3 seconds you can tell the main information and the main action. If not, cut.
 7. Explain at the moment it matters: a short tooltip when a feature unlocks or is offered;
    no walls of text, no forced tutorials. Plain words, short sentences, "Tip ·" for advice.
+   **Preview before you commit:** when choosing from a list, a sticky panel beside it shows what the
+   hovered option changes (dnd5e: `components/Preview.tsx` + `preview.ts` diffDerived; class chart
+   from `data2014/profiles.ts`; hexagon `components/Radar.tsx`). After any pick a short "Just changed"
+   note lists what it did (`components/JustChanged.tsx`, `GameSystem.describeChange`). Options that
+   suit the class get a "Good for <Class>" tag.
 
 **Layout**
 8. Character screens have a left **hero sidebar**: portrait crest with a level ring, name,

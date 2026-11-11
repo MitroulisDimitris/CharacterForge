@@ -2,11 +2,34 @@ import type { Character } from "../character";
 import type { Derived } from "../derive";
 import type { TabProps } from "../../types";
 import { Card, Segmented } from "../../../components/ui";
+import { ChangePreview, WithPreview, useHover } from "./Preview";
+import { deriveWith } from "../preview";
 import { POOLS, averageGold, classKit, expandKit, goldFormula, pickOf, rollGold, startingEquipment } from "../startingKit";
 
 /** 2014 starting equipment: the class's (a)/(b) choices + background kit, or gold instead. */
-export function StartingEquipment({ c, d, set, applyLabel = "Put it in my inventory" }: TabProps<Character, Derived> & { applyLabel?: string }) {
+export function StartingEquipment({ c, d, set, books, applyLabel = "Put it in my inventory" }: TabProps<Character, Derived> & { applyLabel?: string }) {
   const CL = d.cls;
+  const { hover, bind } = useHover<string>();
+  // Preview: your numbers with the kit as picked now vs. with the hovered option.
+  const kitOf = (cc: Character) => startingEquipment({ ...cc, equipMode: "kit" }, CL, d.bg).inventory;
+  const withKit = deriveWith(c, { inventory: kitOf(c) }, books);
+  const hovered = (() => {
+    if (!hover) return null;
+    const [chId, opt] = hover.split(":");
+    if (pickOf(c, CL.equipment.choices.find((x) => x.id === chId)!).option === Number(opt)) return null;
+    const cc = { ...c, equipPicks: { ...c.equipPicks, [chId]: { option: Number(opt), picks: [] } } };
+    return deriveWith(cc, { inventory: kitOf(cc) }, books);
+  })();
+  const kitPanel = (
+    <ChangePreview
+      before={withKit}
+      after={hovered}
+      title="Your starting kit"
+      previewing={!!hovered}
+      chips={hovered ? [] : [`AC ${withKit.ac}`, ...withKit.attacks.filter((a) => kitOf(c).some((i) => i.name === a.name)).map((a) => `${a.name} ${a.bonus} · ${a.damage}`)]}
+      empty="Hover an option to see how it changes your AC and attacks. With your picks so far:"
+    />
+  );
   const { items, missing } = classKit(c, CL);
   const martial = d.weaponText.toLowerCase().includes("martial");
   const heavy = d.armorText.includes("heavy");
@@ -33,6 +56,7 @@ export function StartingEquipment({ c, d, set, applyLabel = "Put it in my invent
       />
 
       {c.equipMode === "kit" ? (
+        <WithPreview panel={kitPanel}>
         <div className="stack small-gap">
           {CL.equipment.choices.map((ch) => {
             const p = pickOf(c, ch);
@@ -50,6 +74,7 @@ export function StartingEquipment({ c, d, set, applyLabel = "Put it in my invent
                         disabled={blocked}
                         title={blocked ? "You aren't proficient with it" : undefined}
                         onClick={() => setPick(ch.id, i, [])}
+                        {...bind(`${ch.id}:${i}`)}
                       >
                         <span>
                           {ch.options.length > 1 ? `(${"abc"[i]}) ` : ""}
@@ -99,6 +124,7 @@ export function StartingEquipment({ c, d, set, applyLabel = "Put it in my invent
           </p>
           {missing.length > 0 && <p className="muted">Still to pick: {missing.join(", ")}.</p>}
         </div>
+        </WithPreview>
       ) : (
         <div className="row-actions">
           <label className="field inline">

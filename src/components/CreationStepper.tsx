@@ -3,6 +3,7 @@ import type { AnySystem, BaseCharacter, Warning } from "../systems/types";
 import { Card } from "./ui";
 import { Warnings } from "./Warnings";
 import { Crest, SHORT } from "./Hero";
+import { JustChanged } from "./JustChanged";
 
 /** Guided, step-by-step creation of a new character (systems with `creation`). */
 export function CreationStepper({
@@ -176,12 +177,14 @@ export function CreationStepper({
           <div className="hero-foot">{hero.footer}</div>
         </aside>
         <main className="hero-main creation-main">{content}</main>
+        <JustChanged system={system} d={d} />
       </div>
     );
   }
 
   return (
     <div className="creation">
+      <JustChanged system={system} d={d} />
       {stepsNav}
       <div className="layout">
         <main className="main">

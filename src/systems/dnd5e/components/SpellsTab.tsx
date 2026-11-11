@@ -7,6 +7,7 @@ import type { Derived, SpellRow } from "../derive";
 import { Card, Counter, Segmented } from "../../../components/ui";
 import { ResourcePips } from "../../../components/ResourcePips";
 import { resources5e } from "../resources";
+import { PreviewHead, WithPreview, useHover } from "./Preview";
 
 /**
  * Spells tab, two views (UI rules: calm first):
@@ -226,6 +227,39 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
     set(on ? { spellbook: c.spellbook.filter((n) => n !== s.name), prepared: c.prepared.filter((n) => n !== s.name) } : { spellbook: [...c.spellbook, s.name] });
   };
   const levels = Array.from({ length: d.maxSpellLevel + 1 }, (_, i) => i);
+  const { hover, bind } = useHover<string>();
+  const hs = hover ? d.rules.getSpell(hover) : undefined;
+  const mine = hs ? (hs.level === 0 ? c.cantrips : c.prepared).map((n) => d.rules.getSpell(n)).filter((x): x is Spell => !!x && x.level === hs.level && x.name !== hs.name) : [];
+  const panel = hs ? (
+    <div className="preview-card">
+      <PreviewHead title={hs.name} previewing={!(hs.level === 0 ? c.cantrips : c.prepared).includes(hs.name)} />
+      <div className="spell-compare-head">
+        <span className="spell-chip">{hs.level === 0 ? "C" : hs.level}</span>
+        <span className="spell-row-meta">{shortMeta(hs, c.level, d.spellDc, d.spellAttack)}</span>
+      </div>
+      <p className="small-text">{hs.desc}</p>
+      <p className="muted small-text">
+        {castingTimeLabel(hs.time)} · {hs.range} · {hs.components} · {hs.duration}
+        {hs.concentration ? " · Concentration" : ""}
+      </p>
+      <span className="hero-label">{mine.length ? `Compared with your other ${hs.level === 0 ? "cantrips" : `${levelLabel(hs.level)} spells`}` : `Your first ${hs.level === 0 ? "cantrip" : `${levelLabel(hs.level)} spell`}`}</span>
+      {mine.length > 0 && (
+        <ul className="change-list">
+          {mine.map((m) => (
+            <li key={m.name} className="change info">
+              <span className="change-label">{m.name}</span>
+              <span className="change-val">{shortMeta(m, c.level, d.spellDc, d.spellAttack)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  ) : (
+    <div className="preview-card">
+      <PreviewHead title="Pick your spells" previewing={false} empty />
+      <p className="muted small-text">Hover a spell to see it at your level, next to the spells you've already picked.</p>
+    </div>
+  );
 
   return (
     <>
@@ -235,6 +269,7 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
           <input type="checkbox" checked={onlyChosen} onChange={(e) => setOnlyChosen(e.target.checked)} /> Only chosen
         </label>
       </div>
+      <WithPreview panel={panel}>
       {levels.map((lvl) => {
         const list = classSpells.filter((s) => s.level === lvl && matches(s));
         if (!list.length) return null;
@@ -251,7 +286,7 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
                 const bookFull = c.spellbook.length >= d.spellbookLimit;
                 if (wizard && !isCantrip)
                   return (
-                    <li key={s.name} className={`${inBook ? "on" : ""}`}>
+                    <li key={s.name} className={`${inBook ? "on" : ""}`} {...bind(s.name)}>
                       <label className="spell-pick">
                         <input type="checkbox" checked={inBook} disabled={!inBook && bookFull} onChange={() => toggleBook(s)} aria-label={`${s.name} in spellbook`} />
                         <SpellLine s={s} level={c.level} dc={d.spellDc} atk={d.spellAttack} core={core} />
@@ -264,7 +299,7 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
                     </li>
                   );
                 return (
-                  <li key={s.name} className={`${on ? "on" : ""} ${isAlways ? "granted" : ""}`}>
+                  <li key={s.name} className={`${on ? "on" : ""} ${isAlways ? "granted" : ""}`} {...bind(s.name)}>
                     <label className="spell-pick">
                       <input type="checkbox" checked={on} disabled={isAlways || (!on && full)} onChange={() => toggle(s)} />
                       <SpellLine s={s} level={c.level} dc={d.spellDc} atk={d.spellAttack} core={core} />
@@ -278,6 +313,7 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
           </Card>
         );
       })}
+      </WithPreview>
       {d.maxSpellLevel < 3 && <p className="muted center">Higher-level spells unlock as you level up.</p>}
     </>
   );

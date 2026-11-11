@@ -8,6 +8,7 @@ import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
 import { Crest, MoreMenu, SHORT } from "./Hero";
 import { ResourcePips } from "./ResourcePips";
+import { JustChanged } from "./JustChanged";
 import { skinOf } from "../skins";
 
 export function Editor({
@@ -239,6 +240,7 @@ export function Editor({
           <p className="credits muted">{system.credits}</p>
         </main>
         {dialogs}
+        <JustChanged system={system} d={d} />
       </div>
     );
   }
@@ -337,6 +339,7 @@ export function Editor({
         </aside>
       </div>
       {dialogs}
+      <JustChanged system={system} d={d} />
     </div>
   );
 }

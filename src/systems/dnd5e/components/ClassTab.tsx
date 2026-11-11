@@ -7,6 +7,10 @@ import type { Character } from "../character";
 import type { Derived } from "../derive";
 import { inBooks, onClassList } from "../rules";
 import type { TabProps } from "../../types";
+import type { CSSProperties } from "react";
+import { CLASS_PROFILES, STRENGTH_AXES } from "../data2014/profiles";
+import { PreviewHead, WithPreview, useHover } from "./Preview";
+import { Radar } from "../../../components/Radar";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
 
 /** Everything a class choice resets (picks that belong to the old class). */
@@ -40,28 +44,88 @@ export const classResetPatch = (cls: ClassDef, level: number): Partial<Character
 /** Class picker (2014): one card per class, with its role in plain words. */
 export function ClassPicker({ c, d, set, books }: TabProps<Character, Derived>) {
   const classes = d.rules.classes.filter((k) => inBooks(books, k.book));
+  const { hover, bind } = useHover<string>();
+  const shownId = hover ?? c.cls;
+  const shown = classes.find((k) => k.id === shownId) ?? classes[0];
+  const prof = CLASS_PROFILES[shown.id];
+  const best = prof ? STRENGTH_AXES.map((n, i) => [n, prof.strengths[i]] as const).sort((x, y) => y[1] - x[1]).slice(0, 2) : [];
+  const second = prof ? [...prof.strengths].sort((x, y) => y - x)[1] : 0;
   return (
-    <div className="option-grid">
-      {classes.map((k) => (
-        <button
-          type="button"
-          key={k.id}
-          className={`option ${c.cls === k.id ? "on" : ""}`}
-          aria-pressed={c.cls === k.id}
-          onClick={() => c.cls !== k.id && set(classResetPatch(k, c.level))}
-        >
-          <strong>
-            {k.name} <span className="pill">d{k.hitDie}</span>
-            {k.book !== "PHB14" && <span className="pill">{k.book}</span>}
-          </strong>
-          <span>{k.summary}</span>
-          <small className="muted">
-            Main ability: {k.primary} · Saves {k.saves.join(", ")}
-            {k.spell ? ` · Spells from level ${k.spell.startLevel}` : " · No spells"}
-          </small>
-        </button>
-      ))}
-    </div>
+    <WithPreview
+      panel={
+        prof && (
+          <div className="preview-card" style={{ "--class-color": prof.color } as CSSProperties}>
+            <PreviewHead title={shown.name} previewing={!!hover && hover !== c.cls} />
+            <Radar
+              axes={[...STRENGTH_AXES]}
+              values={prof.strengths}
+              max={10}
+              color={prof.color}
+              width={380}
+              height={310}
+              ariaLabel={`${shown.name} strengths: ${STRENGTH_AXES.map((n, i) => `${n} ${prof.strengths[i]}`).join(", ")}`}
+              label={(i) => (
+                <>
+                  <div className={`radar-num big ${prof.strengths[i] >= second && prof.strengths[i] > 0 ? "strong" : ""}`}>{prof.strengths[i]}</div>
+                  <div className="radar-axis">{STRENGTH_AXES[i]}</div>
+                </>
+              )}
+            />
+            <div className="chip-row">
+              <span className="muted small-text">Best at</span>
+              {best.map(([n]) => (
+                <span key={n} className="best-chip">
+                  {n}
+                </span>
+              ))}
+            </div>
+            <p className="small-text">{prof.plays}</p>
+            <div className="mini-stats">
+              <div>
+                <span>Hit die</span>
+                <strong>d{shown.hitDie}</strong>
+              </div>
+              <div>
+                <span>Main ability</span>
+                <strong>{shown.recommended[0]}</strong>
+              </div>
+              <div>
+                <span>For beginners</span>
+                <strong className={`easy-${prof.beginner.toLowerCase()}`}>{prof.beginner}</strong>
+              </div>
+            </div>
+            <span className="muted tiny-text">A rough guide to each class's strengths, not a rule.</span>
+          </div>
+        )
+      }
+    >
+      <div className="option-grid compact-classes">
+        {classes.map((k) => {
+          const kp = CLASS_PROFILES[k.id];
+          return (
+            <button
+              type="button"
+              key={k.id}
+              className={`option ${c.cls === k.id ? "on" : ""}`}
+              aria-pressed={c.cls === k.id}
+              style={kp ? ({ "--class-color": kp.color } as CSSProperties) : undefined}
+              onClick={() => c.cls !== k.id && set(classResetPatch(k, c.level))}
+              {...bind(k.id)}
+            >
+              <strong>
+                {k.name} <span className="pill">d{k.hitDie}</span>
+                {k.book !== "PHB14" && <span className="pill">{k.book}</span>}
+              </strong>
+              <span>{k.summary}</span>
+              <small className="muted">
+                Main ability: {k.primary}
+                {k.spell ? ` · Spells from level ${k.spell.startLevel}` : " · No spells"}
+              </small>
+            </button>
+          );
+        })}
+      </div>
+    </WithPreview>
   );
 }
 

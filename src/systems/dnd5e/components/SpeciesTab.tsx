@@ -6,6 +6,8 @@ import { featIn, inBooks, onClassList } from "../rules";
 import type { TabProps } from "../../types";
 import { FeatChoicesEditor } from "./FeatChoicesEditor";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
+import { AbilityPreview, WithPreview, useHover } from "./Preview";
+import { deriveWith } from "../preview";
 
 const asiSummary = (fixed: Partial<Record<Ability, number>> | undefined) =>
   Object.entries(fixed ?? {})
@@ -13,6 +15,7 @@ const asiSummary = (fixed: Partial<Record<Ability, number>> | undefined) =>
     .join(", ");
 
 export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
+  const { hover, bind } = useHover<string>();
   const R = d.rules;
   const sp = d.species;
   const is2014 = c.edition === "2014";
@@ -32,9 +35,10 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
     ...Array(sp.asi?.chooseCount ?? 0).fill(sp.asi?.chooseAmount ?? 1),
   ].sort((a, b) => b - a) as number[];
 
-  const pickSpecies = (id: string) => {
+  /** The patch for choosing a species (also used to preview it on hover). */
+  const speciesPatch = (id: string): Partial<Character> => {
     const next = R.species.find((s) => s.id === id)!;
-    set({
+    return {
       species: id,
       lineage: next.lineages?.[0]?.id ?? "",
       size: next.sizes.includes(c.size) ? c.size : next.sizes[0],
@@ -43,16 +47,40 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
       customAsi: [],
       speciesCantrip: "",
       languages: next.languages ? [...next.languages] : c.languages.includes("Common") ? c.languages : ["Common", ...c.languages],
-    });
+    };
   };
+  const pickSpecies = (id: string) => set(speciesPatch(id));
+  // Good for your class: the race (or one of its lineages) raises your class's main ability.
+  const main = d.cls.recommended[0];
+  const fits = (s: (typeof list)[number]) =>
+    asiApplies && (!!s.asi?.fixed?.[main] || !!s.lineages?.some((l) => l.asi?.[main]) || ((s.asi?.chooseCount ?? 0) > 0 && !(s.asi?.exclude ?? []).includes(main)));
+  const previewId = hover && hover !== c.species ? hover : null;
+  const after = previewId ? deriveWith(c, speciesPatch(previewId), books) : c.species ? d : null;
+  const before = previewId ? d : c.species ? deriveWith(c, { species: "", lineage: "", legacyAsi: [], customAsi: [] }, books) : d;
+  const shownSp = R.species.find((x) => x.id === (previewId ?? c.species));
 
   return (
     <div className="stack">
       <Card title={word}>
+        <WithPreview
+          panel={
+            <AbilityPreview
+              before={before}
+              after={after}
+              title={shownSp ? shownSp.name : `Your abilities`}
+              previewing={!!previewId}
+              chips={shownSp ? [...shownSp.traits.map((t) => t.name), ...(shownSp.lineages ? [`${shownSp.lineages.length} ${(shownSp.lineageLabel ?? "lineage").toLowerCase()} options`] : [])] : []}
+              empty={`Hover a ${word.toLowerCase()} to see exactly what it changes.`}
+            />
+          }
+        >
         <div className="option-grid">
           {list.map((s) => (
-            <button type="button" key={s.id} className={`option ${c.species === s.id ? "on" : ""}`} aria-pressed={c.species === s.id} onClick={() => pickSpecies(s.id)}>
-              <strong>{s.name}</strong>
+            <button type="button" key={s.id} className={`option ${c.species === s.id ? "on" : ""}`} aria-pressed={c.species === s.id} onClick={() => pickSpecies(s.id)} {...bind(s.id)}>
+              <strong>
+                {s.name}
+                {fits(s) && <span className="fit-tag">Good for {d.cls.name}</span>}
+              </strong>
               <span>
                 {s.sizes.join("/")} · {s.speed} ft{s.darkvision ? ` · Darkvision ${s.darkvision} ft` : ""}
                 {is2014 && s.asi ? ` · ${asiSummary(s.asi.fixed) || "+1 to two"}` : ""}
@@ -61,6 +89,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
             </button>
           ))}
         </div>
+        </WithPreview>
       </Card>
 
       <Card title={`${sp.name} choices`}>
@@ -172,7 +201,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
             </div>
             <div className="grid-3">
               <Field label="Feat" hint={feat.text}>
-                <Select<FeatId> value={c.humanFeat} options={R.speciesFeats.filter((f) => inBooks(books, f.book) && (raceOk(f) || f.id === c.humanFeat)).map((f) => ({ value: f.id, label: f.name + (f.book !== (is2014 ? "PHB14" : "PHB24") ? ` (${f.book})` : "") }))} onChange={(humanFeat) => set({ humanFeat })} />
+                <Select<FeatId> value={c.humanFeat} options={R.speciesFeats.filter((f) => inBooks(books, f.book) && (raceOk(f) || f.id === c.humanFeat)).map((f) => ({ value: f.id, label: f.name + (f.book !== (is2014 ? "PHB14" : "PHB24") ? ` (${f.book})` : "") + (f.plusOne?.includes(d.cls.recommended[0]) && f.plusOne.length < 6 ? ` ★ good for ${d.cls.name}` : "") }))} onChange={(humanFeat) => set({ humanFeat })} />
               </Field>
               {feat.plusOne && (
                 <Field label="+1 to">
