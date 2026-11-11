@@ -8,6 +8,7 @@ import { FeatChoicesEditor } from "./FeatChoicesEditor";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
 import { AbilityPreview, WithPreview, useHover } from "./Preview";
 import { deriveWith } from "../preview";
+import { SKILL_INFO } from "../data/skillInfo";
 
 const asiSummary = (fixed: Partial<Record<Ability, number>> | undefined) =>
   Object.entries(fixed ?? {})
@@ -184,7 +185,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
               <Counter count={c.speciesSkills.length} max={skillCount} label="Chosen" />
             </div>
             <ChipPicker<SkillId>
-              options={(sp.skillChoice?.from ?? SKILLS.map((s) => s.id as SkillId)).map((id) => ({ value: id, label: SKILLS.find((s) => s.id === id)!.name }))}
+              options={(sp.skillChoice?.from ?? SKILLS.map((s) => s.id as SkillId)).map((id) => ({ value: id, label: SKILLS.find((s) => s.id === id)!.name, hint: SKILL_INFO[id] }))}
               selected={c.speciesSkills}
               max={skillCount}
               locked={otherSkills.filter((s) => !c.speciesSkills.includes(s))}

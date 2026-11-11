@@ -31,8 +31,10 @@ every skin; the Hero skin is the reference look.
 2. Show what matters now; detail is one step away (hover card, expand, "Show all"), at most 2–3
    layers deep, with an obvious "more" link.
 3. Show only what the character can use at their current level (at creation: level 1). No greyed-out
-   "unlocks at level N" sections; later choices go in one quiet "Coming later: X at level N" line.
-   Future levels belong in the progression tree or a folded "What you get at each level".
+   "unlocks at level N" sections and no "coming later" lines (the user asked to remove them).
+   Future levels belong only in the progression tree or the folded "What you get at each level".
+   Every decision gets help for new players: one plain sentence on what the choice is, a
+   "Beginner-friendly" pick, and hover explanations (SubclassPicker, skill hints, ability lines).
 4. Choices: suggest 2–3 good picks (tag "Popular" / "Beginner-friendly"), the rest behind "Show all".
    Show progress as counters ("1 of 2 chosen", "0/2").
 5. Secondary actions (export, duplicate, PDF, delete) live in a "⋯" menu, not as visible buttons.

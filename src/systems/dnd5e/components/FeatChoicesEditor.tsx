@@ -4,6 +4,7 @@ import type { CasterAbility, FeatChoices } from "../character";
 import type { Edition } from "../rules";
 import { ChipPicker, Field, Select } from "../../../components/ui";
 import { FIGHTING_STYLES } from "../data2014/classes";
+import { SKILL_INFO } from "../data/skillInfo";
 
 /** Extra inputs for feats that need picks (Skilled, Magic Initiate, Fey Touched). */
 export function FeatChoicesEditor({
@@ -26,7 +27,7 @@ export function FeatChoicesEditor({
       <div className="feat-choices">
         <p className="muted">Skilled: choose three skills (tools are allowed too; add them under Skills &amp; Languages → Other tools).</p>
         <ChipPicker
-          options={SKILLS.map((s) => ({ value: s.id as SkillId, label: s.name }))}
+          options={SKILLS.map((s) => ({ value: s.id as SkillId, label: s.name, hint: SKILL_INFO[s.id as SkillId] }))}
           selected={value.skills}
           max={3}
           locked={takenSkills.filter((s) => !value.skills.includes(s))}

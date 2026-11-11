@@ -10,8 +10,10 @@ import type { TabProps } from "../../types";
 import type { CSSProperties } from "react";
 import { CLASS_PROFILES, STRENGTH_AXES } from "../data2014/profiles";
 import { PreviewHead, WithPreview, useHover } from "./Preview";
+import { SubclassPicker } from "./SubclassPicker";
 import { Radar } from "../../../components/Radar";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
+import { SKILL_INFO } from "../data/skillInfo";
 
 /** Everything a class choice resets (picks that belong to the old class). */
 export const classResetPatch = (cls: ClassDef, level: number): Partial<Character> => ({
@@ -202,7 +204,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       <Card title={`${CL.name} skills`} aside={<Counter count={c.classSkills.length} max={CL.skills.count} label="Chosen" />}>
         <p className="muted">{CL.skills.from === "any" ? `Choose any ${CL.skills.count} skills.` : `Choose ${CL.skills.count} from the ${CL.name.toLowerCase()} list.`}</p>
         <ChipPicker
-          options={skillPool.map((s) => ({ value: s, label: skillName(s) }))}
+          options={skillPool.map((s) => ({ value: s, label: skillName(s), hint: SKILL_INFO[s] }))}
           selected={c.classSkills}
           max={CL.skills.count}
           locked={grantedElsewhere.filter((s) => !c.classSkills.includes(s))}
@@ -256,7 +258,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
           </p>
           {c.level >= CL.expertise.level && (
             <ChipPicker
-              options={[...proficientSkills.map((s) => ({ value: s as string, label: skillName(s) })), ...(CL.expertise.thieves ? [{ value: "thieves", label: "Thieves' Tools" }] : [])]}
+              options={[...proficientSkills.map((s) => ({ value: s as string, label: skillName(s), hint: SKILL_INFO[s] })), ...(CL.expertise.thieves ? [{ value: "thieves", label: "Thieves' Tools" }] : [])]}
               selected={c.expertise}
               max={CL.expertise.count}
               onChange={(expertise) => set({ expertise })}
@@ -338,7 +340,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
           {c.rangerTasha && tashaOk ? (
             <div className="grid-3">
               <Field label="Deft Explorer: expertise skill" hint="A skill you're proficient in.">
-                <Select value={c.deftExpertise} options={[{ value: "", label: "Choose…" }, ...proficientSkills.map((s) => ({ value: s as string, label: skillName(s) }))]} onChange={(deftExpertise) => set({ deftExpertise })} />
+                <Select value={c.deftExpertise} options={[{ value: "", label: "Choose…" }, ...proficientSkills.map((s) => ({ value: s as string, label: skillName(s), hint: SKILL_INFO[s] }))]} onChange={(deftExpertise) => set({ deftExpertise })} />
               </Field>
             </div>
           ) : (
@@ -356,28 +358,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
 
       {CL.subclasses.length > 0 && c.level >= CL.subclassLevel ? (
         <Card title={CL.subclassLabel}>
-          {subclasses.length === 0 ? null : (
-            <div className="option-grid">
-              {subclasses.map((s) => (
-                <button
-                  type="button"
-                  key={s.id}
-                  className={`option ${c.subclass === s.id ? "on" : ""}`}
-                  onClick={() =>
-                    s.id !== c.subclass && set({ subclass: s.id, subclassOption: "", subclassSkills: [], subclassCantrip: "", subclassPicks: [], ...(s.spell || d.cls.spell ? {} : { cantrips: [], prepared: [] }) })
-                  }
-                  aria-pressed={c.subclass === s.id}
-                >
-                  <strong>
-                    {s.name} {s.book !== "PHB14" && s.book !== "PHB24" && <span className="pill">{s.book}</span>}
-                  </strong>
-                  <span>{s.summary}</span>
-                  {s.spells.length > 0 && <small className="muted">Spells: {s.spells.filter((g) => g.minLevel <= 1).map((g) => g.spell).join(", ")}{s.spells.some((g) => g.minLevel > 1) ? "…" : ""}</small>}
-                  {s.expanded && <small className="muted">Adds to your list: {s.expanded.filter(([, l]) => l <= 1).map(([n]) => n).join(", ")}…</small>}
-                </button>
-              ))}
-            </div>
-          )}
+          {subclasses.length > 0 && <SubclassPicker {...props} />}
           {sub && d.subclassActive && sub.options && (
             <div className="grid-3">
               <Field label={sub.optionLabel ?? "Option"} hint={d.subOption?.text ?? (d.subOption?.spell ? `Grants ${d.subOption.spell}.` : undefined)}>
@@ -395,7 +376,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
                 {sub.name}: {sub.skillChoice.expertise ? "skills with expertise" : "skill"}
               </h4>
               <ChipPicker
-                options={sub.skillChoice.from.map((s) => ({ value: s, label: skillName(s) }))}
+                options={sub.skillChoice.from.map((s) => ({ value: s, label: skillName(s), hint: SKILL_INFO[s] }))}
                 selected={c.subclassSkills}
                 max={sub.skillChoice.count}
                 locked={grantedElsewhere.filter((s) => !c.subclassSkills.includes(s) && !d.skills.find((x) => x.id === s)?.sources.includes(sub.name))}
@@ -520,26 +501,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
           ))}
         </div>
       </Card>
-      <ComingLater c={c} d={d} />
     </div>
   );
 }
 
-/** One quiet line about choices that unlock later (UI rules: show only what's available now). */
-function ComingLater({ c, d }: { c: Character; d: Derived }) {
-  const CL = d.cls;
-  const firstLevel = (table: number[] | undefined) => (table ? table.findIndex((n) => n > 0) : -1);
-  const later: [string, number][] = [];
-  if (CL.subclasses.length && c.level < CL.subclassLevel) later.push([CL.subclassLabel, CL.subclassLevel]);
-  if (CL.fightingStyle && c.level < CL.fightingStyle.level) later.push(["Fighting Style", CL.fightingStyle.level]);
-  if (CL.expertise && c.level < CL.expertise.level) later.push(["Expertise", CL.expertise.level]);
-  const inv = firstLevel(CL.invocations);
-  if (inv > c.level) later.push(["Eldritch Invocations", inv]);
-  if (CL.pactBoonLevel && c.level < CL.pactBoonLevel) later.push(["Pact Boon", CL.pactBoonLevel]);
-  const inf = firstLevel(CL.infusions);
-  if (inf > c.level) later.push(["Infusions", inf]);
-  if (CL.sorcery && c.level < d.metamagicLevel) later.push(["Metamagic", d.metamagicLevel]);
-  if (!later.length) return null;
-  later.sort((a, b) => a[1] - b[1]);
-  return <p className="muted coming-later">Coming later: {later.map(([name, lv]) => `${name} at level ${lv}`).join(" · ")}</p>;
-}

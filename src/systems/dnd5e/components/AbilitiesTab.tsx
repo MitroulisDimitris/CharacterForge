@@ -12,6 +12,16 @@ const roll4d6 = () => {
   return dice[1] + dice[2] + dice[3];
 };
 
+/** What each ability does, in plain words (shown next to it). */
+const ABILITY_WHAT: Record<Ability, string> = {
+  STR: "Melee weapon hits, carrying, climbing and shoving.",
+  DEX: "Armor Class, initiative, bows and finesse weapons, stealth.",
+  CON: "Hit points, and keeping concentration on spells.",
+  INT: "Wizard and artificer magic; knowledge skills like Arcana.",
+  WIS: "Cleric, druid and ranger magic; Perception and Insight.",
+  CHA: "Sorcerer, bard, warlock and paladin magic; Persuasion.",
+};
+
 export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>) {
   const R = d.rules;
   const setBase = (a: Ability, v: number) => set({ base: { ...c.base, [a]: v } });
@@ -78,6 +88,8 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
               <tr key={a}>
                 <td>
                   <strong>{ABILITY_NAMES[a]}</strong>
+                  {d.cls.recommended[0] === a && <span className="fit-tag">Main for {d.cls.name}</span>}
+                  <small className="ability-what">{ABILITY_WHAT[a]}</small>
                 </td>
                 <td>
                   {c.abilityMethod === "standard" ? (

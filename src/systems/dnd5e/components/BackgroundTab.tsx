@@ -8,6 +8,7 @@ import { FeatChoicesEditor } from "./FeatChoicesEditor";
 import { Card, ChipPicker, Counter, Field, Segmented, Select } from "../../../components/ui";
 import { AbilityPreview, ChangePreview, WithPreview, useHover } from "./Preview";
 import { deriveWith } from "../preview";
+import { SKILL_INFO } from "../data/skillInfo";
 
 export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>) {
   const R = d.rules;
@@ -114,7 +115,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
             <Counter count={c.bgCustomSkills.length} max={2} label="Chosen" />
           </div>
           <ChipPicker<SkillId>
-            options={SKILL_IDS.map((id) => ({ value: id, label: skillName(id) }))}
+            options={SKILL_IDS.map((id) => ({ value: id, label: skillName(id), hint: SKILL_INFO[id] }))}
             selected={c.bgCustomSkills}
             max={2}
             locked={takenSkills.filter((s) => !c.bgCustomSkills.includes(s))}
