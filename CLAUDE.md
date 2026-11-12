@@ -1,5 +1,7 @@
 # Character Forge — notes for future work
 
+**Start here:** read `HANDOFF.md` (full state, architecture, checks, open items, how the user works).
+
 ## Product direction (from the user — keep following this)
 
 This app should **follow the player as the campaign continues and help them learn the rules**.
