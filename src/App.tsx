@@ -4,11 +4,33 @@ import { NewCharacterWizard } from "./components/NewCharacterWizard";
 import { Editor } from "./components/Editor";
 import { Loading, Login, NewPassword } from "./components/Login";
 import { AccountDialog } from "./components/AccountDialog";
+import { HostDialog, JoinDialog, SessionPage, SessionsNav } from "./components/Sessions";
 import { skinOf } from "./skins";
 import { loadLastOpen, loadTheme, saveLastOpen, saveTheme, type StoredCharacter, type Theme } from "./storage";
-import { arrivedFrom, cloudConfigured, deleteCharacters, loadCharacters, loadProfile, saveCharacters, supabase, type Profile, type Session } from "./cloud";
+import { arrivedFrom, claimIfFresh, cloudConfigured, deleteCharacters, kickedOut, markFreshLogin, stillActiveLogin, loadCharacters, loadProfile, saveCharacters, supabase, type Profile, type Session } from "./cloud";
+import {
+  clearPendingJoin,
+  joinSession,
+  loadMemberships,
+  loadSessions,
+  loadVersion,
+  pendingJoin,
+  saveMemberships,
+  saveVersion,
+  sessionError,
+  summarize,
+  takeJoinFromUrl,
+  type Membership,
+  type Preview,
+  type SessionInfo,
+} from "./sessions";
+import { getSystem } from "./systems/registry";
 
-type View = { kind: "library" } | { kind: "new" } | { kind: "edit"; id: string };
+type View =
+  | { kind: "library" }
+  | { kind: "new"; forSession?: { preview: Preview; code: string } }
+  | { kind: "edit"; id: string }
+  | { kind: "session"; id: string };
 export type SaveState = "saved" | "saving" | "error";
 
 /** Login gate: the login page, or the logged-in account's app. */
@@ -16,6 +38,9 @@ export default function Root() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [theme, setTheme] = useState<Theme>(loadTheme);
   const [recovery, setRecovery] = useState(() => arrivedFrom() === "recovery");
+  // A Verify or Reset link is a fresh login too.
+  useState(() => arrivedFrom() && markFreshLogin());
+  useState(() => takeJoinFromUrl());
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -37,58 +62,30 @@ export default function Root() {
   if (session === undefined) return <Loading text="Loading…" />;
   if (!session) return <Login />;
   if (recovery) return <NewPassword onDone={() => setRecovery(false)} />;
-  return <Account key={session.user.id} email={session.user.email ?? ""} theme={theme} setTheme={setTheme} />;
+  return <Account key={session.user.id} session={session} userId={session.user.id} email={session.user.email ?? ""} theme={theme} setTheme={setTheme} />;
 }
 
-function Account({ email, theme, setTheme }: { email: string; theme: Theme; setTheme: (t: Theme) => void }) {
-  const [lib, setLib] = useState<StoredCharacter[] | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loadError, setLoadError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-  const [save, setSave] = useState<SaveState>("saved");
+/** Saves records shortly after they change; retries every 8 s if saving fails. */
+function useAutosave<T>(list: T[] | null, keyOf: (x: T) => string, save: (changed: T[], removed: string[]) => Promise<void>) {
+  const synced = useRef(new Map<string, T>());
+  const [state, setState] = useState<SaveState>("saved");
   const [retry, setRetry] = useState(0);
-  const synced = useRef(new Map<string, StoredCharacter>());
-  const [view, setView] = useState<View>({ kind: "library" });
-  const [welcome, setWelcome] = useState(() => arrivedFrom() === "signup");
-  const [settings, setSettings] = useState(false);
-
-  // Load the account's characters (and reopen the last one on this device).
   useEffect(() => {
-    let live = true;
-    setLoadError("");
-    Promise.all([loadProfile(), loadCharacters()])
-      .then(([p, list]) => {
-        if (!live) return;
-        synced.current = new Map(list.map((r) => [r.id, r]));
-        setProfile(p);
-        setLib(list);
-        const last = loadLastOpen();
-        if (last && list.some((r) => r.id === last)) setView({ kind: "edit", id: last });
-      })
-      .catch((e) => live && setLoadError(e instanceof Error ? e.message : String(e)));
-    return () => {
-      live = false;
-    };
-  }, [attempt]);
-
-  // Save changes to the account shortly after they happen; retry if it fails.
-  useEffect(() => {
-    if (!lib) return;
-    const changed = lib.filter((r) => synced.current.get(r.id) !== r);
-    const removed = [...synced.current.keys()].filter((id) => !lib.some((r) => r.id === id));
+    if (!list) return;
+    const changed = list.filter((x) => synced.current.get(keyOf(x)) !== x);
+    const removed = [...synced.current.keys()].filter((k) => !list.some((x) => keyOf(x) === k));
     if (!changed.length && !removed.length) return;
-    setSave("saving");
+    setState("saving");
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const t = setTimeout(async () => {
       try {
-        await saveCharacters(changed);
-        await deleteCharacters(removed);
-        changed.forEach((r) => synced.current.set(r.id, r));
-        removed.forEach((id) => synced.current.delete(id));
-        setSave("saved");
+        await save(changed, removed);
+        changed.forEach((x) => synced.current.set(keyOf(x), x));
+        removed.forEach((k) => synced.current.delete(k));
+        setState("saved");
       } catch (e) {
         console.error(e);
-        setSave("error");
+        setState("error");
         retryTimer = setTimeout(() => setRetry((n) => n + 1), 8000);
       }
     }, 600);
@@ -96,7 +93,97 @@ function Account({ email, theme, setTheme }: { email: string; theme: Theme; setT
       clearTimeout(t);
       clearTimeout(retryTimer);
     };
-  }, [lib, retry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list, retry]);
+  /** Mark records as already saved (just loaded, or saved some other way). */
+  const markSaved = (items: T[], reset = false) => {
+    if (reset) synced.current = new Map();
+    items.forEach((x) => synced.current.set(keyOf(x), x));
+  };
+  return [state, markSaved] as const;
+}
+
+function Account({ session, userId, email, theme, setTheme }: { session: Session; userId: string; email: string; theme: Theme; setTheme: (t: Theme) => void }) {
+  const [lib, setLib] = useState<StoredCharacter[] | null>(null);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [memberships, setMemberships] = useState<Membership[] | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [view, setView] = useState<View>({ kind: "library" });
+  const [welcome, setWelcome] = useState(() => arrivedFrom() === "signup");
+  const [dialog, setDialog] = useState<{ kind: "settings" } | { kind: "host" } | { kind: "join"; code: string } | null>(null);
+  const [notice, setNotice] = useState("");
+  const [versions, setVersions] = useState<Record<string, string>>({});
+
+  const [saveChars, markChars] = useAutosave(lib, (r) => r.id, async (changed, removed) => {
+    await saveCharacters(changed);
+    await deleteCharacters(removed);
+  });
+  const [saveMembers, markMembers] = useAutosave(memberships, (m) => m.id, async (changed) => {
+    await saveMemberships(changed);
+  });
+  const save: SaveState = saveChars === "error" || saveMembers === "error" ? "error" : saveChars === "saving" || saveMembers === "saving" ? "saving" : "saved";
+
+  const reloadSessions = async () => {
+    const [s, m] = await Promise.all([loadSessions(), loadMemberships(userId)]);
+    markMembers(m, true);
+    setSessions(s);
+    setMemberships(m);
+  };
+
+  // One active login per account: claim it after a fresh login, then keep checking.
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const check = async () => {
+      if (live && !(await stillActiveLogin(userId, sessionRef.current))) await kickedOut();
+    };
+    const onVisible = () => document.visibilityState === "visible" && check();
+    claimIfFresh(userId, session).then(() => {
+      if (!live) return;
+      timer = setInterval(check, 60_000);
+      window.addEventListener("focus", check);
+      document.addEventListener("visibilitychange", onVisible);
+    });
+    return () => {
+      live = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Load the account's characters and sessions (and reopen the last character on this device).
+  useEffect(() => {
+    let live = true;
+    setLoadError("");
+    Promise.all([loadProfile(userId), loadCharacters(), loadSessions(), loadMemberships(userId)])
+      .then(([p, list, s, m]) => {
+        if (!live) return;
+        markChars(list, true);
+        markMembers(m, true);
+        setProfile(p);
+        setLib(list);
+        setSessions(s);
+        setMemberships(m);
+        const code = pendingJoin();
+        if (code) setDialog({ kind: "join", code });
+        else {
+          const last = loadLastOpen();
+          if (last?.startsWith("s:") && s.some((x) => x.id === last.slice(2))) setView({ kind: "session", id: last.slice(2) });
+          else if (last && list.some((r) => r.id === last)) setView({ kind: "edit", id: last });
+        }
+      })
+      .catch((e) => live && setLoadError(sessionError(e)));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
 
   // Warn before closing the page while a change isn't saved yet.
   useEffect(() => {
@@ -107,7 +194,7 @@ function Account({ email, theme, setTheme }: { email: string; theme: Theme; setT
   }, [save]);
 
   useEffect(() => {
-    if (lib) saveLastOpen(view.kind === "edit" ? view.id : null);
+    if (lib) saveLastOpen(view.kind === "edit" ? view.id : view.kind === "session" ? `s:${view.id}` : null);
   }, [view, lib]);
 
   if (loadError)
@@ -123,7 +210,7 @@ function Account({ email, theme, setTheme }: { email: string; theme: Theme; setT
         </div>
       </div>
     );
-  if (!lib) return <Loading />;
+  if (!lib || !memberships) return <Loading />;
 
   const upsert = (rec: StoredCharacter) => setLib((l) => (l!.some((r) => r.id === rec.id) ? l!.map((r) => (r.id === rec.id ? rec : r)) : [rec, ...l!]));
   const logout = async () => {
@@ -131,35 +218,115 @@ function Account({ email, theme, setTheme }: { email: string; theme: Theme; setT
     saveLastOpen(null);
     await supabase.auth.signOut();
   };
-  const account = { name: profile?.display_name || email, email, onLogout: logout, onSettings: profile ? () => setSettings(true) : undefined };
+  const account = { name: profile?.display_name || email, email, onLogout: logout, onSettings: profile ? () => setDialog({ kind: "settings" }) : undefined };
+  const sessionName = (id: string) => sessions.find((s) => s.id === id)?.name ?? "A session";
+  const closeJoin = () => {
+    clearPendingJoin();
+    setDialog(null);
+  };
+  const openSession = (id: string) => {
+    setDialog(null);
+    setView({ kind: "session", id });
+  };
+  const openSheet = (characterId: string, memberId: string) => {
+    saveVersion(characterId, memberId);
+    setVersions((v) => ({ ...v, [characterId]: memberId }));
+    setView({ kind: "edit", id: characterId });
+  };
 
-  if (view.kind === "new")
+  if (view.kind === "new") {
+    const forSession = view.forSession;
     return (
       <NewCharacterWizard
         theme={theme}
         onTheme={setTheme}
+        preset={forSession && { systemId: forSession.preview.system, books: forSession.preview.books, label: forSession.preview.name }}
         onCancel={() => setView({ kind: "library" })}
-        onCreate={(rec) => {
+        onCreate={async (rec) => {
           upsert(rec);
-          setView({ kind: "edit", id: rec.id });
+          if (!forSession) return setView({ kind: "edit", id: rec.id });
+          // Save it first: joining checks the saved character.
+          try {
+            await saveCharacters([rec]);
+            markChars([rec]);
+            await joinSession(forSession.code, rec);
+            clearPendingJoin();
+            await reloadSessions();
+            setNotice(`${(rec.data as { name?: string }).name || "Your character"} joined ${forSession.preview.name}.`);
+            setView({ kind: "session", id: forSession.preview.id });
+          } catch (e) {
+            setNotice(`Your character is saved, but couldn't join: ${sessionError(e)}`);
+            setView({ kind: "edit", id: rec.id });
+          }
         }}
       />
     );
+  }
+
+  if (view.kind === "session") {
+    const s = sessions.find((x) => x.id === view.id);
+    if (s)
+      return (
+        <SessionPage
+          key={s.id}
+          session={s}
+          userId={userId}
+          membership={memberships.find((m) => m.session_id === s.id)}
+          lib={lib}
+          theme={theme}
+          onTheme={setTheme}
+          onBack={() => setView({ kind: "library" })}
+          onChanged={reloadSessions}
+          onOpenSheet={openSheet}
+        />
+      );
+  }
 
   const open = view.kind === "edit" ? lib.find((r) => r.id === view.id) : undefined;
-  if (open)
+  if (open) {
+    const mine = memberships.filter((m) => m.character_id === open.id);
+    const picked = versions[open.id] ?? loadVersion(open.id);
+    const m = mine.find((x) => x.id === picked);
+    const versionList = mine.length
+      ? [
+          { id: "", label: "My character" },
+          ...mine.map((x) => {
+            const lvl = (x.data as { level?: number }).level;
+            return { id: x.id, label: `${sessionName(x.session_id)}${lvl ? ` · level ${lvl}` : ""}` };
+          }),
+        ]
+      : [];
+    const pickVersion = (id: string) => {
+      saveVersion(open.id, id);
+      setVersions((v) => ({ ...v, [open.id]: id }));
+    };
+    const rec: StoredCharacter = m ? { ...open, books: m.books, data: m.data, pending: m.pending.length ? m.pending : undefined, updated: Date.parse(m.updated_at) } : open;
     return (
       <Editor
-        key={open.id}
-        rec={open}
+        key={`${open.id}:${m?.id ?? ""}`}
+        rec={rec}
         theme={theme}
         save={save}
         onTheme={setTheme}
-        onUpdate={(patch) => upsert({ ...open, ...patch, updated: Date.now() })}
+        versions={versionList}
+        version={m?.id ?? ""}
+        onVersion={pickVersion}
+        sessionCopy={m ? sessionName(m.session_id) : undefined}
+        onOpenSession={m ? () => setView({ kind: "session", id: m.session_id }) : undefined}
+        onUpdate={(patch) => {
+          if (!m) return upsert({ ...open, ...patch, updated: Date.now() });
+          const data = patch.data ?? m.data;
+          const pending = patch.pending ?? m.pending;
+          setMemberships((list) =>
+            list!.map((x) => (x.id === m.id ? { ...x, data, pending, summary: summarize(open.system, m.books, data), updated_at: new Date().toISOString() } : x)),
+          );
+        }}
         onBack={() => setView({ kind: "library" })}
       />
     );
+  }
 
+  const inSessions = (charId: string) => memberships.filter((m) => m.character_id === charId).map((m) => sessionName(m.session_id));
   return (
     <>
       <Library
@@ -167,15 +334,50 @@ function Account({ email, theme, setTheme }: { email: string; theme: Theme; setT
         theme={theme}
         account={account}
         welcome={welcome}
+        notice={notice}
+        onDismissNotice={() => setNotice("")}
+        inSessions={inSessions}
+        sessionsNav={
+          <SessionsNav
+            sessions={sessions}
+            memberships={memberships}
+            lib={lib}
+            userId={userId}
+            onOpen={openSession}
+            onHost={() => setDialog({ kind: "host" })}
+            onJoin={() => setDialog({ kind: "join", code: "" })}
+          />
+        }
         onDismissWelcome={() => setWelcome(false)}
         onTheme={setTheme}
         onOpen={(id) => setView({ kind: "edit", id })}
         onNew={() => setView({ kind: "new" })}
         onImport={(rec) => upsert(rec)}
-        onDelete={(id) => setLib((l) => l!.filter((r) => r.id !== id))}
+        onDelete={(id) => {
+          setLib((l) => l!.filter((r) => r.id !== id));
+          setMemberships((list) => list!.filter((m) => m.character_id !== id));
+        }}
         onDuplicate={(rec) => upsert(rec)}
       />
-      {settings && profile && <AccountDialog profile={profile} email={email} onSaved={setProfile} onClose={() => setSettings(false)} />}
+      {dialog?.kind === "settings" && profile && <AccountDialog profile={profile} email={email} onSaved={setProfile} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "host" && <HostDialog onClose={() => setDialog(null)} onCreated={reloadSessions} onOpen={openSession} />}
+      {dialog?.kind === "join" && (
+        <JoinDialog
+          lib={lib}
+          initialCode={dialog.code}
+          onClose={closeJoin}
+          onJoined={async (id) => {
+            clearPendingJoin();
+            await reloadSessions();
+            openSession(id);
+          }}
+          onCreateFor={(preview, code) => {
+            setDialog(null);
+            if (!getSystem(preview.system)) return;
+            setView({ kind: "new", forSession: { preview, code } });
+          }}
+        />
+      )}
     </>
   );
 }

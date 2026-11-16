@@ -1,7 +1,9 @@
-// Feedback button shown on every page. Write a note, point at the part of the screen you mean,
-// paste or drop screenshots. Notes are saved by the dev server into ./feedback (feedback.json +
-// images/) so Claude can read them; without the dev server they fall back to this browser's storage.
+// Feedback button shown on every page, also logged out. Write a note, point at the part of the
+// screen you mean, paste or drop screenshots. Saved online (table `feedback`, screenshots in the
+// private `feedback` bucket). `npm run feedback:pull` downloads everything into ./feedback
+// (feedback.json + images/) on the owner's PC; `npm run feedback:fix` marks an item fixed.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "../cloud";
 
 export interface FeedbackItem {
   id: string;
@@ -18,24 +20,53 @@ export interface FeedbackItem {
   fixNote?: string;
 }
 
-const LOCAL_KEY = "characterforge.feedback.v1";
-const API = "/__feedback";
+interface Row {
+  id: string;
+  user_id: string | null;
+  sender_name: string;
+  note: string;
+  context: string;
+  target: FeedbackItem["target"] | null;
+  images: string[];
+  status: "open" | "fixed";
+  fix_note: string;
+  created_at: string;
+}
 
-const loadLocal = (): FeedbackItem[] => {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]");
-  } catch {
-    return [];
+const BUCKET = "feedback";
+
+/** Items this account may see (its own; the admin sees all), with signed links to the screenshots. */
+async function loadItems(): Promise<(FeedbackItem & { mine: boolean; sender: string })[]> {
+  const { data: auth } = await supabase.auth.getSession();
+  const uid = auth.session?.user.id;
+  if (!uid) return [];
+  const { data, error } = await supabase.from("feedback").select("id, user_id, sender_name, note, context, target, images, status, fix_note, created_at").order("created_at", { ascending: false }).limit(200);
+  if (error) throw error;
+  const rows = data as Row[];
+  const paths = rows.flatMap((r) => r.images);
+  const urls = new Map<string, string>();
+  if (paths.length) {
+    const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
+    signed?.forEach((x) => x.path && x.signedUrl && urls.set(x.path, x.signedUrl));
   }
-};
-const saveLocal = (items: FeedbackItem[]) => {
-  try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(items));
-    return true;
-  } catch {
-    return false;
-  }
-};
+  return rows.map((r) => ({
+    id: r.id,
+    created: Date.parse(r.created_at),
+    note: r.note,
+    context: r.context,
+    target: r.target ?? undefined,
+    images: r.images.map((p) => urls.get(p) ?? "").filter(Boolean),
+    status: r.status,
+    fixNote: r.fix_note || undefined,
+    mine: r.user_id === uid,
+    sender: r.sender_name,
+  }));
+}
+
+const dataUrlToBlob = async (u: string) => (await fetch(u)).blob();
+
+/** Where the app was built from (shown with each report). */
+const appVersion = () => `${import.meta.env.MODE}${import.meta.env.DEV ? " (dev)" : ""}`;
 
 /** Short description of where the user is: "Editor · Parry Hotter · Spells tab · Level up dialog". */
 function screenContext() {
@@ -82,8 +113,11 @@ const readImage = (f: File) =>
 export function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"new" | "list">("new");
-  const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [server, setServer] = useState(true);
+  const [items, setItems] = useState<(FeedbackItem & { mine: boolean; sender: string })[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
+  const [admin, setAdmin] = useState(false);
+  const [senderName, setSenderName] = useState("");
+  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [target, setTarget] = useState<FeedbackItem["target"]>();
@@ -96,18 +130,27 @@ export function FeedbackWidget() {
 
   const refresh = useCallback(async () => {
     try {
-      const r = await fetch(API);
-      if (!r.ok) throw new Error();
-      const remote: FeedbackItem[] = await r.json();
-      setServer(true);
-      setItems(remote);
+      setItems(await loadItems());
     } catch {
-      setServer(false);
-      setItems(loadLocal());
+      /* offline: keep what we have */
     }
   }, []);
+  const myName = useRef("");
   useEffect(() => {
-    refresh();
+    let current: string | null | undefined;
+    const apply = async (id: string | null) => {
+      if (id === current) return;
+      current = id;
+      setUid(id);
+      setAdmin(id ? Boolean((await supabase.rpc("is_admin")).data) : false);
+      myName.current = id ? ((await supabase.from("profiles").select("display_name").eq("id", id).maybeSingle()).data?.display_name ?? "") : "";
+      refresh();
+    };
+    supabase.auth.getSession().then(({ data }) => apply(data.session?.user.id ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_e, sess) => {
+      setTimeout(() => apply(sess?.user.id ?? null), 0);
+    });
+    return () => data.subscription.unsubscribe();
   }, [refresh]);
 
   const start = () => {
@@ -178,37 +221,62 @@ export function FeedbackWidget() {
   // ---------- save / update ----------
   const save = async () => {
     if (!note.trim() && !images.length) return;
-    const id = `fb${Date.now().toString(36)}`;
-    const base: FeedbackItem = { id, created: Date.now(), note: note.trim(), context, target, images: [], status: "open" };
+    const id = `fb${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+    setBusy(true);
+    setStatus("Sending…");
     try {
-      const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...base, imageData: images }) });
-      if (!r.ok) throw new Error();
-      setStatus("Saved. Tell Claude “fix the feedback” when you're ready.");
-    } catch {
-      const ok = saveLocal([{ ...base, images }, ...loadLocal()]);
-      setStatus(ok ? "Saved in this browser (the dev server isn't running)." : "Couldn't save: the screenshots are too large for browser storage. Remove one and try again.");
-      if (!ok) return;
+      const folder = uid ?? "anon";
+      const paths: string[] = [];
+      for (const [i, u] of images.entries()) {
+        const blob = await dataUrlToBlob(u);
+        const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png";
+        const path = `${folder}/${id}-${i + 1}.${ext}`;
+        const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || "image/png" });
+        if (error) throw error;
+        paths.push(path);
+      }
+      const { error } = await supabase.from("feedback").insert({
+        id,
+        sender_name: (uid ? myName.current : senderName.trim()).slice(0, 60),
+        note: note.trim().slice(0, 5000),
+        context: context.slice(0, 500),
+        target: target ?? null,
+        images: paths,
+        details: {
+          page: window.location.href.split("#")[0],
+          window: { w: window.innerWidth, h: window.innerHeight },
+          touch: window.matchMedia("(pointer: coarse)").matches,
+          browser: navigator.userAgent,
+          app: appVersion(),
+          skin: document.documentElement.dataset.theme,
+        },
+      });
+      if (error) throw error;
+      setStatus(uid ? "Sent. Thank you! You can see it under Saved." : "Sent. Thank you!");
+      setNote("");
+      setImages([]);
+      setTarget(undefined);
+      refresh();
+    } catch (e) {
+      console.error(e);
+      setStatus("Couldn't send it. Check your internet connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setNote("");
-    setImages([]);
-    setTarget(undefined);
-    refresh();
   };
-  const update = async (id: string, patch: Partial<FeedbackItem>) => {
-    if (server) await fetch(`${API}/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).catch(() => {});
-    else saveLocal(loadLocal().map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const update = async (id: string, patch: { status: "open" | "fixed" }) => {
+    await supabase.from("feedback").update(patch).eq("id", id);
     refresh();
   };
   const remove = async (id: string) => {
     if (!confirm("Delete this feedback?")) return;
-    if (server) await fetch(`${API}/${id}`, { method: "DELETE" }).catch(() => {});
-    else saveLocal(loadLocal().filter((x) => x.id !== id));
+    await supabase.from("feedback").delete().eq("id", id);
     refresh();
   };
 
   const openCount = items.filter((x) => x.status === "open").length;
   const shown = items.filter((x) => showFixed || x.status === "open");
-  const src = (p: string) => (p.startsWith("data:") ? p : `/${p}`);
+  const src = (p: string) => p;
 
   return (
     <>
@@ -276,6 +344,12 @@ export function FeedbackWidget() {
                 )}
               </div>
 
+              {!uid && (
+                <label className="fb-section">
+                  <span className="fb-k">Your name (optional)</span>
+                  <input value={senderName} maxLength={60} onChange={(e) => setSenderName(e.target.value)} autoComplete="nickname" />
+                </label>
+              )}
               <label className="fb-section">
                 <span className="fb-k">What should change?</span>
                 <textarea
@@ -315,15 +389,15 @@ export function FeedbackWidget() {
 
               <div className="fb-foot">
                 <span className="fb-muted">{status}</span>
-                <button className="btn primary" disabled={!note.trim() && !images.length} onClick={save}>
-                  Save feedback
+                <button className="btn primary" disabled={busy || (!note.trim() && !images.length)} onClick={save}>
+                  {busy ? "Sending…" : "Send feedback"}
                 </button>
               </div>
             </div>
           ) : (
             <div className="fb-body">
               <div className="fb-row">
-                <span className="fb-muted">{server ? "Saved in the project's feedback folder." : "Saved in this browser only."}</span>
+                <span className="fb-muted">{!uid ? "Log in to see the feedback you sent." : admin ? "Everyone's feedback (you're the admin)." : "The feedback you sent."}</span>
                 <label className="fb-muted fb-toggle">
                   <input type="checkbox" checked={showFixed} onChange={(e) => setShowFixed(e.target.checked)} /> show fixed
                 </label>
@@ -333,7 +407,10 @@ export function FeedbackWidget() {
                 <article key={x.id} className={`fb-item ${x.status}`}>
                   <div className="fb-item-top">
                     <span className={`fb-chip ${x.status}`}>{x.status === "open" ? "Open" : "Fixed"}</span>
-                    <span className="fb-muted">{new Date(x.created).toLocaleString()}</span>
+                    <span className="fb-muted">
+                      {new Date(x.created).toLocaleString()}
+                      {admin && !x.mine && ` · ${x.sender || "someone"}`}
+                    </span>
                   </div>
                   {x.note && <p className="fb-note">{x.note}</p>}
                   <p className="fb-muted fb-small">
@@ -350,14 +427,18 @@ export function FeedbackWidget() {
                       ))}
                     </div>
                   )}
-                  <div className="fb-item-actions">
-                    <button className="btn small" onClick={() => update(x.id, { status: x.status === "open" ? "fixed" : "open" })}>
-                      {x.status === "open" ? "Mark fixed" : "Reopen"}
-                    </button>
-                    <button className="btn small ghost" onClick={() => remove(x.id)}>
-                      Delete
-                    </button>
-                  </div>
+                  {(admin || x.mine) && (
+                    <div className="fb-item-actions">
+                      {admin && (
+                        <button className="btn small" onClick={() => update(x.id, { status: x.status === "open" ? "fixed" : "open" })}>
+                          {x.status === "open" ? "Mark fixed" : "Reopen"}
+                        </button>
+                      )}
+                      <button className="btn small ghost" onClick={() => remove(x.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

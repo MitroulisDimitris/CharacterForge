@@ -88,8 +88,8 @@ export function authError(message: string): string {
   return message;
 }
 
-export async function loadProfile(): Promise<Profile | null> {
-  const { data, error } = await supabase.from("profiles").select("id, display_name, is_admin").maybeSingle();
+export async function loadProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase.from("profiles").select("id, display_name, is_admin").eq("id", userId).maybeSingle();
   if (error) throw error;
   return data as Profile | null;
 }
@@ -115,4 +115,81 @@ export async function deleteCharacters(ids: string[]): Promise<void> {
 export async function saveDisplayName(id: string, name: string): Promise<void> {
   const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", id);
   if (error) throw error;
+}
+
+// ---------- One active login per account ----------
+// A fresh login (password, Verify link, Reset link) "claims" the account: other devices are signed
+// out on the server, and the app on those devices notices the claim and logs out (checked on
+// focus and every minute).
+
+const CLAIM_KEY = "character-forge:claim";
+const KICKED_KEY = "character-forge:kicked";
+
+/** The login session id inside the access token. */
+export function loginSessionId(session: Session | null): string | null {
+  try {
+    const part = session?.access_token.split(".")[1];
+    if (!part) return null;
+    const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof json.session_id === "string" ? json.session_id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Call right before a fresh login: the app claims the account once it's in. */
+export function markFreshLogin() {
+  try {
+    sessionStorage.setItem(CLAIM_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** If this is a fresh login: sign out every other device and make this one the active login. */
+export async function claimIfFresh(userId: string, session: Session): Promise<void> {
+  let fresh = false;
+  try {
+    fresh = sessionStorage.getItem(CLAIM_KEY) === "1";
+  } catch {
+    /* ignore */
+  }
+  if (!fresh) return;
+  const sid = loginSessionId(session);
+  await supabase.auth.signOut({ scope: "others" }).catch(() => {});
+  if (sid) await supabase.from("profiles").update({ active_session: sid }).eq("id", userId);
+  try {
+    sessionStorage.removeItem(CLAIM_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** False when another device has logged in to this account since. */
+export async function stillActiveLogin(userId: string, session: Session): Promise<boolean> {
+  const sid = loginSessionId(session);
+  const { data, error } = await supabase.from("profiles").select("active_session").eq("id", userId).maybeSingle();
+  if (error || !data || !sid) return true; // offline or unknown: don't kick
+  return !data.active_session || data.active_session === sid;
+}
+
+/** Log this device out because the account logged in somewhere else. */
+export async function kickedOut() {
+  try {
+    sessionStorage.setItem(KICKED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+  await supabase.auth.signOut({ scope: "local" });
+}
+
+/** Read (once) whether this device was just logged out by a newer login. */
+export function takeKicked(): boolean {
+  try {
+    const k = sessionStorage.getItem(KICKED_KEY) === "1";
+    sessionStorage.removeItem(KICKED_KEY);
+    return k;
+  } catch {
+    return false;
+  }
 }

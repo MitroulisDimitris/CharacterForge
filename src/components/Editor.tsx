@@ -25,6 +25,11 @@ export function Editor({
   onTheme,
   onUpdate,
   onBack,
+  versions = [],
+  version = "",
+  onVersion,
+  sessionCopy,
+  onOpenSession,
 }: {
   rec: StoredCharacter;
   theme: Theme;
@@ -32,6 +37,13 @@ export function Editor({
   onTheme: (t: Theme) => void;
   onUpdate: (patch: Partial<StoredCharacter>) => void;
   onBack: () => void;
+  /** "My character" + one entry per session the character plays in (D2). Empty: not in a session. */
+  versions?: { id: string; label: string }[];
+  version?: string;
+  onVersion?: (id: string) => void;
+  /** Set when editing a session's copy: the session's name. */
+  sessionCopy?: string;
+  onOpenSession?: () => void;
 }) {
   const system = getSystem(rec.system)!;
   const [char, setChar] = useState<BaseCharacter>(() => system.normalize(rec.data));
@@ -79,6 +91,29 @@ export function Editor({
     setPending(p);
     onUpdate({ pending: p });
   };
+
+  const canChangeBooks = hasOptionalBooks(system) && !sessionCopy;
+  const versionPick = versions.length > 1 && (
+    <label className="version-pick" title="Each session keeps its own version of this character">
+      <span>Version</span>
+      <select value={version} onChange={(e) => onVersion?.(e.target.value)}>
+        {versions.map((v) => (
+          <option key={v.id} value={v.id}>
+            {v.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  const sessionNote = sessionCopy && (
+    <p className="session-copy-note">
+      Playing in{" "}
+      <button type="button" className="link" onClick={onOpenSession}>
+        {sessionCopy}
+      </button>
+      . Changes here stay in this session.
+    </p>
+  );
 
   const tabsNav = (
     <nav className="tabs" role="tablist">
@@ -135,7 +170,7 @@ export function Editor({
           <div className="hero-id">
             <input className="hero-name" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" placeholder="Name your hero" />
             <span className="hero-sub">{d.identity}</span>
-            {hasOptionalBooks(system) ? (
+            {canChangeBooks ? (
               <button type="button" className="hero-system" title={`Rules fixed at creation. Books: ${books}. Click to change the books.`} onClick={() => setBooksOpen(true)}>
                 {system.short} · {rec.books.length} book{rec.books.length > 1 ? "s" : ""}
               </button>
@@ -145,6 +180,8 @@ export function Editor({
               </span>
             )}
           </div>
+          {versionPick}
+          {sessionNote}
           <section className={`hero-todo ${waiting.length ? "has" : ""}`} aria-label="To do">
             <span className="hero-label">To do</span>
             {waiting.length === 0 ? (
@@ -193,7 +230,7 @@ export function Editor({
                 <button type="button" onClick={() => exportJson({ ...rec, data: char, pending })}>
                   Export as file
                 </button>
-                {hasOptionalBooks(system) && (
+                {canChangeBooks && (
                   <button type="button" onClick={() => setBooksOpen(true)}>
                     Change books
                   </button>
@@ -228,7 +265,8 @@ export function Editor({
           <input className="name-input" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
           <span className="identity-sub">{d.identity}</span>
         </div>
-        {hasOptionalBooks(system) ? (
+        {versionPick}
+        {canChangeBooks ? (
           <button
             type="button"
             className="system-badge as-button"
@@ -265,6 +303,7 @@ export function Editor({
           </button>
         </div>
       </header>
+      {sessionNote}
       <p className="save-status" aria-live="polite">
         {SAVE_TEXT[save]}
       </p>

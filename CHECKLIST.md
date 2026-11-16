@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-16.
+Last updated: 2026-11-16 (sessions).
 
 ---
 
@@ -36,10 +36,14 @@ Last updated: 2026-11-16.
 - [ ] Turn on "leaked password protection" in the Supabase dashboard (optional, your choice)
 
 ## 3. Accounts, part 2
+- [x] One active login per account: a new login logs out the other devices (with a message)
+- [x] Activity log in the database (who changed what, deleted characters kept) + `npm run audit`
 - [x] Email sender: Brevo account, connected to Supabase (SMTP)
 - [x] Verify / Reset password email designs written (`supabase/templates/`)
-- [ ] **Needs from you:** paste the two email designs + set the link addresses in Supabase
-- [ ] End-to-end test with a real email (sign up → Verify → logged in; reset password)
+- [x] Email designs pasted and link addresses set in Supabase
+- [x] End-to-end test: sign up → Verify email arrived (inbox) → logged in
+- [ ] End-to-end test: reset password by email
+- [ ] Verify email subject: set to "Verify your email for Character Forge" in Supabase
 - [x] Sign-up page (display name, email, password ≥ 8 characters)
 - [x] "Check your email" screen with Resend (60 s wait) and "Use a different email"
 - [x] Verify link logs in and lands on *My characters* with a welcome
@@ -52,38 +56,43 @@ Last updated: 2026-11-16.
 - [ ] Portrait shown everywhere the crest appears; included in JSON export
 
 ## 4. Publish + online feedback
-- [ ] Only D&D 5e 2014 selectable; other rule sets greyed "Coming soon"
+- [x] Host-a-session picker: only D&D 5e 2014, others "Coming soon"
+- [ ] New-character picker: only D&D 5e 2014, others "Coming soon"
 - [ ] Import of other rule sets refused with a plain message
 - [ ] One setting per rule set to switch it back on later
-- [ ] Feedback saved online (database + screenshot storage)
+- [x] Feedback saved online (database + screenshot storage)
 - [ ] Feedback records the last ~50 steps, the screen, the open character, errors, device
 - [ ] "Also sends: … / Show details" under the note
-- [ ] Feedback works on the login page too (with an optional name)
-- [ ] Admin list of all feedback with open / fixed; senders see "Fixed: …"
-- [ ] `npm run feedback:pull` for the "fix the feedback" workflow
-- [ ] `netlify.toml`
-- [ ] **Needs from you:** add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Netlify
-- [ ] **Needs from you:** OK to push to GitHub
-- [ ] Check the live site on phone and desktop
+- [x] Feedback works on the login page too (with an optional name)
+- [x] Admin list of all feedback with open / fixed; senders see "Fixed: …"
+- [x] `npm run feedback:pull` + `npm run feedback:fix` for the "fix the feedback" workflow
+- [x] Feedback records page, window size, browser, skin
+- [x] `netlify.toml`
+- [x] `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` added in Netlify
+- [x] Pushed to GitHub (2026-11-16); live at https://character-forge-dnd.netlify.app (login checked)
+- [ ] Check the live site on a real phone and desktop
 
 ## 5. Table card
 - [ ] `tableCard` for D&D 5e 2014 (name, player, identity, level, AC, HP, speed, init, passives, spell DC)
 - [ ] Saved with the character so session screens can read it
 
 ## 6. Host / join / manage sessions
-- [ ] Sessions section in the library sidebar (Host, Join, active sessions)
-- [ ] Host a session: name, rules, allowed books → invite code + link (copy / share)
-- [ ] Join with a code or link (remembers the code through login)
-- [ ] Character picker: eligible vs greyed with the reason (rules / books)
-- [ ] Create a new character for the session (rules and books pre-picked)
-- [ ] Session copy of the character on join (D2)
-- [ ] Version dropdown on the sheet: "My character" + one per session (D2)
-- [ ] Session badge on the character
-- [ ] Player session page: name, host, rules, who's playing (summary only, D4), your character
-- [ ] Swap character, Leave session
-- [ ] Host: new code, lock joining, rename, add books, end session, delete session
-- [ ] Host: see members, remove a player
-- [ ] Database security rules for sessions and members
+- [x] Database: `sessions` + `session_members` tables, security rules, join/swap/roster functions
+- [x] Sessions section in the library sidebar (Host, Join, active sessions, Past sessions)
+- [x] Host a session: name, rules (others "Coming soon"), allowed books → invite code + link (copy / share)
+- [x] Join with a code or link (the link is remembered through login, with a hint on the login page)
+- [x] Character picker: eligible vs greyed with the reason (rules / books) + Books tip
+- [x] Session copy of the character on join (D2)
+- [x] Version dropdown on the sheet: "My character" + one per session (D2)
+- [x] Session note on the sheet ("Playing in …") and "In <session>" tag on library cards
+- [x] Player session page: name, rules, who's playing (summary only, D4), Open sheet
+- [x] Host session page: invite code, who's playing (name + player)
+- [x] Host menu: new code, lock / unlock joining, rename, add books, end / reopen, delete
+- [x] Host removes a player; player leaves
+- [x] Tested with two accounts: join by link, session copy separate, host sees player, lock, players can't read the code, leave, delete
+- [ ] Try in the browser: create a new character for a session (built, not yet clicked through)
+- [ ] Try in the browser: swap character, rename, add books, end session, new code (built, not yet clicked through)
+- [ ] Check the session page in Dark / Parchment and on a real phone
 
 ## 7. Party tools (host)
 - [ ] Party tab: every member's table card

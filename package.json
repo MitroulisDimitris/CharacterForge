@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "preview": "vite preview",
-    "pdf:sample": "vite build --ssr scripts/sample-pdf.ts --outDir .sample-build --emptyOutDir && node .sample-build/sample-pdf.js"
+    "pdf:sample": "vite build --ssr scripts/sample-pdf.ts --outDir .sample-build --emptyOutDir && node .sample-build/sample-pdf.js",
+    "feedback:pull": "node scripts/feedback.mjs pull",
+    "feedback:fix": "node scripts/feedback.mjs fix",
+    "audit": "node scripts/audit.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

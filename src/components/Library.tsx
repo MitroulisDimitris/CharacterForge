@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { getSystem, SYSTEMS } from "../systems/registry";
 import { bookAbbr, type AnySystem, type BaseCharacter, type DerivedBase } from "../systems/types";
 import { exportJson, importFile, newRecordId, type StoredCharacter, type Theme } from "../storage";
@@ -25,6 +25,10 @@ export function Library({
   account,
   welcome = false,
   onDismissWelcome,
+  notice = "",
+  onDismissNotice,
+  inSessions = () => [],
+  sessionsNav,
   onTheme,
   onOpen,
   onNew,
@@ -37,6 +41,11 @@ export function Library({
   account: Account;
   welcome?: boolean;
   onDismissWelcome?: () => void;
+  notice?: string;
+  onDismissNotice?: () => void;
+  /** Names of the sessions a character plays in. */
+  inSessions?: (id: string) => string[];
+  sessionsNav?: ReactNode;
   onTheme: (t: Theme) => void;
   onOpen: (id: string) => void;
   onNew: () => void;
@@ -59,7 +68,9 @@ export function Library({
   const duplicate = (rec: StoredCharacter, c: BaseCharacter) =>
     onDuplicate({ ...rec, id: newRecordId(), created: Date.now(), updated: Date.now(), data: { ...(rec.data as object), name: `${c.name} (copy)` } });
   const remove = (rec: StoredCharacter, c: BaseCharacter) => {
-    if (confirm(`Delete ${c.name || "this character"}? Export it first if you want a backup.`)) onDelete(rec.id);
+    const s = inSessions(rec.id);
+    const also = s.length ? ` It also leaves ${s.length === 1 ? `the session "${s[0]}"` : `${s.length} sessions`}.` : "";
+    if (confirm(`Delete ${c.name || "this character"}?${also} Export it first if you want a backup.`)) onDelete(rec.id);
   };
 
   const rows: Row[] = [];
@@ -100,6 +111,15 @@ export function Library({
     </div>
   );
 
+  const noticeNote = notice && (
+    <div className="welcome-note" role="status">
+      <span>{notice}</span>
+      <button type="button" className="hero-dismiss" aria-label="Close" onClick={onDismissNotice}>
+        ×
+      </button>
+    </div>
+  );
+
   // ---------- "Hero" skin ----------
   if (skinOf(theme).layout === "hero") {
     const shown = rows.filter((r) => filter === "all" || r.system.id === filter);
@@ -122,6 +142,7 @@ export function Library({
               );
             })}
           </nav>
+          {sessionsNav}
           <div className="hero-foot">
             <button type="button" className="link" onClick={() => fileRef.current?.click()}>
               Import a character…
@@ -137,6 +158,7 @@ export function Library({
             <span className="muted">{rows.length ? "Pick up where you left off." : ""}</span>
           </header>
           {welcomeNote}
+          {noticeNote}
           {rows.length === 0 ? (
             empty
           ) : shown.length === 0 ? (
@@ -155,6 +177,11 @@ export function Library({
                       <span className="hero-card-tags">
                         <span className="hero-system">{system.short}</span>
                         {problems > 0 && <span className="hero-todo-chip">{problems} to fix</span>}
+                        {inSessions(rec.id).length > 0 && (
+                          <span className="session-chip" title={inSessions(rec.id).join(", ")}>
+                            In {inSessions(rec.id).length === 1 ? inSessions(rec.id)[0] : `${inSessions(rec.id).length} sessions`}
+                          </span>
+                        )}
                         <span className="muted">{ago(rec.updated)}</span>
                       </span>
                     </span>
@@ -201,6 +228,8 @@ export function Library({
       </header>
 
       {welcomeNote}
+      {noticeNote}
+      {sessionsNav && <div className="card sessions-card">{sessionsNav}</div>}
       {rows.length === 0 ? (
         empty
       ) : (

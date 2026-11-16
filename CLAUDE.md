@@ -104,12 +104,22 @@ every skin; the Hero skin is the reference look.
 
 ## Feedback from the user ("fix the feedback")
 
-The app has a Feedback button on every page (`src/components/Feedback.tsx`). The dev server plugin
-(`feedback-server.ts`) saves each note to `feedback/feedback.json` (newest first) with pasted
-screenshots in `feedback/images/` (open them with Read). Each item has `note`, `context` (screen,
-tab, open dialog), optional `target` (the element the user pointed at: label, text, CSS-like `path`,
-rect) and `status`. When asked to fix the feedback: work through every `status: "open"` item, then
-set its `status` to `"fixed"` and add a short `fixNote` saying what changed. The folder is git-ignored.
+The app has a Feedback button on every page, also logged out (`src/components/Feedback.tsx`). Notes
+are saved online (Supabase table `feedback`, screenshots in the private `feedback` bucket). When
+asked to fix the feedback: run `npm run feedback:pull` (writes `feedback/feedback.json`, newest
+first, + `feedback/images/`; open images with Read), work through every `status: "open"` item, then
+for each run `npm run feedback:fix -- <id> "short note of what changed"` (the sender sees it).
+Items marked `local: true` are from before feedback went online: set their status/fixNote in the
+JSON by hand. Each item has `note`, `context`, optional `target`, `sender`, `details` (page,
+window size, browser, skin). The folder is git-ignored. The scripts log in as the admin with
+`CF_ADMIN_EMAIL` / `CF_ADMIN_PASSWORD` from `.env.local`.
+
+**Activity log:** `npm run audit` (last 50), `npm run audit -- <character id>` (one row's history),
+`npm run audit -- restore <id>` (prints a deleted character's full row). Written by database
+triggers on characters, sessions, session_members, profiles (`audit_log`, admin-only).
+**One active login per account:** a fresh login signs out other devices (`claimIfFresh` in
+`cloud.ts`, `profiles.active_session`). Don't log into the user's own account in browser tests:
+it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD` in `.env.local`).
 
 ## Dev notes
 

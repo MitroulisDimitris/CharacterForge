@@ -1,7 +1,8 @@
 // Account screens (REQUIREMENTS §3.1): log in, sign up, "check your email", forgot password,
 // choose a new password, and the message for an expired / used email link.
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { authError, linkProblem, MIN_PASSWORD, supabase } from "../cloud";
+import { authError, linkProblem, markFreshLogin, MIN_PASSWORD, supabase, takeKicked } from "../cloud";
+import { pendingJoin } from "../sessions";
 
 type Mode = "login" | "signup" | "check" | "forgot" | "forgot-sent" | "link-expired";
 
@@ -70,6 +71,7 @@ function useCooldown() {
 
 export function Login() {
   const problem = linkProblem();
+  const [kicked] = useState(takeKicked);
   const [mode, setMode] = useState<Mode>(problem ? "link-expired" : "login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -102,6 +104,7 @@ export function Login() {
   const login = (e: FormEvent) => {
     e.preventDefault();
     run(async () => {
+      markFreshLogin();
       const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (error && /email not confirmed/i.test(error.message)) {
         go("check");
@@ -278,6 +281,16 @@ export function Login() {
 
   return (
     <AuthCard title="Character Forge" tagline="Your character, through the whole campaign.">
+      {kicked && (
+        <p className="auth-info join-hint" role="status">
+          You were logged out because your account logged in on another device. Only the newest login stays active.
+        </p>
+      )}
+      {pendingJoin() && (
+        <p className="auth-info join-hint">
+          You were invited to a session (code <strong>{pendingJoin()}</strong>). Log in or create an account to join.
+        </p>
+      )}
       <form onSubmit={login} className="auth-form" noValidate>
         <Field label="Email">
           <input type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />

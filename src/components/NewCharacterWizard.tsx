@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SYSTEMS } from "../systems/registry";
+import { getSystem, SYSTEMS } from "../systems/registry";
 import type { AnySystem, BaseCharacter } from "../systems/types";
 import { newRecordId, type StoredCharacter, type Theme } from "../storage";
 import { Brand, SkinPicker } from "./Brand";
@@ -18,17 +18,21 @@ export function NewCharacterWizard({
   onTheme,
   onCancel,
   onCreate,
+  preset,
 }: {
+  /** New character for a session: rules and books are the session's (REQUIREMENTS §4.2). */
+  preset?: { systemId: string; books: string[]; label: string };
   theme: Theme;
   onTheme: (t: Theme) => void;
   onCancel: () => void;
   onCreate: (rec: StoredCharacter) => void;
 }) {
-  const [system, setSystem] = useState<AnySystem | null>(null);
-  const [books, setBooks] = useState<string[]>([]);
+  const presetSystem = preset ? (getSystem(preset.systemId) ?? null) : null;
+  const [system, setSystem] = useState<AnySystem | null>(presetSystem);
+  const [books, setBooks] = useState<string[]>(presetSystem ? normalizeBooks(presetSystem, preset!.books) : []);
   const [templateId, setTemplateId] = useState("");
   const [name, setName] = useState("");
-  const [building, setBuilding] = useState(false);
+  const [building, setBuilding] = useState(Boolean(presetSystem?.creation));
 
   const pickSystem = (s: AnySystem) => {
     const t = s.templates[0];
@@ -73,7 +77,7 @@ export function NewCharacterWizard({
       <CreationStepper
         system={system}
         books={normalizeBooks(system, books)}
-        onBack={() => setBuilding(false)}
+        onBack={() => (preset ? onCancel() : setBuilding(false))}
         onCreate={save}
         hero={{ onCancel, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
       />
@@ -83,7 +87,7 @@ export function NewCharacterWizard({
     return (
       <div className="app">
         {header}
-        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => setBuilding(false)} onCreate={save} />
+        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? onCancel() : setBuilding(false))} onCreate={save} />
       </div>
     );
 
