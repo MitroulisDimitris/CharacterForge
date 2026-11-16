@@ -3669,3 +3669,25 @@ button.hero-system:hover {
   width: 18px;
   height: 18px;
 }
+
+/* Netlify shows a "Powered by Netlify" badge in the bottom-right corner of the live site:
+   keep the Feedback button and panel above it on every screen size. */
+:root {
+  --fb-lift: 72px;
+}
+.fb-fab {
+  bottom: var(--fb-lift);
+}
+.fb-panel {
+  bottom: var(--fb-lift);
+  max-height: calc(100vh - var(--fb-lift) - 16px);
+  max-height: calc(100dvh - var(--fb-lift) - 16px);
+}
+.creation-main .step-foot {
+  padding-bottom: calc(var(--fb-lift) + 8px);
+}
+@media (max-width: 860px) {
+  .creation-main .step-foot {
+    padding-bottom: calc(var(--fb-lift) + 56px);
+  }
+}
