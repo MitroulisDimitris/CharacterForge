@@ -164,3 +164,46 @@ export function toggleFavorite(r: LookupRef) {
 export function addRecent(r: LookupRef) {
   write(RECENT_KEY, [r, ...recent().filter((x) => !(x.kind === r.kind && x.slug === r.slug))].slice(0, 12));
 }
+
+// ---------- the whole SRD monster list (for encounter suggestions) ----------
+
+export interface MonsterBrief {
+  slug: string;
+  name: string;
+  size: string;
+  type: string;
+  armor_class: number;
+  hit_points: number;
+  challenge_rating: string;
+  cr: number;
+  environments: string[];
+}
+
+let allCache: Promise<MonsterBrief[]> | null = null;
+/** All ~320 SRD monsters with only what suggestions need (about 65 KB, loaded once). */
+export function allMonsters(): Promise<MonsterBrief[]> {
+  allCache ??= get<{ results: MonsterBrief[] }>(`/monsters/?${SRD}&limit=500&fields=slug,name,size,type,armor_class,hit_points,challenge_rating,cr,environments`)
+    .then((r) => r.results)
+    .catch((e) => {
+      allCache = null;
+      throw e;
+    });
+  return allCache;
+}
+
+/** Places to pick from, each covering the data's own (messier) names. */
+export const PLACES: { id: string; label: string; match: string[] }[] = [
+  { id: "arctic", label: "Arctic / tundra", match: ["Arctic", "Tundra"] },
+  { id: "coastal", label: "Coast", match: ["Coastal"] },
+  { id: "desert", label: "Desert", match: ["Desert"] },
+  { id: "forest", label: "Forest", match: ["Forest"] },
+  { id: "grassland", label: "Grassland", match: ["Grassland"] },
+  { id: "hill", label: "Hills", match: ["Hill", "Hills"] },
+  { id: "jungle", label: "Jungle", match: ["Jungle"] },
+  { id: "mountain", label: "Mountains", match: ["Mountain", "Mountains"] },
+  { id: "swamp", label: "Swamp", match: ["Swamp"] },
+  { id: "underdark", label: "Underdark / caves", match: ["Underdark", "Caverns"] },
+  { id: "urban", label: "Town / city", match: ["Urban", "Settlement", "Sewer"] },
+  { id: "ruins", label: "Ruins / tombs / temples", match: ["Ruin", "Tomb", "Temple"] },
+  { id: "water", label: "Water", match: ["Water", "Underwater"] },
+];

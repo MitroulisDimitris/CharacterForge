@@ -3,7 +3,8 @@
 // 2014 XP thresholds. Players never see encounters.
 import { useEffect, useMemo, useState } from "react";
 import { DIFFICULTY_TEXT, deleteEncounter, loadEncounters, rate, saveEncounter, xpForCr, type Encounter, type EncounterMonster, type Rating } from "../encounters";
-import { getMonster, searchMonsters, type Monster } from "../lookup";
+import { allMonsters, getMonster, PLACES, searchMonsters, type Monster, type MonsterBrief } from "../lookup";
+import { filterPool, SHAPE_TEXT, suggestEncounter, type Shape, type Suggestion, type Target } from "../suggest";
 import { sessionError } from "../sessions";
 import { MonsterCard } from "./Lookup";
 import { MoreMenu } from "./Hero";
@@ -68,12 +69,17 @@ function Builder({
   start,
   party,
   onDone,
+  suggested,
 }: {
   sessionId: string;
   start: Encounter | null;
   party: number[];
   onDone: (saved: boolean) => void;
+  /** Opened from "Suggest an encounter": show what it is and offer another. */
+  suggested?: { shape: Shape; retry: () => Suggestion | null };
 }) {
+  const [shape, setShape] = useState(suggested?.shape);
+  const [noMore, setNoMore] = useState(false);
   const [name, setName] = useState(start?.name ?? "");
   const [monsters, setMonsters] = useState<EncounterMonster[]>(start?.monsters ?? []);
   const [notes, setNotes] = useState(start?.notes ?? "");
@@ -122,7 +128,7 @@ function Builder({
     setBusy(true);
     setError("");
     try {
-      await saveEncounter({ id: start?.id, session_id: sessionId, name: name.trim() || "Untitled encounter", monsters, notes });
+      await saveEncounter({ id: start?.id || undefined, session_id: sessionId, name: name.trim() || "Untitled encounter", monsters, notes });
       onDone(true);
     } catch (e) {
       setError(sessionError(e));
@@ -131,7 +137,7 @@ function Builder({
     }
   };
   const remove = async () => {
-    if (!start || !confirm(`Delete "${start.name}"?`)) return;
+    if (!start?.id || !confirm(`Delete "${start.name}"?`)) return;
     try {
       await deleteEncounter(start.id);
       onDone(true);
@@ -146,7 +152,7 @@ function Builder({
         <button type="button" className="link" onClick={() => onDone(false)}>
           ‹ Encounters
         </button>
-        {start && (
+        {start?.id && (
           <MoreMenu label="Encounter actions">
             <button type="button" className="danger" onClick={remove}>
               Delete encounter…
@@ -154,6 +160,28 @@ function Builder({
           </MoreMenu>
         )}
       </div>
+      {suggested && shape && (
+        <div className="enc-suggested" role="status">
+          <span>
+            <strong>Suggested:</strong> {SHAPE_TEXT[shape]}. Change anything, then save it.
+          </span>
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => {
+              const next = suggested.retry();
+              if (next) {
+                setMonsters(next.monsters);
+                setShape(next.shape);
+                setNoMore(false);
+              } else setNoMore(true);
+            }}
+          >
+            Try another
+          </button>
+          {noMore && <span className="muted">Nothing else fits these choices.</span>}
+        </div>
+      )}
       <div className="enc-layout">
         <div className="enc-main">
           <label className="auth-field">
@@ -244,9 +272,78 @@ function Builder({
   );
 }
 
+/** Pick a difficulty (and optionally a creature type and a place); get a fitting encounter. */
+function SuggestPanel({ party, onResult, onClose }: { party: number[]; onResult: (name: string, s: Suggestion, retry: () => Suggestion | null) => void; onClose: () => void }) {
+  const [pool, setPool] = useState<MonsterBrief[] | null>(null);
+  const [target, setTarget] = useState<Target>("Medium");
+  const [type, setType] = useState("");
+  const [place, setPlace] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    allMonsters().then(setPool, (e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+  const types = useMemo(() => [...new Set((pool ?? []).map((m) => m.type))].sort(), [pool]);
+  const placeDef = PLACES.find((p) => p.id === place);
+  const filtered = useMemo(() => (pool ? filterPool(pool, type, placeDef?.match ?? []) : []), [pool, type, placeDef]);
+  const go = () => {
+    const make = () => suggestEncounter(filtered, party, target);
+    const s = make();
+    if (!s) return setError(`Nothing fits a ${target.toLowerCase()} fight with these choices. Try “Any” for the type or the place.`);
+    const name = [target, placeDef?.label.split(" /")[0].toLowerCase(), type ? `${type.toLowerCase()}s` : "", "fight"].filter(Boolean).join(" ");
+    onResult(name.charAt(0).toUpperCase() + name.slice(1), s, make);
+  };
+  return (
+    <section className="suggest-panel" aria-label="Suggest an encounter">
+      <div className="party-head">
+        <h3 className="lk-group-title">Suggest an encounter</h3>
+        <button type="button" className="link" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      <p className="muted">Pick how hard it should be. The app picks monsters that fit your party; you can change them before saving.</p>
+      <div className="lk-filters" role="radiogroup" aria-label="Difficulty">
+        {(["Easy", "Medium", "Hard", "Deadly"] as Target[]).map((t) => (
+          <button key={t} type="button" role="radio" aria-checked={target === t} className={`lk-kind diff-${t.toLowerCase()} ${target === t ? "on" : ""}`} onClick={() => setTarget(t)}>
+            {t}
+          </button>
+        ))}
+      </div>
+      <div className="suggest-row">
+        <label className="auth-field">
+          <span>Creature type</span>
+          <select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">Any</option>
+            {types.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <label className="auth-field">
+          <span>Place</span>
+          <select value={place} onChange={(e) => setPlace(e.target.value)}>
+            <option value="">Any</option>
+            {PLACES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {pool && <p className="muted suggest-count">{filtered.length} monsters match.</p>}
+      {error && <p className="auth-error">{error}</p>}
+      <button type="button" className="btn primary" disabled={!pool || !filtered.length} onClick={() => (setError(""), go())}>
+        {pool ? "Suggest" : "Loading monsters…"}
+      </button>
+    </section>
+  );
+}
+
 export function EncountersTab({ sessionId, members }: { sessionId: string; members: PartyMember[] }) {
   const [list, setList] = useState<Encounter[] | null>(null);
   const [editing, setEditing] = useState<Encounter | "new" | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggested, setSuggested] = useState<{ shape: Shape; retry: () => Suggestion | null } | undefined>();
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
   // With nobody in the session yet, the host sets a party to plan with.
@@ -282,8 +379,10 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
           sessionId={sessionId}
           start={editing === "new" ? null : editing}
           party={party}
+          suggested={suggested}
           onDone={(saved) => {
             setEditing(null);
+            setSuggested(undefined);
             if (saved) setTick((n) => n + 1);
           }}
         />
@@ -296,11 +395,27 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
         <h2 className="section-title">
           Encounters <span className="counter">{list ? list.length : "…"}</span>
         </h2>
-        <button type="button" className="btn primary" onClick={() => setEditing("new")}>
-          + New encounter
-        </button>
+        <span className="enc-actions">
+          <button type="button" className="btn" onClick={() => setSuggesting((x) => !x)} aria-expanded={suggesting}>
+            Suggest one
+          </button>
+          <button type="button" className="btn primary" onClick={() => setEditing("new")}>
+            + New encounter
+          </button>
+        </span>
       </div>
       {partyLine}
+      {suggesting && (
+        <SuggestPanel
+          party={party}
+          onClose={() => setSuggesting(false)}
+          onResult={(name, sug, retry) => {
+            setSuggesting(false);
+            setSuggested({ shape: sug.shape, retry });
+            setEditing({ id: "", session_id: sessionId, name, monsters: sug.monsters, notes: "", updated_at: "" });
+          }}
+        />
+      )}
       <p className="muted">Only you see these. Difficulty uses the 2014 rules: Easy, Medium, Hard or Deadly for this party.</p>
       {error && <p className="auth-error">{error}</p>}
       {list && list.length === 0 && <p className="muted">No encounters yet. Build one before the game, then open it at the table.</p>}

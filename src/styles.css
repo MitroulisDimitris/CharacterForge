@@ -4657,3 +4657,60 @@ button.hero-system:hover {
 .enc-row .enc-name {
   min-width: 140px;
 }
+
+/* Suggest an encounter */
+.enc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.suggest-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid rgba(212, 166, 74, 0.45);
+}
+.suggest-panel p {
+  margin: 0;
+}
+.suggest-panel > .btn {
+  align-self: flex-start;
+}
+.suggest-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 10px;
+}
+.suggest-row select {
+  min-height: 44px;
+}
+.suggest-count {
+  font-size: 13px;
+}
+.lk-kind.diff-easy.on,
+.lk-kind.diff-medium.on,
+.lk-kind.diff-hard.on,
+.lk-kind.diff-deadly.on {
+  border-color: var(--diff);
+  color: var(--diff);
+  background: transparent;
+}
+.enc-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 166, 74, 0.5);
+  background: var(--gold-soft);
+  font-size: 14px;
+}
+.enc-suggested .btn {
+  min-height: 40px;
+}

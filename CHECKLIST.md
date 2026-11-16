@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-16 (encounters).
+Last updated: 2026-11-16 (suggest an encounter).
 
 ---
 
@@ -122,7 +122,8 @@ Last updated: 2026-11-16 (encounters).
 - [x] Saved encounters per session: list with difficulty, open to edit, delete
 - [x] Tests for the maths (DMG examples) · browser test on desktop and phone
 - [ ] "Add to encounter" straight from a Lookup monster card
-- [ ] Suggest an encounter by difficulty + creature type / environment (later)
+- [x] Suggest an encounter: pick Easy / Medium / Hard / Deadly + optional creature type and place; lands exactly on that difficulty for this party; "Try another"; opens in the builder to change and save
+- [x] Suggestions keep groups to one creature type most of the time; tests for every difficulty
 
 ## 10. Polish (every screen, every size)
 - [x] Phone: sidebar becomes a compact top bar (sheet, library, session page) so the Sheet tab is reachable right away
