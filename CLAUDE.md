@@ -1,6 +1,13 @@
 # Character Forge — notes for future work
 
 **Start here:** read `HANDOFF.md` (full state, architecture, checks, open items, how the user works).
+**Progress:** `CHECKLIST.md` is the user's tracker: tick items (and update the date) whenever one is done.
+**Where it's going:** `REQUIREMENTS.md`: accounts + online characters, and **sessions**. One account can
+have many characters, host sessions (as DM) and join others' sessions with an invite code; no
+player/DM split, no scheduling. Keep it simple. Accounts are live in Supabase (login, `src/cloud.ts`, tables in
+`supabase/migrations/`); there's no sign-up page yet. Draft screens:
+https://claude.ai/artifact/Fpag5ohAFURXdPpjmPLM5t. It's private (the user + a few friends), so
+non-SRD book content stays in.
 
 ## Product direction (from the user — keep following this)
 
@@ -34,6 +41,8 @@ every skin; the Hero skin is the reference look.
    layers deep, with an obvious "more" link.
 3. Show only what the character can use at their current level (at creation: level 1). No greyed-out
    "unlocks at level N" sections and no "coming later" lines (the user asked to remove them).
+   One exception (user, 2026-11-16): rule-set pickers show the switched-off rule sets greyed
+   with "Coming soon" (only D&D 5e 2014 is available for now; see `REQUIREMENTS.md`).
    Future levels belong only in the progression tree or the folded "What you get at each level".
    Every decision gets help for new players: one plain sentence on what the choice is, a
    "Beginner-friendly" pick, and hover explanations (SubclassPicker, skill hints, ability lines).
@@ -51,8 +60,9 @@ every skin; the Hero skin is the reference look.
 
 **Layout**
 8. Character screens have a left **hero sidebar**: portrait crest with a level ring, name,
-   race · class, 3–4 key numbers (AC, HP, Speed, Init), resource pips (sorcery points, slots…),
-   a "To do" box for pending choices, and the main action (Level up) at the bottom.
+   race · class, a "To do" box for pending choices, and the main action (Level up) at the bottom.
+   The numbers, resource pips and full summary live in the first tab, **Sheet**
+   (`components/SheetTab.tsx`; user request 2026-11-16: it's what a player uses most).
    The library and creation use the same sidebar idea (brand + New character / the hero taking shape + steps).
 9. The main area has tabs across the top (active = crimson underline; a gold dot marks a tab with a to-do).
 10. No horizontal page scroll. At phone width the sidebar becomes a compact top bar.

@@ -1,8 +1,127 @@
-# Character Forge — handoff (state on 2026-11-12)
+# Character Forge — handoff (state on 2026-11-16)
 
 Everything a new session needs to pick up this project. `CLAUDE.md` (auto-loaded) holds the
 product direction and the **UI rules**; this file holds the full picture: what exists, how it is
-built, how it was checked, what's open, and how the user likes to work.
+built, how it was checked, what's open, and how the user likes to work. **`REQUIREMENTS.md`** is
+the roadmap for what comes next (accounts, sessions, publishing).
+
+---
+
+## 0a. Latest: Sheet tab + login + online characters (2026-11-16, later the same day)
+
+- The user's `[NOTE:]`s in `REQUIREMENTS.md` were applied: public site shared with friends;
+  every screen must fit 375–1920 px; **D2** a character can be in many sessions (a session copy
+  per session + a version dropdown on the sheet, §4.2a); **D3** host can't edit a player's sheet
+  but can change in-play state (HP, damage + type, conditions, exhaustion); **D4** summary only;
+  monster lookup shows what a host needs first (Weak to / Resists / Immune to). New milestone
+  order in §10.
+- **Sheet tab** (`components/SheetTab.tsx`): first tab, opens by default, holds the summary and
+  the "In play" pips + rests. The hero sidebar keeps crest, name, To do, Level up, menu. Classic
+  skins lost the right-hand summary column (it's the Sheet tab now).
+- **Supabase is live** (project `jyjnarwlylmpsjdnanrx`): tables `profiles` (display_name,
+  is_admin; trigger fills it from sign-up metadata) and `characters` (id text, owner_id, system,
+  books, data jsonb, pending, timestamps), RLS = owner only. SQL in
+  `supabase/migrations/20261116_profiles_and_characters.sql`. `rls_auto_enable()` (a
+  pre-existing helper) had EXECUTE revoked from anon/authenticated (advisor warning).
+  Remaining advisor note: leaked-password protection is off (a dashboard setting).
+- **The user's account** (email in the user context, display name "Fart enjoyer", admin) was made
+  by SQL with a confirmed email. Their 2 characters (efiah 2014 lvl 2, Parry Hotter 2024 lvl 5)
+  were read from Chrome's localStorage on port 5173 (LevelDB, parsed by a scratch script) and
+  uploaded while logged in as them. The old browser copy is untouched.
+- **App:** `src/cloud.ts` (client, load/save/delete), `App.tsx` = login gate → `Account`
+  (loads profile + characters, saves changed records 600 ms after a change, retries every 8 s,
+  warns before closing while unsaved). `components/Login.tsx` (email + password; no sign-up or
+  reset yet: needs the email sender). Library sidebar has the account row (⋯ → Log out).
+  `.env.local` holds `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (publishable key).
+  `localStorage` still holds the skin and last-open character per device.
+- Checked: tsc, 72 tests, build, puppeteer run (login, wrong password, library, Sheet tab,
+  spend + reload + long rest saved, 375 px no sideways scroll, Dark/Parchment, log out).
+- **Netlify** needs the two `VITE_SUPABASE_*` variables before the next deploy, or the site
+  shows "not connected to its server". Not pushed.
+
+## 0. Planning accounts, sessions and publishing (2026-11-16)
+
+No app code changed in this round; it was planning, drafts and setup. Pick up here.
+
+### What was decided (all written into `REQUIREMENTS.md`)
+- **One app.** A separate "DM Helper" app was dropped; its folder was deleted.
+- **One kind of account**, no player/DM split. An account has many characters, can **host**
+  sessions (as DM) and **join** others' sessions. A **session** = a game someone hosts, with one
+  invite code, open until the host ends it. No scheduling / RSVPs / campaign bookkeeping: the
+  user wants it **simple**.
+- **Join rule:** same rules, and the character's books ⊆ the session's books. Ineligible
+  characters are greyed with a plain reason.
+- **Every account starts empty**; characters move between accounts only by JSON export/import
+  (no upload of browser-saved characters).
+- **For now D&D 5e (2014) only** (PHB always on + Xanathar's + Tasha's). 2024 / 3.5 / PF2e stay
+  in the code but are greyed "Coming soon" in pickers; importing them is refused. This is an
+  agreed exception to the "no coming later lines" UI rule (noted in `CLAUDE.md`).
+- **Login: email + password only** (no magic link, no Google), with a required **Verify** email
+  whose button opens the app logged in; forgot-password email too.
+- **Character portraits:** optional upload per character, replaces the class icon inside the
+  level ring everywhere. **Keep the current library card design** (user likes it).
+- **Feedback works in the published app** for everyone and records automatically: the last ~50
+  actions in plain words (steps to get there), where they are, current state (open character
+  data, session, skin), recent errors, device, app version. Never typed text or passwords.
+  Admin flag on the user's account to read all; senders see their own items + "Fixed: …".
+  `npm run feedback:pull` keeps the "fix the feedback" workflow (REQUIREMENTS 6.1).
+- **Host tools = quick reference, not micromanaging:** session page opens on **Lookup** (one
+  search for monsters, spells, conditions; favorites; recent). Party (table cards, read-only
+  sheets, award a level → "Level up ready"), Encounters (builder, 2014 XP thresholds), Notes.
+  **Combat tracker is optional**, last tab, last milestone. Monster pictures and cleaner search
+  are "(later)".
+- Private app for the user + a few friends: **non-SRD book content stays in**; don't raise
+  licensing again.
+- Backend: **Supabase** (login, database, row-level security, storage, auth emails via our own
+  SMTP). Hosting: **Netlify**. Monster/SRD spell data: **Open5e**.
+
+### Still open
+- **D2–D4** in REQUIREMENTS (defaults fine): one session per character; host can't edit
+  characters; players see each other's summary only.
+- **Feedback backend for milestone 1:** the user asked "why do we need Supabase?". Options given:
+  Supabase from the start (plan), or Netlify Forms for feedback only in milestone 1 and Supabase
+  from milestone 2. **No answer yet — ask.**
+- **Email sender** for milestone 2: a Gmail account for the app with an app password, or own
+  domain + Resend.
+
+### Draft screens (Design canvas artifact)
+https://claude.ai/artifact/Fpag5ohAFURXdPpjmPLM5t — 10 artboards in the Hero look:
+1 Create account + "Check your email" · 2 Home (approximation; the real library look stays) ·
+3 Host a session (2014 only, others "Coming soon") · 4 Join a session (eligible / greyed with
+reason) · 5 Session host: Party · 6 Combat · 7 Monsters & encounter · 8 Session player ·
+9 New character rules step · 10 Feedback dialog with recorded details.
+User feedback: 3, 4, 6, 7, 8 good; 5 good but less micromanaging (done in requirements: Lookup
+first, no "Start combat" main action). The canvas still shows the old host tabs (Party / Combat /
+Monsters / Notes) and "Start combat"; update it when that screen is built.
+
+### Infrastructure
+- **Netlify site: https://character-forge-dnd.netlify.app/** — deploys from GitHub `origin/main`,
+  which is still the old commit `5576f8c` (2 commits). The 7 newer local commits are **not
+  pushed**. The user said **don't push yet; build some things first**. Ask before pushing.
+  Netlify build: `npm run build`, publish `dist` (add a `netlify.toml` when building milestone 1).
+  Supabase URL + anon key will go in Netlify → Project configuration → Environment variables
+  (the user adds them; Claude has no Netlify access). The Verify-email redirect must point to
+  this address.
+- **Supabase project ref `jyjnarwlylmpsjdnanrx`**, connected through the Supabase MCP server in
+  `.mcp.json` (project scope, features: docs, account, database, debugging, development,
+  functions, branching, feedback, notebooks). **Start sessions in this folder** so it loads.
+  First time: approve the server and sign in with `/mcp` inside an interactive `claude`
+  session in this folder. The MCP can fetch the project URL and public key; the **service role
+  key** (for `feedback:pull`) must come from the user and goes only in `.env.local`.
+  Tell the user before creating tables or changing settings in Supabase.
+- **Uncommitted:** `REQUIREMENTS.md`, `.mcp.json` (no secrets), `CLAUDE.md` and this file. Not
+  committed yet; commit when the user asks.
+
+### Next step: milestone 1 (see REQUIREMENTS §10–11)
+1. Switch the UI to D&D 5e 2014 only: rule-set availability flag in `src/systems/registry.ts`,
+   wizard and (later) host picker show the others greyed "Coming soon"; JSON import refuses them.
+2. Online feedback: an action-trail recorder (ring buffer, survives reload via sessionStorage;
+   screen/tab/step/dialog changes, labelled clicks, picks via `describeChange`, level changes,
+   rests, import/export, errors), state + device capture, the "Also sends… / Show details" UI in
+   `Feedback.tsx`, the Supabase table + storage + security rules (or Netlify Forms, see Still
+   open), and `npm run feedback:pull` writing `./feedback/` in today's format. The dev-server
+   plugin (`feedback-server.ts`) is replaced by the same online path.
+3. `netlify.toml`, environment variables, then push (with the user's OK) and check the live site.
 
 ---
 
@@ -107,9 +226,9 @@ Spells: levels 0–3 only (enough for character level 5).
 
 ## 6. Open items / backlog
 
-- **Not pushed**: 6 local commits on `main` ahead of `origin/main`
-  (https://github.com/MitroulisDimitris/CharacterForge). The user hasn't said whether to push
-  routinely; ask before pushing.
+- **Not pushed**: 7 local commits on `main` ahead of `origin/main`
+  (https://github.com/MitroulisDimitris/CharacterForge). Pushing deploys to Netlify. The user said
+  (2026-11-16) don't push yet, build first; ask before pushing.
 - **Feedback file**: 1 open item ("why do I get Sorcerous Origin at creation?"). Answered in chat:
   correct for 2014 rules (PHB p.100–101: chosen at level 1; the user's D&D Beyond character is 2024,
   where it's level 3). Ask the user whether to mark it fixed.

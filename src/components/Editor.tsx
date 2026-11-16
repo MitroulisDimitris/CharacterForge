@@ -6,29 +6,36 @@ import { Brand, SkinPicker } from "./Brand";
 import { Warnings } from "./Warnings";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
-import { Crest, MoreMenu, SHORT } from "./Hero";
-import { ResourcePips } from "./ResourcePips";
+import { Crest, MoreMenu } from "./Hero";
+import { SheetTab, SHEET_TAB } from "./SheetTab";
 import { JustChanged } from "./JustChanged";
 import { skinOf } from "../skins";
+import type { SaveState } from "../App";
+
+const SAVE_TEXT: Record<SaveState, string> = {
+  saved: "Saved to your account",
+  saving: "Saving…",
+  error: "Not saved yet: can't reach the server. Retrying…",
+};
 
 export function Editor({
   rec,
   theme,
-  saveOk,
+  save,
   onTheme,
   onUpdate,
   onBack,
 }: {
   rec: StoredCharacter;
   theme: Theme;
-  saveOk: boolean;
+  save: SaveState;
   onTheme: (t: Theme) => void;
   onUpdate: (patch: Partial<StoredCharacter>) => void;
   onBack: () => void;
 }) {
   const system = getSystem(rec.system)!;
   const [char, setChar] = useState<BaseCharacter>(() => system.normalize(rec.data));
-  const [tab, setTab] = useState(system.tabs[0].id);
+  const [tab, setTab] = useState(SHEET_TAB);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pending, setPending] = useState<string[]>(rec.pending ?? []);
   const [booksOpen, setBooksOpen] = useState(false);
@@ -63,8 +70,8 @@ export function Editor({
   };
 
   const tabErrors = (id: string) => (d.warnings as Warning[]).filter((w) => w.tab === id && w.level !== "info").length;
-  const Active = system.tabs.find((t) => t.id === tab)?.Component ?? system.tabs[0].Component;
-  const Summary = system.Summary;
+  const Active = system.tabs.find((t) => t.id === tab)?.Component;
+  const body = Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} />;
   const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
   const levelOptions = Array.from({ length: maxLevel }, (_, i) => i + 1);
   const dismiss = (id: string) => {
@@ -75,6 +82,9 @@ export function Editor({
 
   const tabsNav = (
     <nav className="tabs" role="tablist">
+      <button role="tab" aria-selected={!Active} className={!Active ? "on" : ""} onClick={() => setTab(SHEET_TAB)}>
+        Sheet
+      </button>
       {system.tabs.map((t) => (
         <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
           {t.label}
@@ -114,8 +124,6 @@ export function Editor({
 
   // ---------- "Hero" skin: the character in a sidebar on the left (UI rules in CLAUDE.md) ----------
   if (skinOf(theme).layout === "hero") {
-    const stats = system.progression.snapshot(d);
-    const pools = system.resources?.(char, d) ?? [];
     const books = rec.books.map((b) => bookName(system, b)).join(", ");
     return (
       <div className="hero-shell">
@@ -137,33 +145,6 @@ export function Editor({
               </span>
             )}
           </div>
-          <div className="hero-stats">
-            {stats.slice(0, 4).map((s) => (
-              <div className="hero-stat" key={s.label} title={s.label}>
-                <span>{SHORT[s.label] ?? s.label}</span>
-                <strong>{s.value}</strong>
-              </div>
-            ))}
-          </div>
-          {stats.length > 4 && (
-            <details className="hero-more-stats">
-              <summary>More numbers</summary>
-              <dl>
-                {stats.slice(4).map((s) => (
-                  <div key={s.label}>
-                    <dt>{s.label}</dt>
-                    <dd>{s.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </details>
-          )}
-          {pools.length > 0 && (
-            <section className="hero-pools" aria-label="In play">
-              <span className="hero-label">In play · tap to use</span>
-              <ResourcePips c={char} pools={pools} set={set} compact />
-            </section>
-          )}
           <section className={`hero-todo ${waiting.length ? "has" : ""}`} aria-label="To do">
             <span className="hero-label">To do</span>
             {waiting.length === 0 ? (
@@ -188,10 +169,6 @@ export function Editor({
               </>
             )}
           </section>
-          <details className="hero-summary">
-            <summary>Full summary</summary>
-            <Summary c={char} d={d} />
-          </details>
           <div className="hero-foot">
             {char.level < maxLevel && (
               <button type="button" className="btn primary hero-levelup" onClick={() => setDialog({ kind: "change", target: char.level + 1 })}>
@@ -227,16 +204,14 @@ export function Editor({
               </MoreMenu>
             </div>
             <span className="hero-saved" aria-live="polite">
-              {saveOk ? "Saved in this browser" : "Couldn't save (browser storage blocked)"}
+              {SAVE_TEXT[save]}
             </span>
           </div>
         </aside>
         <main className="hero-main">
           {tabsNav}
           <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
-          <div className="tab-body">
-            <Active c={char} d={d} set={set} books={rec.books} />
-          </div>
+          <div className="tab-body">{body}</div>
           <p className="credits muted">{system.credits}</p>
         </main>
         {dialogs}
@@ -291,10 +266,10 @@ export function Editor({
         </div>
       </header>
       <p className="save-status" aria-live="polite">
-        {saveOk ? "Saved in this browser" : "Couldn't save (browser storage blocked)"}
+        {SAVE_TEXT[save]}
       </p>
 
-      <div className="layout">
+      <div className="layout single">
         <main className="main">
           {tabsNav}
           {waiting.length > 0 && (
@@ -329,14 +304,9 @@ export function Editor({
             </div>
           )}
           <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
-          <div className="tab-body">
-            <Active c={char} d={d} set={set} books={rec.books} />
-          </div>
+          <div className="tab-body">{body}</div>
           <p className="credits muted">{system.credits}</p>
         </main>
-        <aside className="side">
-          <Summary c={char} d={d} />
-        </aside>
       </div>
       {dialogs}
       <JustChanged system={system} d={d} />

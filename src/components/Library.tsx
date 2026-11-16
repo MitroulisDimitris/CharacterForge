@@ -22,6 +22,9 @@ const ago = (t: number) => {
 export function Library({
   lib,
   theme,
+  account,
+  welcome = false,
+  onDismissWelcome,
   onTheme,
   onOpen,
   onNew,
@@ -31,6 +34,9 @@ export function Library({
 }: {
   lib: StoredCharacter[];
   theme: Theme;
+  account: Account;
+  welcome?: boolean;
+  onDismissWelcome?: () => void;
   onTheme: (t: Theme) => void;
   onOpen: (id: string) => void;
   onNew: () => void;
@@ -83,6 +89,17 @@ export function Library({
     </div>
   );
 
+  const welcomeNote = welcome && (
+    <div className="welcome-note" role="status">
+      <span>
+        <strong>Your account is ready.</strong> Your characters are saved online, so they're on every device you log in from.
+      </span>
+      <button type="button" className="hero-dismiss" aria-label="Close" onClick={onDismissWelcome}>
+        ×
+      </button>
+    </div>
+  );
+
   // ---------- "Hero" skin ----------
   if (skinOf(theme).layout === "hero") {
     const shown = rows.filter((r) => filter === "all" || r.system.id === filter);
@@ -111,6 +128,7 @@ export function Library({
             </button>
             {importInput}
             <SkinPicker theme={theme} onChange={onTheme} />
+            <AccountRow account={account} />
           </div>
         </aside>
         <main className="hero-main">
@@ -118,6 +136,7 @@ export function Library({
             <h1>My characters</h1>
             <span className="muted">{rows.length ? "Pick up where you left off." : ""}</span>
           </header>
+          {welcomeNote}
           {rows.length === 0 ? (
             empty
           ) : shown.length === 0 ? (
@@ -170,6 +189,7 @@ export function Library({
         </div>
         <div className="actions">
           <SkinPicker theme={theme} onChange={onTheme} />
+          <AccountRow account={account} />
           <button type="button" className="btn ghost" onClick={() => fileRef.current?.click()}>
             Import JSON
           </button>
@@ -180,6 +200,7 @@ export function Library({
         </div>
       </header>
 
+      {welcomeNote}
       {rows.length === 0 ? (
         empty
       ) : (
@@ -208,6 +229,30 @@ export function Library({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+type Account = { name: string; email: string; onLogout: () => void; onSettings?: () => void };
+
+/** Who is logged in, with "Log out" in the "⋯" menu. */
+function AccountRow({ account }: { account: Account }) {
+  return (
+    <div className="account-row" title={account.email}>
+      <span className="account-initial" aria-hidden="true">
+        {account.name.trim().charAt(0).toUpperCase() || "?"}
+      </span>
+      <span className="account-name">{account.name}</span>
+      <MoreMenu label="Account">
+        {account.onSettings && (
+          <button type="button" onClick={account.onSettings}>
+            Name and password
+          </button>
+        )}
+        <button type="button" onClick={account.onLogout}>
+          Log out
+        </button>
+      </MoreMenu>
     </div>
   );
 }

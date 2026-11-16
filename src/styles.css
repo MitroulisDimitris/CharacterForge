@@ -3105,3 +3105,235 @@ button.hero-system:hover {
   font-weight: 400;
   max-width: 32ch;
 }
+
+/* ---------- Sheet tab (first tab: summary + in-play pools; user request 2026-11-16) ---------- */
+.layout.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sheet-tab {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.sheet-tab.with-pools {
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+}
+.sheet-summary,
+.sheet-pools {
+  min-width: 0;
+}
+.sheet-pools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 16px;
+}
+@media (max-width: 900px) {
+  .sheet-tab.with-pools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sheet-pools {
+    position: static;
+    order: -1;
+  }
+}
+
+/* ---------- Login page + account row (milestone 2, 2026-11-16) ---------- */
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px 24px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.025), transparent 60%), var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.auth-card h1 {
+  font-family: var(--font-head);
+  font-size: 26px;
+  margin: 8px 0 4px;
+  letter-spacing: 0.02em;
+}
+.auth-crest svg {
+  width: 56px;
+  height: 56px;
+}
+.auth-tagline {
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-field > span:first-child {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.auth-field input {
+  width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+}
+.auth-pass {
+  position: relative;
+  display: block;
+}
+.auth-pass input {
+  padding-right: 64px;
+}
+.auth-show {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 36px;
+  min-width: 52px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(229, 85, 95, 0.12);
+  border: 1px solid rgba(229, 85, 95, 0.45);
+  color: var(--text);
+  font-size: 14px;
+}
+.auth-submit {
+  min-height: 46px;
+  font-size: 16px;
+  width: 100%;
+}
+.auth-note {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-loading {
+  color: var(--muted);
+}
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.account-initial {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-head);
+  font-weight: 700;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--text);
+}
+.account-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hero-foot .account-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.topbar .account-row {
+  flex: 0 1 auto;
+  max-width: 220px;
+}
+.topbar .account-row .more-menu {
+  right: 0;
+  left: auto;
+}
+
+/* ---------- Sign up / reset / account settings (2026-11-16) ---------- */
+.auth-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.auth-forgot {
+  align-self: flex-end;
+  margin-top: -6px;
+  font-size: 13px;
+  min-height: 32px;
+}
+.auth-tip {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.auth-info {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(111, 191, 115, 0.12);
+  border: 1px solid rgba(111, 191, 115, 0.45);
+  font-size: 14px;
+}
+.auth-note .link {
+  min-height: 32px;
+}
+.auth-card .auth-tagline strong {
+  color: var(--text);
+}
+.account-modal {
+  max-width: 440px;
+}
+.account-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.account-modal .auth-form .btn {
+  align-self: flex-start;
+}
+.welcome-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(111, 191, 115, 0.1);
+  border: 1px solid rgba(111, 191, 115, 0.45);
+}
