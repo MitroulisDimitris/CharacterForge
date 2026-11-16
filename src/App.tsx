@@ -9,8 +9,10 @@ import { skinOf } from "./skins";
 import { loadLastOpen, loadTheme, saveLastOpen, saveTheme, type StoredCharacter, type Theme } from "./storage";
 import { arrivedFrom, claimIfFresh, cloudConfigured, deleteCharacters, kickedOut, markFreshLogin, stillActiveLogin, loadCharacters, loadProfile, saveCharacters, supabase, type Profile, type Session } from "./cloud";
 import {
+  clearLevelAward,
   clearPendingJoin,
   joinSession,
+  loadMyLive,
   loadMemberships,
   loadSessions,
   loadVersion,
@@ -115,6 +117,8 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
   const [dialog, setDialog] = useState<{ kind: "settings" } | { kind: "host" } | { kind: "join"; code: string } | null>(null);
   const [notice, setNotice] = useState("");
   const [versions, setVersions] = useState<Record<string, string>>({});
+  // What the DM changed on my session copies (HP, conditions, level awards), polled.
+  const [hostSide, setHostSide] = useState<Record<string, { live: Membership["live"]; level_award: number | null }>>({});
 
   const [saveChars, markChars] = useAutosave(lib, (r) => r.id, async (changed, removed) => {
     await saveCharacters(changed);
@@ -184,6 +188,22 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
+
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      loadMyLive(userId)
+        .then((rows) => live && setHostSide(Object.fromEntries(rows.map((r) => [r.id, { live: r.live, level_award: r.level_award }]))))
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 20_000);
+    window.addEventListener("focus", load);
+    return () => {
+      live = false;
+      clearInterval(t);
+      window.removeEventListener("focus", load);
+    };
+  }, [userId]);
 
   // Warn before closing the page while a change isn't saved yet.
   useEffect(() => {
@@ -312,11 +332,20 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
         version={m?.id ?? ""}
         onVersion={pickVersion}
         sessionCopy={m ? sessionName(m.session_id) : undefined}
+        live={m ? (hostSide[m.id]?.live ?? m.live) : undefined}
+        levelReady={m ? (hostSide[m.id] ? hostSide[m.id].level_award : m.level_award) : undefined}
         onOpenSession={m ? () => setView({ kind: "session", id: m.session_id }) : undefined}
         onUpdate={(patch) => {
           if (!m) return upsert({ ...open, ...patch, updated: Date.now() });
           const data = patch.data ?? m.data;
           const pending = patch.pending ?? m.pending;
+          // Leveled up to what the DM awarded: the to-do is done.
+          const award = hostSide[m.id]?.level_award ?? m.level_award;
+          const lvl = (data as { level?: number }).level ?? 0;
+          if (award && lvl >= award) {
+            clearLevelAward(m.id).catch(() => {});
+            setHostSide((h) => ({ ...h, [m.id]: { live: h[m.id]?.live ?? m.live, level_award: null } }));
+          }
           setMemberships((list) =>
             list!.map((x) => (x.id === m.id ? { ...x, data, pending, summary: summarize(open.system, m.books, data), updated_at: new Date().toISOString() } : x)),
           );

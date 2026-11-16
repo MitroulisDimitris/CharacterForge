@@ -43,6 +43,19 @@ export function Crest({ identity, level, maxLevel, size = 132, badge = true }: {
   );
 }
 
+/** Phone top bar: shows / hides the rest of the sidebar. A gold dot when something waits. */
+export function SideToggle({ open, onToggle, label = "Details", dot = false }: { open: boolean; onToggle: () => void; label?: string; dot?: boolean }) {
+  return (
+    <button type="button" className="hero-side-toggle" aria-expanded={open} onClick={onToggle}>
+      {dot && <span className="toggle-dot" aria-label="Something to do" />}
+      {open ? "Close" : label}
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : undefined }}>
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </button>
+  );
+}
+
 /** "⋯" button with a small menu of secondary actions. */
 export function MoreMenu({ children, label = "More actions" }: { children: ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);

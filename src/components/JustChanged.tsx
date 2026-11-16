@@ -2,6 +2,7 @@
 // Systems describe the change with `describeChange`; the note fades after a few seconds.
 import { useEffect, useRef, useState } from "react";
 import type { AnySystem, ChangeLine } from "../systems/types";
+import { record } from "../trail";
 
 export function JustChanged({ system, d }: { system: AnySystem; d: unknown }) {
   const prev = useRef(d);
@@ -13,6 +14,7 @@ export function JustChanged({ system, d }: { system: AnySystem; d: unknown }) {
     if (before === d || !system.describeChange) return;
     const lines = system.describeChange(before, d).filter((l) => l.tone !== "info" || l.from || l.to);
     if (!lines.length) return;
+    record(`Changed: ${lines.slice(0, 4).map((l) => `${l.label}${l.from || l.to ? ` ${l.from ?? ""}→${l.to ?? ""}` : ""}`).join("; ")}`);
     setShown({ lines, key: Date.now() });
   }, [d, system]);
 

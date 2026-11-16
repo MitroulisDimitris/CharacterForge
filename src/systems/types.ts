@@ -125,6 +125,21 @@ export interface CreationStep<C, D> {
   blocker?: (c: C, d: D) => string | null;
 }
 
+/** What the host needs at the table (REQUIREMENTS §3.3), the same shape for every rule set. */
+export interface TableCard {
+  ac: number;
+  hpMax: number;
+  speed: number;
+  initiative: number;
+  passivePerception: number;
+  passiveInsight?: number;
+  passiveInvestigation?: number;
+  spellDc?: number;
+  /** Damage types the character resists (e.g. "Fire"), for the host's damage box. */
+  resistances?: string[];
+  immunities?: string[];
+}
+
 export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends DerivedBase = DerivedBase> {
   progression: Progression<C, D>;
   id: SystemId;
@@ -145,6 +160,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   Summary: FC<{ c: C; d: D }>;
   /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
   resources?: (c: C, d: D) => ResourcePool[];
+  /** Short card for the host's party view. */
+  tableCard?: (c: C, d: D) => TableCard;
   /** What changed between two derived states (shown as a short note after each pick). */
   describeChange?: (before: D, after: D) => ChangeLine[];
   buildPdf(c: C, d: D, books: string[]): Promise<Uint8Array>;

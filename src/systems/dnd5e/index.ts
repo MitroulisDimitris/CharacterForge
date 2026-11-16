@@ -1,5 +1,5 @@
 // D&D 5th edition plugins: one engine, two rule sets (2024 and 2014).
-import type { GameSystem } from "../types";
+import type { GameSystem, TableCard } from "../types";
 import { resources5e } from "./resources";
 import { diffDerived } from "./preview";
 import { blankCharacter, defaultCharacter, freshCharacter2014, normalizeCharacter, type Character } from "./character";
@@ -34,6 +34,19 @@ const CREDITS_2024 =
 const CREDITS_2014 =
   "Includes material from the System Reference Document 5.1 by Wizards of the Coast LLC (CC-BY-4.0). Other rules are summarized in our own words; see the Player's Handbook, Xanathar's and Tasha's.";
 
+const tableCard5e = (_c: Character, d: Derived): TableCard => ({
+  ac: d.ac,
+  hpMax: d.hpMax,
+  speed: d.speed,
+  initiative: d.initiative,
+  passivePerception: d.passivePerception,
+  passiveInsight: d.passiveInsight,
+  passiveInvestigation: d.passiveInvestigation,
+  spellDc: d.caster ? d.spellDc : undefined,
+  resistances: d.resistances,
+  immunities: d.immunities,
+});
+
 export const dnd2024: GameSystem<Character, Derived> = {
   id: "dnd2024",
   name: "D&D 5e — 2024 rules",
@@ -55,6 +68,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   Summary,
   progression: progression5e,
   resources: resources5e,
+  tableCard: tableCard5e,
   describeChange: (a, b) => diffDerived(a, b),
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2024),
   credits: CREDITS_2024,
@@ -83,6 +97,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   Summary,
   progression: progression5e,
   resources: resources5e,
+  tableCard: tableCard5e,
   describeChange: (a, b) => diffDerived(a, b),
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2014),
   credits: CREDITS_2014,

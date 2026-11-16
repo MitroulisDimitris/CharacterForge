@@ -12,6 +12,7 @@ import {
   inviteLink,
   joinBlocker,
   joinSession,
+  loadHostMembers,
   loadRoster,
   newSessionCode,
   normalizeCode,
@@ -29,7 +30,10 @@ import {
 } from "../sessions";
 import { BookChecklist, normalizeBooks } from "./BookChecklist";
 import { Brand, SkinPicker } from "./Brand";
-import { Crest, MoreMenu } from "./Hero";
+import { Crest, MoreMenu, SideToggle } from "./Hero";
+import { Lookup } from "./Lookup";
+import { MemberView, NotesTab, PartyTab } from "./Party";
+import { setState as setFeedbackState } from "../trail";
 
 const charName = (rec: StoredCharacter) => ((rec.data as { name?: string }).name || "Unnamed").trim();
 
@@ -551,6 +555,31 @@ export function SessionPage({
   const [dialog, setDialog] = useState<"rename" | "books" | "swap" | null>(null);
   const [tick, setTick] = useState(0);
   const ended = session.status !== "active";
+  const [sideOpen, setSideOpen] = useState(false);
+  const [hostTab, setHostTab] = useState<"lookup" | "party" | "notes">("lookup");
+  const [members, setMembers] = useState<Awaited<ReturnType<typeof loadHostMembers>>>([]);
+  const [viewMember, setViewMember] = useState<string | null>(null);
+
+  // The host's full view of the members (table cards, in-play state); refreshed every 20 s.
+  useEffect(() => {
+    if (!isHost) return;
+    let live = true;
+    const load = () =>
+      loadHostMembers(session.id)
+        .then((m) => live && setMembers(m))
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 20_000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, [isHost, session.id, tick]);
+
+  useEffect(() => {
+    setFeedbackState("session", { name: session.name, role: isHost ? "host" : "player", status: session.status, members: roster?.length ?? null, hostTab: isHost ? hostTab : undefined });
+    return () => setFeedbackState("session", undefined);
+  }, [session.name, session.status, isHost, roster, hostTab]);
 
   useEffect(() => {
     let live = true;
@@ -707,6 +736,45 @@ export function SessionPage({
     </>
   );
 
+  const shown = viewMember ? members.find((m) => m.id === viewMember) : undefined;
+  const hostBody = (
+    <>
+      <nav className="tabs" role="tablist">
+        {(["lookup", "party", "notes"] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={hostTab === t}
+            className={hostTab === t ? "on" : ""}
+            onClick={() => {
+              setHostTab(t);
+              setViewMember(null);
+            }}
+          >
+            {t === "lookup" ? "Lookup" : t === "party" ? "Party" : "Notes"}
+            {t === "party" && members.length > 0 && <span className="tab-count">{members.length}</span>}
+          </button>
+        ))}
+      </nav>
+      <div className="tab-body">
+        {hostTab === "lookup" && <Lookup />}
+        {hostTab === "party" &&
+          (shown ? (
+            <MemberView
+              member={shown}
+              system={session.system}
+              player={roster?.find((r) => r.member_id === shown.id)?.display_name || "a player"}
+              onBack={() => setViewMember(null)}
+              onChanged={() => setTick((n) => n + 1)}
+            />
+          ) : (
+            <PartyTab sessionId={session.id} system={session.system} members={members} roster={roster ?? []} onOpen={setViewMember} onChanged={() => setTick((n) => n + 1)} />
+          ))}
+        {hostTab === "notes" && <NotesTab sessionId={session.id} />}
+      </div>
+    </>
+  );
+
   const identity = (
     <div className="session-id">
       <h1>{session.name}</h1>
@@ -721,11 +789,13 @@ export function SessionPage({
   if (skinOf(theme).layout === "hero")
     return (
       <div className="hero-shell">
-        <aside className="hero-side">
-          <button type="button" className="hero-back" onClick={onBack}>
-            ‹ My characters
+        <aside className={`hero-side session-side ${sideOpen ? "open" : ""}`}>
+          <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
+            ‹ <span className="back-label">My characters</span>
           </button>
           {identity}
+          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} label={isHost ? "Code & menu" : "Menu"} />
+          <div className="hero-side-extra">
           {isHost && code && !ended && <InviteBox code={code} name={session.name} />}
           <div className="hero-foot">
             {mainAction}
@@ -734,10 +804,11 @@ export function SessionPage({
               {menu}
             </div>
           </div>
+          </div>
         </aside>
         <main className="hero-main">
           <Err text={error} />
-          {rosterView}
+          {isHost ? hostBody : rosterView}
         </main>
         {dialogs}
       </div>
@@ -770,7 +841,7 @@ export function SessionPage({
             <InviteBox code={code} name={session.name} />
           </div>
         )}
-        {rosterView}
+        {isHost ? hostBody : rosterView}
       </div>
       {dialogs}
     </div>

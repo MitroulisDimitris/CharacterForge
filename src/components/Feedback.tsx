@@ -4,6 +4,7 @@
 // (feedback.json + images/) on the owner's PC; `npm run feedback:fix` marks an item fixed.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../cloud";
+import { getErrors, getState, getSteps } from "../trail";
 
 export interface FeedbackItem {
   id: string;
@@ -63,6 +64,19 @@ async function loadItems(): Promise<(FeedbackItem & { mine: boolean; sender: str
   }));
 }
 
+/** Recorded automatically with each report (REQUIREMENTS §6.1). */
+function autoDetails() {
+  const steps = getSteps().map((s, i) => `${i + 1}. ${new Date(s.t).toLocaleTimeString()} ${s.what}`);
+  return {
+    steps,
+    errors: getErrors().map((e) => `${new Date(e.t).toLocaleTimeString()} ${e.what}`),
+    state: getState(),
+    window: { w: window.innerWidth, h: window.innerHeight },
+    touch: window.matchMedia("(pointer: coarse)").matches,
+    browser: navigator.userAgent,
+  };
+}
+
 const dataUrlToBlob = async (u: string) => (await fetch(u)).blob();
 
 /** Where the app was built from (shown with each report). */
@@ -118,6 +132,7 @@ export function FeedbackWidget() {
   const [admin, setAdmin] = useState(false);
   const [senderName, setSenderName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [note, setNote] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [target, setTarget] = useState<FeedbackItem["target"]>();
@@ -243,6 +258,7 @@ export function FeedbackWidget() {
         target: target ?? null,
         images: paths,
         details: {
+          ...autoDetails(),
           page: window.location.href.split("#")[0],
           window: { w: window.innerWidth, h: window.innerHeight },
           touch: window.matchMedia("(pointer: coarse)").matches,
@@ -385,6 +401,16 @@ export function FeedbackWidget() {
                   </label>
                 </div>
                 <p className="fb-muted fb-hint">Tip: Win+Shift+S takes a screenshot, then Ctrl+V here.</p>
+              </div>
+
+              <div className="fb-section fb-also">
+                <span className="fb-muted">
+                  Also sends: the steps you took, the screen you're on{getState().character ? ", and the open character" : ""}.{" "}
+                  <button type="button" className="fb-link" onClick={() => setShowDetails((x) => !x)} aria-expanded={showDetails}>
+                    {showDetails ? "Hide details" : "Show details"}
+                  </button>
+                </span>
+                {showDetails && <pre className="fb-details">{JSON.stringify(autoDetails(), null, 2)}</pre>}
               </div>
 
               <div className="fb-foot">

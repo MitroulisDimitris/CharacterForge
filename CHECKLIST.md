@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-16 (sessions).
+Last updated: 2026-11-16 (party tools, Lookup, phone bar).
 
 ---
 
@@ -57,12 +57,12 @@ Last updated: 2026-11-16 (sessions).
 
 ## 4. Publish + online feedback
 - [x] Host-a-session picker: only D&D 5e 2014, others "Coming soon"
-- [ ] New-character picker: only D&D 5e 2014, others "Coming soon"
-- [ ] Import of other rule sets refused with a plain message
+- [x] New-character picker: only D&D 5e 2014, others "Coming soon"
+- [x] Import of other rule sets refused with a plain message
 - [ ] One setting per rule set to switch it back on later
 - [x] Feedback saved online (database + screenshot storage)
-- [ ] Feedback records the last ~50 steps, the screen, the open character, errors, device
-- [ ] "Also sends: … / Show details" under the note
+- [x] Feedback records the last ~50 steps, the screen, the open character, errors, device
+- [x] "Also sends: … / Show details" under the note
 - [x] Feedback works on the login page too (with an optional name)
 - [x] Admin list of all feedback with open / fixed; senders see "Fixed: …"
 - [x] `npm run feedback:pull` + `npm run feedback:fix` for the "fix the feedback" workflow
@@ -73,8 +73,8 @@ Last updated: 2026-11-16 (sessions).
 - [ ] Check the live site on a real phone and desktop
 
 ## 5. Table card
-- [ ] `tableCard` for D&D 5e 2014 (name, player, identity, level, AC, HP, speed, init, passives, spell DC)
-- [ ] Saved with the character so session screens can read it
+- [x] `tableCard` for D&D 5e 2014 (AC, HP, speed, initiative, passives, spell DC, resistances)
+- [x] Shown on the host's party cards (worked out from the session copy, so it's always current)
 
 ## 6. Host / join / manage sessions
 - [x] Database: `sessions` + `session_members` tables, security rules, join/swap/roster functions
@@ -95,21 +95,23 @@ Last updated: 2026-11-16 (sessions).
 - [ ] Check the session page in Dark / Parchment and on a real phone
 
 ## 7. Party tools (host)
-- [ ] Party tab: every member's table card
-- [ ] Open a member's full sheet, read-only (D3)
-- [ ] Host changes in-play state: HP, temp HP, damage + type, healing, conditions, exhaustion (D3)
-- [ ] Player sees those changes on their session version
-- [ ] Award a level → gold "Level up ready" to-do on the character
-- [ ] Private host notes
+- [x] Party tab: every member's table card, HP bar, conditions
+- [x] Open a member's full sheet, read-only (D3)
+- [x] Host changes in-play state: damage + type (halved when resistant, blocked when immune), healing, temp HP, conditions, exhaustion, reset; "What happened" log (D3)
+- [x] Player sees those changes on their session version ("In <session> · set by your DM"), refreshed every 20 s
+- [x] Award a level (one player or everyone) → gold "Level up ready" to-do; clears once the player levels up
+- [x] Private host notes (autosave)
+- [x] Tested: host test account + your account in the background (you weren't logged out); players can't change HP
 
 ## 8. Lookup (host)
-- [ ] One search box for monsters, spells, conditions
-- [ ] Monster card: CR, AC, HP, speed, then Weak to / Resists / Immune to chips, then 1–2 key traits
-- [ ] "Full stat block" one tap away; spell names inside open the spell
-- [ ] Monster filters: CR, type, size, environment
-- [ ] Spells of every level (app text + Open5e SRD spells)
-- [ ] Conditions + exhaustion in plain words
-- [ ] Favorites and Recently viewed
+- [x] One search box for monsters, spells, conditions (Lookup tab opens first for the host)
+- [x] Monster card: CR, AC, HP, speed, then Weak to / Resists / Immune to chips, then 1–4 key traits
+- [x] "Full stat block" one tap away
+- [x] Monster filters: CR range, creature type
+- [x] Spells (SRD, every level) with "What it does"; conditions + exhaustion in plain words
+- [x] Favorites and Recently viewed (saved in this browser for now)
+- [ ] Spell names inside a stat block open that spell
+- [ ] Environment filter; favorites saved to the account (any device)
 
 ## 9. Encounters
 - [ ] Encounter builder: monsters + counts, difficulty for this party (2014 XP thresholds)
@@ -117,7 +119,7 @@ Last updated: 2026-11-16 (sessions).
 - [ ] Saved encounters per session (players never see them)
 
 ## 10. Polish (every screen, every size)
-- [ ] Phone: sidebar becomes a compact top bar so the Sheet tab is reachable right away
+- [x] Phone: sidebar becomes a compact top bar (sheet, library, session page) so the Sheet tab is reachable right away
 - [ ] Screen-size check at 375 / 768 / 1280 / 1920 px in Hero, Dark, Parchment
 - [ ] Check on a real phone (iPhone Safari, Android Chrome)
 - [ ] Hover cards and previews open by tap

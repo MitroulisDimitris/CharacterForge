@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getSystem, SYSTEMS } from "../systems/registry";
+import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
 import type { AnySystem, BaseCharacter } from "../systems/types";
 import { newRecordId, type StoredCharacter, type Theme } from "../storage";
 import { Brand, SkinPicker } from "./Brand";
@@ -98,8 +98,18 @@ export function NewCharacterWizard({
         <Card title="1 · Game rules" aside={<span className="muted">This can't be changed later</span>}>
           <div className="option-grid wide">
             {SYSTEMS.map((s) => (
-              <button type="button" key={s.id} className={`option ${system?.id === s.id ? "on" : ""}`} aria-pressed={system?.id === s.id} onClick={() => pickSystem(s)}>
-                <strong>{s.name}</strong>
+              <button
+                type="button"
+                key={s.id}
+                className={`option ${system?.id === s.id ? "on" : ""}`}
+                aria-pressed={system?.id === s.id}
+                disabled={!isAvailable(s.id)}
+                onClick={() => pickSystem(s)}
+              >
+                <strong>
+                  {s.name}
+                  {!isAvailable(s.id) && <span className="pill soon-pill">Coming soon</span>}
+                </strong>
                 <span>{s.tagline}</span>
                 <small className="muted">Core: {s.books.filter((b) => b.core).map((b) => b.name).join(", ")}</small>
               </button>

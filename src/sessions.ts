@@ -4,6 +4,7 @@ import { supabase } from "./cloud";
 import type { StoredCharacter } from "./storage";
 import { getSystem } from "./systems/registry";
 import type { SystemId } from "./systems/types";
+import type { Live } from "./live";
 
 export interface SessionInfo {
   id: string;
@@ -27,6 +28,10 @@ export interface Membership {
   summary: Summary;
   joined_at: string;
   updated_at: string;
+  /** Host-kept in-play state (D3); read-only for the player. */
+  live: Live;
+  /** The host awarded this level ("Level up ready"). */
+  level_award: number | null;
 }
 
 /** What other players see of a character (D4). */
@@ -58,7 +63,7 @@ export interface RosterRow {
 }
 
 const SESSION_COLS = "id, host_id, name, system, books, joining_locked, status, created_at";
-const MEMBER_COLS = "id, session_id, character_id, books, data, pending, summary, joined_at, updated_at";
+const MEMBER_COLS = "id, session_id, character_id, books, data, pending, summary, joined_at, updated_at, live, level_award";
 
 /** "k7p2qx", "K7P 2QX" → "K7P-2QX". */
 export function normalizeCode(raw: string): string {
@@ -237,4 +242,47 @@ export function saveVersion(charId: string, memberId: string) {
   } catch {
     /* ignore */
   }
+}
+
+// ---------- Host tools (§4.4) ----------
+
+/** Every member's full row: the host may read them (read-only sheets, D3). */
+export async function loadHostMembers(sessionId: string): Promise<(Membership & { user_id: string })[]> {
+  const { data, error } = await supabase.from("session_members").select(`${MEMBER_COLS}, user_id`).eq("session_id", sessionId).order("joined_at");
+  if (error) throw error;
+  return data as (Membership & { user_id: string })[];
+}
+
+export async function setLive(memberId: string, live: Live): Promise<void> {
+  const { error } = await supabase.rpc("set_live", { mid: memberId, new_live: live });
+  if (error) throw error;
+}
+
+/** One more level for one member, or everyone when memberId is omitted. */
+export async function awardLevel(sessionId: string, memberId?: string): Promise<void> {
+  const { error } = await supabase.rpc("award_level", { sid: sessionId, mid: memberId ?? null });
+  if (error) throw error;
+}
+
+export async function loadNotes(sessionId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("session_notes", { sid: sessionId });
+  if (error) throw error;
+  return (data as string | null) ?? "";
+}
+
+export async function saveNotes(sessionId: string, notes: string): Promise<void> {
+  const { error } = await supabase.from("sessions").update({ notes }).eq("id", sessionId);
+  if (error) throw error;
+}
+
+/** The player: what the host changed (live state, level awards) on my session copies. */
+export async function loadMyLive(userId: string): Promise<{ id: string; live: Live; level_award: number | null }[]> {
+  const { data, error } = await supabase.from("session_members").select("id, live, level_award").eq("user_id", userId);
+  if (error) throw error;
+  return data as { id: string; live: Live; level_award: number | null }[];
+}
+
+export async function clearLevelAward(memberId: string): Promise<void> {
+  const { error } = await supabase.from("session_members").update({ level_award: null }).eq("id", memberId);
+  if (error) throw error;
 }

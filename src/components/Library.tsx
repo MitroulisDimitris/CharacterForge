@@ -1,10 +1,10 @@
 import { useRef, useState, type ReactNode } from "react";
-import { getSystem, SYSTEMS } from "../systems/registry";
+import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
 import { bookAbbr, type AnySystem, type BaseCharacter, type DerivedBase } from "../systems/types";
 import { exportJson, importFile, newRecordId, type StoredCharacter, type Theme } from "../storage";
 import { skinOf } from "../skins";
 import { Brand, SkinPicker } from "./Brand";
-import { Crest, MoreMenu } from "./Hero";
+import { Crest, MoreMenu, SideToggle } from "./Hero";
 
 interface Row {
   rec: StoredCharacter;
@@ -55,12 +55,16 @@ export function Library({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [sideOpen, setSideOpen] = useState(false);
   const sorted = [...lib].sort((a, b) => b.updated - a.updated);
 
   const doImport = async (f: File | undefined) => {
     if (!f) return;
     try {
-      onImport(await importFile(f));
+      const rec = await importFile(f);
+      // Only D&D 5e (2014) is open for now (REQUIREMENTS §1).
+      if (!isAvailable(rec.system)) throw new Error(`This character uses ${getSystem(rec.system)?.name ?? rec.system}, which is coming soon.`);
+      onImport(rec);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Couldn't read that file.");
     }
@@ -125,11 +129,13 @@ export function Library({
     const shown = rows.filter((r) => filter === "all" || r.system.id === filter);
     return (
       <div className="hero-shell">
-        <aside className="hero-side">
+        <aside className={`hero-side ${sideOpen ? "open" : ""}`}>
           <Brand />
           <button type="button" className="btn primary hero-new" onClick={onNew}>
             + New character
           </button>
+          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} label="Menu" />
+          <div className="hero-side-extra">
           <nav className="hero-filter" aria-label="Rule sets">
             <span className="hero-label">Rule sets</span>
             {[{ id: "all", short: "All characters" }, ...SYSTEMS.map((s) => ({ id: s.id, short: s.short }))].map((s) => {
@@ -150,6 +156,7 @@ export function Library({
             {importInput}
             <SkinPicker theme={theme} onChange={onTheme} />
             <AccountRow account={account} />
+          </div>
           </div>
         </aside>
         <main className="hero-main">

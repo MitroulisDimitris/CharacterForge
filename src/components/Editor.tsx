@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { setState as setFeedbackState } from "../trail";
 import { getSystem } from "../systems/registry";
 import { bookName, type BaseCharacter, type Warning } from "../systems/types";
 import { downloadBlob, exportJson, fileSafe, type StoredCharacter, type Theme } from "../storage";
@@ -6,8 +7,10 @@ import { Brand, SkinPicker } from "./Brand";
 import { Warnings } from "./Warnings";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
-import { Crest, MoreMenu } from "./Hero";
+import { Crest, MoreMenu, SideToggle } from "./Hero";
 import { SheetTab, SHEET_TAB } from "./SheetTab";
+import { LiveView } from "./Party";
+import type { Live } from "../live";
 import { JustChanged } from "./JustChanged";
 import { skinOf } from "../skins";
 import type { SaveState } from "../App";
@@ -30,6 +33,8 @@ export function Editor({
   onVersion,
   sessionCopy,
   onOpenSession,
+  live,
+  levelReady,
 }: {
   rec: StoredCharacter;
   theme: Theme;
@@ -44,6 +49,10 @@ export function Editor({
   /** Set when editing a session's copy: the session's name. */
   sessionCopy?: string;
   onOpenSession?: () => void;
+  /** In-play state the DM keeps for this session copy (read-only here, D3). */
+  live?: Live;
+  /** The DM awarded this level ("Level up ready"). */
+  levelReady?: number | null;
 }) {
   const system = getSystem(rec.system)!;
   const [char, setChar] = useState<BaseCharacter>(() => system.normalize(rec.data));
@@ -51,6 +60,7 @@ export function Editor({
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pending, setPending] = useState<string[]>(rec.pending ?? []);
   const [booksOpen, setBooksOpen] = useState(false);
+  const [sideOpen, setSideOpen] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "change"; target: number } | { kind: "resume"; ids: string[] } | null>(null);
   const d = useMemo(() => system.derive(char, rec.books), [system, char, rec.books]);
 
@@ -65,6 +75,22 @@ export function Editor({
     setPending(nextPending);
     onUpdate({ data: next, pending: nextPending });
   };
+
+  // What feedback sends about the open character (same as a JSON export, plus what's shown).
+  useEffect(() => {
+    setFeedbackState("character", {
+      id: rec.id,
+      system: rec.system,
+      books: rec.books,
+      level: char.level,
+      version: sessionCopy ? `session copy: ${sessionCopy}` : "my character",
+      tab,
+      pending,
+      warnings: (d.warnings as Warning[]).map((w) => `[${w.level}] ${w.text}`),
+      data: char,
+    });
+    return () => setFeedbackState("character", undefined);
+  }, [rec.id, rec.system, rec.books, char, pending, tab, d, sessionCopy]);
 
   const waiting = useMemo(() => openUnlocks(system, char, rec.books, pending), [system, char, rec.books, pending]);
 
@@ -83,8 +109,20 @@ export function Editor({
 
   const tabErrors = (id: string) => (d.warnings as Warning[]).filter((w) => w.tab === id && w.level !== "info").length;
   const Active = system.tabs.find((t) => t.id === tab)?.Component;
-  const body = Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} />;
   const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
+  const hpMax = system.tableCard?.(char, d)?.hpMax ?? 0;
+  const liveTop = sessionCopy && live ? <LiveView live={live} max={hpMax} sessionName={sessionCopy} /> : null;
+  const body = Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} top={liveTop} />;
+  const award = levelReady && levelReady > char.level ? Math.min(levelReady, maxLevel) : null;
+  const awardItem = award && (
+    <div className="award-todo">
+      <strong>Level up ready</strong>
+      <span>Your DM gave you level {award}. See what you gain and make your choices.</span>
+      <button type="button" className="btn primary small" onClick={() => setDialog({ kind: "change", target: award })}>
+        Level up to {award}
+      </button>
+    </div>
+  );
   const levelOptions = Array.from({ length: maxLevel }, (_, i) => i + 1);
   const dismiss = (id: string) => {
     const p = pending.filter((x) => x !== id);
@@ -162,9 +200,9 @@ export function Editor({
     const books = rec.books.map((b) => bookName(system, b)).join(", ");
     return (
       <div className="hero-shell">
-        <aside className="hero-side">
-          <button type="button" className="hero-back" onClick={onBack}>
-            ‹ My characters
+        <aside className={`hero-side ${sideOpen ? "open" : ""}`}>
+          <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
+            ‹ <span className="back-label">My characters</span>
           </button>
           <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} />
           <div className="hero-id">
@@ -180,11 +218,15 @@ export function Editor({
               </span>
             )}
           </div>
+          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} dot={waiting.length > 0 || !!award} />
+          <div className="hero-side-extra">
           {versionPick}
           {sessionNote}
-          <section className={`hero-todo ${waiting.length ? "has" : ""}`} aria-label="To do">
+          <section className={`hero-todo ${waiting.length || award ? "has" : ""}`} aria-label="To do">
             <span className="hero-label">To do</span>
+            {awardItem}
             {waiting.length === 0 ? (
+              award ? null : 
               <span className="muted">Nothing to choose right now.</span>
             ) : (
               <>
@@ -243,6 +285,7 @@ export function Editor({
             <span className="hero-saved" aria-live="polite">
               {SAVE_TEXT[save]}
             </span>
+          </div>
           </div>
         </aside>
         <main className="hero-main">
@@ -311,6 +354,7 @@ export function Editor({
       <div className="layout single">
         <main className="main">
           {tabsNav}
+          {awardItem}
           {waiting.length > 0 && (
             <div className="todo-banner">
               <div className="todo-head">
