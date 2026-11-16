@@ -16,3 +16,6 @@ create policy "host adds" on public.encounters for insert to authenticated with 
 create policy "host changes" on public.encounters for update to authenticated using (public.is_session_host(session_id)) with check (public.is_session_host(session_id));
 create policy "host deletes" on public.encounters for delete to authenticated using (public.is_session_host(session_id));
 revoke all on public.encounters from anon;
+
+-- Activity log for encounters (added after friends tested, 2026-11-16).
+create trigger audit_encounters after insert or update or delete on public.encounters for each row execute function public.audit_row();

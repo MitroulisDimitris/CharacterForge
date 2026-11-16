@@ -283,7 +283,7 @@ export function Login() {
     <AuthCard title="Character Forge" tagline="Your character, through the whole campaign.">
       {kicked && (
         <p className="auth-info join-hint" role="status">
-          You were logged out because your account logged in on another device. Only the newest login stays active.
+          You were logged out because your account logged in somewhere else (another phone, computer or browser). Only the newest login stays active. Tip · On a phone, open the site in your normal browser, not inside Messenger or Facebook: those count as a separate browser.
         </p>
       )}
       {pendingJoin() && (

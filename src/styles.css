@@ -4714,3 +4714,58 @@ button.hero-system:hover {
 .enc-suggested .btn {
   min-height: 40px;
 }
+
+/* Character creation: resume a draft (kept on this device) */
+.draft-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 166, 74, 0.6);
+  background: var(--gold-soft);
+}
+.draft-box > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.draft-actions {
+  display: flex;
+  gap: 8px;
+}
+.draft-actions .btn {
+  min-height: 44px;
+}
+.draft-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Phones: the Feedback button shrinks to an icon, and pages leave room under it (friends' feedback) */
+@media (max-width: 640px) {
+  .fb-fab {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    opacity: 0.9;
+  }
+  .fb-fab .fb-label {
+    display: none;
+  }
+  .fb-fab .fb-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+  }
+  .hero-main,
+  .app,
+  .wizard {
+    padding-bottom: 140px;
+  }
+}

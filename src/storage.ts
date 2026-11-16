@@ -145,3 +145,32 @@ export function parseImport(text: string): StoredCharacter {
 export async function importFile(file: File): Promise<StoredCharacter> {
   return parseImport(await file.text());
 }
+
+// ---------- Character creation in progress (survives a reload / the phone closing the tab) ----------
+
+export interface CreationDraft {
+  userId: string;
+  system: SystemId;
+  books: string[];
+  char: unknown;
+  step: number;
+  visited: number[];
+  saved: number;
+}
+const DRAFT_KEY = "character-forge:creation-draft";
+export function loadDraft(userId: string): CreationDraft | null {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null") as CreationDraft | null;
+    return d && d.userId === userId && isSystemId(d.system) ? d : null;
+  } catch {
+    return null;
+  }
+}
+export const saveDraft = (d: CreationDraft) => safeSet(DRAFT_KEY, JSON.stringify(d));
+export function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* ignore */
+  }
+}

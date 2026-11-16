@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AnySystem, BaseCharacter, Warning } from "../systems/types";
 import { Card } from "./ui";
 import { Warnings } from "./Warnings";
@@ -12,7 +12,13 @@ export function CreationStepper({
   onBack,
   onCreate,
   hero,
+  resume,
+  onProgress,
 }: {
+  /** Continue a character that was being made (after a reload). */
+  resume?: { char: BaseCharacter; step: number; visited: number[] };
+  /** Called on every change, to keep the progress on this device. */
+  onProgress?: (p: { char: BaseCharacter; step: number; visited: number[] }) => void;
   system: AnySystem;
   books: string[];
   onBack: () => void;
@@ -21,9 +27,19 @@ export function CreationStepper({
   hero?: { onCancel: () => void; footer: ReactNode };
 }) {
   const steps = system.creation!.steps;
-  const [char, setChar] = useState<BaseCharacter>(() => system.creation!.fresh());
-  const [i, setI] = useState(0);
-  const [visited, setVisited] = useState<Set<number>>(new Set([0]));
+  const [char, setChar] = useState<BaseCharacter>(() => (resume ? system.normalize(resume.char) : system.creation!.fresh()));
+  const [i, setI] = useState(() => Math.min(resume?.step ?? 0, system.creation!.steps.length));
+  const [visited, setVisited] = useState<Set<number>>(() => new Set(resume?.visited ?? [0]));
+  // Keep progress only once something changed (opening and leaving leaves no draft behind).
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    onProgress?.({ char, step: i, visited: [...visited] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [char, i, visited]);
   const d = useMemo(() => system.derive(char, books), [system, char, books]);
   const warnings = d.warnings as Warning[];
   const review = i === steps.length;
@@ -174,6 +190,7 @@ export function CreationStepper({
             <summary>Full summary</summary>
             <Summary c={char} d={d} />
           </details>
+          <p className="draft-note">Your progress is kept on this device. The character is saved to your account when you press Create character.</p>
           <div className="hero-foot">{hero.footer}</div>
         </aside>
         <main className="hero-main creation-main">{content}</main>

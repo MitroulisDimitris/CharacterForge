@@ -297,8 +297,9 @@ export function FeedbackWidget() {
   return (
     <>
       {!open && !picking && (
-        <button className="fb-fab" data-fb-ui onClick={start} title="Give feedback on anything you see">
-          <span aria-hidden>✎</span> Feedback{openCount > 0 && <span className="fb-count">{openCount}</span>}
+        <button className="fb-fab" data-fb-ui onClick={start} title="Give feedback on anything you see" aria-label="Feedback">
+          <span aria-hidden>✎</span> <span className="fb-label">Feedback</span>
+          {openCount > 0 && <span className="fb-count">{openCount}</span>}
         </button>
       )}
 

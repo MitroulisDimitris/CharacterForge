@@ -178,7 +178,8 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
         if (code) setDialog({ kind: "join", code });
         else {
           const last = loadLastOpen();
-          if (last?.startsWith("s:") && s.some((x) => x.id === last.slice(2))) setView({ kind: "session", id: last.slice(2) });
+          if (last === "new") setView({ kind: "new" });
+          else if (last?.startsWith("s:") && s.some((x) => x.id === last.slice(2))) setView({ kind: "session", id: last.slice(2) });
           else if (last && list.some((r) => r.id === last)) setView({ kind: "edit", id: last });
         }
       })
@@ -214,7 +215,7 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
   }, [save]);
 
   useEffect(() => {
-    if (lib) saveLastOpen(view.kind === "edit" ? view.id : view.kind === "session" ? `s:${view.id}` : null);
+    if (lib) saveLastOpen(view.kind === "edit" ? view.id : view.kind === "session" ? `s:${view.id}` : view.kind === "new" && !view.forSession ? "new" : null);
   }, [view, lib]);
 
   if (loadError)
@@ -258,6 +259,7 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     const forSession = view.forSession;
     return (
       <NewCharacterWizard
+        userId={userId}
         theme={theme}
         onTheme={setTheme}
         preset={forSession && { systemId: forSession.preview.system, books: forSession.preview.books, label: forSession.preview.name }}

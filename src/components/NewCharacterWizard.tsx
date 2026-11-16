@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
 import type { AnySystem, BaseCharacter } from "../systems/types";
-import { newRecordId, type StoredCharacter, type Theme } from "../storage";
+import { clearDraft, loadDraft, newRecordId, saveDraft, type StoredCharacter, type Theme } from "../storage";
 import { Brand, SkinPicker } from "./Brand";
 import { Card, Field } from "./ui";
 import { BookChecklist, normalizeBooks } from "./BookChecklist";
@@ -19,7 +19,10 @@ export function NewCharacterWizard({
   onCancel,
   onCreate,
   preset,
+  userId,
 }: {
+  /** Whose creation draft to keep / resume on this device. */
+  userId: string;
   /** New character for a session: rules and books are the session's (REQUIREMENTS §4.2). */
   preset?: { systemId: string; books: string[]; label: string };
   theme: Theme;
@@ -28,8 +31,15 @@ export function NewCharacterWizard({
   onCreate: (rec: StoredCharacter) => void;
 }) {
   const presetSystem = preset ? (getSystem(preset.systemId) ?? null) : null;
-  const [system, setSystem] = useState<AnySystem | null>(presetSystem);
-  const [books, setBooks] = useState<string[]>(presetSystem ? normalizeBooks(presetSystem, preset!.books) : []);
+  // Only one rule set is open for now: pick it straight away (others stay listed as "Coming soon").
+  const onlyOne = SYSTEMS.filter((s) => isAvailable(s.id));
+  const startSystem = presetSystem ?? (onlyOne.length === 1 ? onlyOne[0] : null);
+  const [draft, setDraft] = useState(() => (preset ? null : loadDraft(userId)));
+  const [resume, setResume] = useState<{ char: BaseCharacter; step: number; visited: number[] } | undefined>();
+  const [system, setSystem] = useState<AnySystem | null>(startSystem);
+  const [books, setBooks] = useState<string[]>(
+    presetSystem ? normalizeBooks(presetSystem, preset!.books) : startSystem ? normalizeBooks(startSystem, startSystem.books.map((b) => b.id)) : [],
+  );
   const [templateId, setTemplateId] = useState("");
   const [name, setName] = useState("");
   const [building, setBuilding] = useState(Boolean(presetSystem?.creation));
@@ -46,6 +56,7 @@ export function NewCharacterWizard({
 
   const save = (data: BaseCharacter) => {
     if (!system) return;
+    clearDraft();
     const now = Date.now();
     onCreate({ id: newRecordId(), system: system.id, books: normalizeBooks(system, books), created: now, updated: now, data });
   };
@@ -56,6 +67,47 @@ export function NewCharacterWizard({
     if (name.trim()) data.name = name.trim();
     save(data);
   };
+
+  const progress = (p: { char: BaseCharacter; step: number; visited: number[] }) => {
+    if (!system || preset) return;
+    saveDraft({ userId, system: system.id, books: normalizeBooks(system, books), char: p.char, step: p.step, visited: p.visited, saved: Date.now() });
+  };
+  const draftSystem = draft ? getSystem(draft.system) : undefined;
+  const draftName = (draft?.char as { name?: string } | undefined)?.name?.trim();
+  const draftBox = draft && draftSystem?.creation && !building && (
+    <div className="draft-box" role="status">
+      <div>
+        <strong>Continue your character?</strong>
+        <span className="muted">
+          {draftName || "An unnamed hero"} · step {Math.min(draft.step + 1, draftSystem.creation.steps.length + 1)} of {draftSystem.creation.steps.length + 1} · {draftSystem.short}
+        </span>
+      </div>
+      <div className="draft-actions">
+        <button
+          type="button"
+          className="btn ghost"
+          onClick={() => {
+            clearDraft();
+            setDraft(null);
+          }}
+        >
+          Start over
+        </button>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={() => {
+            setSystem(draftSystem);
+            setBooks(draft.books);
+            setResume({ char: draft.char as BaseCharacter, step: draft.step, visited: draft.visited });
+            setBuilding(true);
+          }}
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  );
 
   const header = (
     <header className="topbar">
@@ -79,6 +131,8 @@ export function NewCharacterWizard({
         books={normalizeBooks(system, books)}
         onBack={() => (preset ? onCancel() : setBuilding(false))}
         onCreate={save}
+        resume={resume}
+        onProgress={progress}
         hero={{ onCancel, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
       />
     );
@@ -87,7 +141,7 @@ export function NewCharacterWizard({
     return (
       <div className="app">
         {header}
-        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? onCancel() : setBuilding(false))} onCreate={save} />
+        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? onCancel() : setBuilding(false))} onCreate={save} resume={resume} onProgress={progress} />
       </div>
     );
 
@@ -95,9 +149,10 @@ export function NewCharacterWizard({
     <div className="app">
       {header}
       <div className="wizard stack">
+        {draftBox}
         <Card title="1 · Game rules" aside={<span className="muted">This can't be changed later</span>}>
           <div className="option-grid wide">
-            {SYSTEMS.map((s) => (
+            {[...SYSTEMS].sort((a, b) => Number(isAvailable(b.id)) - Number(isAvailable(a.id))).map((s) => (
               <button
                 type="button"
                 key={s.id}
