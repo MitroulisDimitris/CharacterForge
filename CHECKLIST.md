@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-16 (party tools, Lookup, phone bar).
+Last updated: 2026-11-16 (encounters).
 
 ---
 
@@ -114,9 +114,15 @@ Last updated: 2026-11-16 (party tools, Lookup, phone bar).
 - [ ] Environment filter; favorites saved to the account (any device)
 
 ## 9. Encounters
-- [ ] Encounter builder: monsters + counts, difficulty for this party (2014 XP thresholds)
-- [ ] Total XP and XP per player
-- [ ] Saved encounters per session (players never see them)
+- [x] Encounters tab for the host (players never see it; enforced in the database)
+- [x] Builder: search monsters, add, set counts, stat block on tap, notes
+- [x] Difficulty for this party, live (2014 XP thresholds: Easy / Medium / Hard / Deadly), with a meter
+- [x] Total XP, XP per player, adjusted XP with the group multiplier (shifted for small / big parties)
+- [x] Plan for a party before anyone joins (players × level)
+- [x] Saved encounters per session: list with difficulty, open to edit, delete
+- [x] Tests for the maths (DMG examples) · browser test on desktop and phone
+- [ ] "Add to encounter" straight from a Lookup monster card
+- [ ] Suggest an encounter by difficulty + creature type / environment (later)
 
 ## 10. Polish (every screen, every size)
 - [x] Phone: sidebar becomes a compact top bar (sheet, library, session page) so the Sheet tab is reachable right away

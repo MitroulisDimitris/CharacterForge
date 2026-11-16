@@ -32,6 +32,7 @@ import { BookChecklist, normalizeBooks } from "./BookChecklist";
 import { Brand, SkinPicker } from "./Brand";
 import { Crest, MoreMenu, SideToggle } from "./Hero";
 import { Lookup } from "./Lookup";
+import { EncountersTab } from "./Encounters";
 import { MemberView, NotesTab, PartyTab } from "./Party";
 import { setState as setFeedbackState } from "../trail";
 
@@ -556,7 +557,7 @@ export function SessionPage({
   const [tick, setTick] = useState(0);
   const ended = session.status !== "active";
   const [sideOpen, setSideOpen] = useState(false);
-  const [hostTab, setHostTab] = useState<"lookup" | "party" | "notes">("lookup");
+  const [hostTab, setHostTab] = useState<"lookup" | "party" | "encounters" | "notes">("lookup");
   const [members, setMembers] = useState<Awaited<ReturnType<typeof loadHostMembers>>>([]);
   const [viewMember, setViewMember] = useState<string | null>(null);
 
@@ -740,7 +741,7 @@ export function SessionPage({
   const hostBody = (
     <>
       <nav className="tabs" role="tablist">
-        {(["lookup", "party", "notes"] as const).map((t) => (
+        {(["lookup", "party", "encounters", "notes"] as const).map((t) => (
           <button
             key={t}
             role="tab"
@@ -751,7 +752,7 @@ export function SessionPage({
               setViewMember(null);
             }}
           >
-            {t === "lookup" ? "Lookup" : t === "party" ? "Party" : "Notes"}
+            {t === "lookup" ? "Lookup" : t === "party" ? "Party" : t === "encounters" ? "Encounters" : "Notes"}
             {t === "party" && members.length > 0 && <span className="tab-count">{members.length}</span>}
           </button>
         ))}
@@ -770,6 +771,15 @@ export function SessionPage({
           ) : (
             <PartyTab sessionId={session.id} system={session.system} members={members} roster={roster ?? []} onOpen={setViewMember} onChanged={() => setTick((n) => n + 1)} />
           ))}
+        {hostTab === "encounters" && (
+          <EncountersTab
+            sessionId={session.id}
+            members={members.map((m) => {
+              const d = m.data as { name?: string; level?: number };
+              return { name: d.name || "Unnamed", level: d.level ?? 1 };
+            })}
+          />
+        )}
         {hostTab === "notes" && <NotesTab sessionId={session.id} />}
       </div>
     </>
