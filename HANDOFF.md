@@ -95,6 +95,11 @@ first, no "Start combat" main action). The canvas still shows the old host tabs 
 Monsters / Notes) and "Start combat"; update it when that screen is built.
 
 ### Infrastructure
+- **Live site (2026-11-17): https://character-forge-d8q.pages.dev** on Cloudflare Pages, deploys from GitHub
+  `origin/main` (build `npm run build`, output `dist`, variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+  `NODE_VERSION=22`; the user set them, Claude has no Cloudflare access). Moved from Netlify because its
+  free plan allows ~20 deploys a month; the old Netlify address forwards here (`netlify.toml`).
+  Supabase Auth → URL Configuration has the new Site URL and Redirect URL.
 - **Netlify site: https://character-forge-dnd.netlify.app/** — deploys from GitHub `origin/main`,
   which is still the old commit `5576f8c` (2 commits). The 7 newer local commits are **not
   pushed**. The user said **don't push yet; build some things first**. Ask before pushing.

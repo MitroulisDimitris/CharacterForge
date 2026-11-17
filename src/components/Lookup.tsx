@@ -358,10 +358,12 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
   const favs = favorites();
   const recents = recent();
   const filtered = band || type || place;
+  // Clicking the monster that's already open closes its page (back to the full list).
   const openMonster = (slug: string, name: string) => {
+    setPicked(null);
+    if (open === slug) return setOpen(null);
     addRecent({ kind: "monster", slug, name });
     setOpen(slug);
-    setPicked(null);
   };
 
   const refList = (title: string, list: LookupRef[]) =>

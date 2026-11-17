@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-17 (combat tracker, "Only you see this", Browse lists mockup).
+Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster page).
 
 ---
 
@@ -70,6 +70,7 @@ Last updated: 2026-11-17 (combat tracker, "Only you see this", Browse lists mock
 - [x] `netlify.toml`
 - [x] `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` added in Netlify
 - [x] Pushed to GitHub (2026-11-16); live at https://character-forge-dnd.netlify.app (login checked)
+- [x] Moved to Cloudflare Pages (2026-11-17, Netlify's free plan = ~20 deploys a month): https://character-forge-d8q.pages.dev · same two `VITE_SUPABASE_*` variables + `NODE_VERSION=22` there · Supabase Site URL + Redirect URLs updated · the Netlify address forwards to the new one (`netlify.toml`) · checked live with the test account
 - [ ] Check the live site on a real phone and desktop
 
 ## 5. Table card

@@ -393,7 +393,7 @@ pointed at, and screenshots. In the published app:
 | File storage | Supabase Storage | Character portraits, feedback screenshots |
 | Email | Supabase Auth emails sent through our own sender (SMTP) | Verify email and reset password, with our own wording and button |
 | Monster / spell data | Open5e API, cached in the browser | Monsters, SRD spells, conditions |
-| Hosting | Netlify or Vercel (free tier) | Deploys from the GitHub repo; gives the shareable link |
+| Hosting | Cloudflare Pages (free; moved from Netlify 2026-11-17) | Deploys from the GitHub repo; gives the shareable link |
 
 Notes:
 - I create the Supabase and hosting accounts. The app needs the Supabase project URL + public

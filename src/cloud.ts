@@ -7,7 +7,7 @@ import { isSystemId } from "./systems/registry";
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-/** False when the app was built without the Supabase settings (.env.local / Netlify variables). */
+/** False when the app was built without the Supabase settings (.env.local / Cloudflare Pages variables). */
 export const cloudConfigured = Boolean(url && key);
 
 // What an email link brought us (read before the client consumes and clears the address).

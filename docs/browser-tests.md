@@ -6,7 +6,7 @@ account if you have one). Don't paste real players' passwords.
 
 ---
 
-You are testing the web app **Character Forge** at https://character-forge-dnd.netlify.app — a
+You are testing the web app **Character Forge** at https://character-forge-d8q.pages.dev — a
 D&D character builder with online sessions for a DM and players. Work through the test cases
 below in order, in a new tab. Don't change or delete anything that isn't yours (only touch
 characters and sessions you create during the test; their names start with **"QA "**).

@@ -1,3 +1,6 @@
+# The site moved to Cloudflare Pages on 2026-11-17 (Netlify's free plan allows about 20 deploys a
+# month). The old Netlify address now only forwards everyone to the new one, keeping the path,
+# invite codes (?join=…) and email-link tokens (#…). Netlify builds can be stopped after this.
 [build]
   command = "npm run build"
   publish = "dist"
@@ -5,8 +8,8 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# One page app: any address opens index.html.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
-  status = 200
+  to = "https://character-forge-d8q.pages.dev/:splat"
+  status = 301
+  force = true
