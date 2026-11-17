@@ -1,6 +1,8 @@
 // Combat tracker (host only): roll initiative, then run the fight in turn order — whose turn it is,
 // rounds, monster HP and conditions, the players' HP (shared with their sheets), XP at the end.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LootCard } from "./Loot";
+import type { Foe } from "../loot";
 import {
   addFighter,
   concentrationDc,
@@ -54,6 +56,7 @@ export function CombatView({
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [ended, setEnded] = useState<{ rounds: number; xp: ReturnType<typeof xpEarned> } | null>(null);
+  const [lootFoes, setLootFoes] = useState<Foe[] | null>(null);
   // Players' in-play state: what we last saved, until the next refresh from the server.
   const [playerLive, setPlayerLive] = useState<Record<string, Live>>({});
   useEffect(() => setPlayerLive({}), [members]);
@@ -144,6 +147,10 @@ export function CombatView({
         ) : (
           <p className="muted">No monsters were brought to 0 HP, so no XP from this fight.</p>
         )}
+        {lootFoes === null && ended.xp.total > 0 && <p className="muted">Working out the loot…</p>}
+        {lootFoes && lootFoes.length > 0 && (
+          <LootCard foes={lootFoes} players={members.length} title="Loot from this fight" intro="From the monsters you beat. Keep what fits your story, or roll again." />
+        )}
         <p className="muted">Tip · The players' HP stays as it is. After a long rest, reset it on the Party tab.</p>
         <button type="button" className="btn primary" onClick={onExit}>
           Back to encounters
@@ -156,6 +163,7 @@ export function CombatView({
   const endFight = () => {
     if (!confirm("End the fight? The turn order and monster HP are cleared.")) return;
     setEnded({ rounds: combat.round, xp: xpEarned(combat, members.length) });
+    void beatenFoes(combat).then(setLootFoes);
     change(null, true);
   };
   const cancel = () => {
@@ -383,6 +391,28 @@ export function CombatView({
       </div>
     </section>
   );
+}
+
+/** The monsters brought to 0 HP, one entry per kind, with what loot needs from their stat block. */
+async function beatenFoes(c: Combat): Promise<Foe[]> {
+  const kinds = new Map<string, { name: string; count: number }>();
+  for (const f of c.fighters) {
+    if (f.kind !== "monster" || !isDown(f) || !f.group) continue;
+    const k = kinds.get(f.group);
+    if (k) k.count++;
+    else kinds.set(f.group, { name: f.name.replace(/ \d+$/, ""), count: 1 });
+  }
+  const out = await Promise.all(
+    [...kinds].map(async ([slug, k]) => {
+      try {
+        const m = await getMonster(slug);
+        return { name: k.name, count: k.count, cr: m.cr, type: m.type, intelligence: m.intelligence };
+      } catch {
+        return null; // no stat block: no loot suggestion for it
+      }
+    }),
+  );
+  return out.filter((x): x is Foe => x !== null).sort((a, b) => b.cr - a.cr);
 }
 
 function MiniHp({ hp, max }: { hp: number; max: number }) {

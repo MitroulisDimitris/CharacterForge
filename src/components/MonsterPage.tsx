@@ -2,6 +2,7 @@
 // monster; the page shows the DM's own picture when they added one (else the icon), the numbers,
 // "At the table", the full SRD stat block with Roll buttons, and the Monster Manual page.
 import { useEffect, useRef, useState } from "react";
+import { LootCard } from "./Loot";
 import { abilityMod, getMonster, keyTraits, speedText, splitList, toggleFavorite, isFavorite, type Monster, type MonsterBrief } from "../lookup";
 import { xpForCr, loadEncounters, saveEncounter, type Encounter } from "../encounters";
 import { sessionError } from "../sessions";
@@ -298,6 +299,11 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
             {traits.length > 0 && <p className="muted">{traits.join(" · ")}</p>}
           </section>
 
+          <LootCard
+            foes={[{ name: m.name, count: 1, cr: m.cr, type: m.type, intelligence: m.intelligence }]}
+            title="Suggested loot"
+            intro={`What one ${m.name} might carry.`}
+          />
           <section className="mon-block" aria-label="Stat block">
             <div className="mon-abilities">
               {(["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const).map((a) => (

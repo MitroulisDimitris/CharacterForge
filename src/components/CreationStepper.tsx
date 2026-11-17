@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AnySystem, BaseCharacter, Warning } from "../systems/types";
 import { Card } from "./ui";
 import { Warnings } from "./Warnings";
-import { Crest, SHORT } from "./Hero";
+import { Crest } from "./Hero";
 import { JustChanged } from "./JustChanged";
 
 /** Guided, step-by-step creation of a new character (systems with `creation`). */
@@ -160,16 +160,29 @@ export function CreationStepper({
     </>
   );
 
+  // The character so far: open in a wide left column on PC (every skin, user 2026-11-17),
+  // folded to one line on phones so the step's choices stay near the top.
+  const summary = (
+    <>
+      <div className="sum-wide">
+        <Summary c={char} d={d} />
+      </div>
+      <details className="sum-narrow">
+        <summary>Your character so far</summary>
+        <Summary c={char} d={d} />
+      </details>
+    </>
+  );
+
   // ---------- Hero skin: the character taking shape on the left ----------
   if (hero) {
-    const stats = system.progression.snapshot(d);
     return (
-      <div className="hero-shell">
-        <aside className="hero-side">
+      <div className="hero-shell creation-shell">
+        <aside className="hero-side creation-side">
           <button type="button" className="hero-back" onClick={hero.onCancel}>
             ‹ Cancel
           </button>
-          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} size={112} badge={false} />
+          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} size={96} badge={false} />
           <div className="hero-id">
             <input className="hero-name" value={char.name} placeholder="Unnamed hero" onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
             <span className="hero-sub">{d.identity}</span>
@@ -178,18 +191,7 @@ export function CreationStepper({
             </span>
           </div>
           {stepsNav}
-          <div className="hero-stats">
-            {stats.slice(0, 4).map((x) => (
-              <div className="hero-stat" key={x.label} title={x.label}>
-                <span>{SHORT[x.label] ?? x.label}</span>
-                <strong>{x.value}</strong>
-              </div>
-            ))}
-          </div>
-          <details className="hero-summary">
-            <summary>Full summary</summary>
-            <Summary c={char} d={d} />
-          </details>
+          {summary}
           <p className="draft-note">Your progress is kept on this device. The character is saved to your account when you press Create character.</p>
           <div className="hero-foot">{hero.footer}</div>
         </aside>
@@ -203,13 +205,9 @@ export function CreationStepper({
     <div className="creation">
       <JustChanged system={system} d={d} />
       {stepsNav}
-      <div className="layout">
-        <main className="main">
-          {content}
-        </main>
-        <aside className="side">
-          <Summary c={char} d={d} />
-        </aside>
+      <div className="layout creation-layout">
+        <aside className="side">{summary}</aside>
+        <main className="main">{content}</main>
       </div>
     </div>
   );

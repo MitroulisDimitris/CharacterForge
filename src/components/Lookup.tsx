@@ -10,6 +10,7 @@ import {
   abilityMod,
   addRecent,
   allMonsters,
+  allSpells,
   favorites,
   getMonster,
   getSpell,
@@ -17,7 +18,6 @@ import {
   keyTraits,
   PLACES,
   recent,
-  searchSpells,
   speedText,
   splitList,
   toggleFavorite,
@@ -26,6 +26,7 @@ import {
   type Monster,
   type MonsterBrief,
   type Spell,
+  type SpellBrief,
 } from "../lookup";
 
 type Kind = "all" | "monster" | "spell" | "condition";
@@ -287,6 +288,56 @@ const MONSTER_BANDS: { id: string; label: string; test: (cr: number) => boolean 
   { id: "13", label: "CR 13+", test: (c) => c >= 13 },
 ];
 const PAGE_SIZE = 60;
+const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
+/** Spell level colour: cantrips lilac, then lighter-to-deeper blue (also differs in lightness). */
+const SPELL_TINT = ["#b9a3e8", "#a9c7ec", "#8fb6e3", "#78a5db", "#6494d2", "#5584c6", "#4a76b8", "#4169a8", "#395d97", "#335387"];
+
+/** A spell in the browse list: level badge, name, school and the basics, Concentration / Ritual tags. */
+function SpellRow({ s, current, onOpen }: { s: SpellBrief; current: boolean; onOpen: () => void }) {
+  const c = SPELL_TINT[s.level_int] ?? "#8fb6e3";
+  return (
+    <button type="button" className={`mon-row spell-row ${current ? "on" : ""}`} aria-current={current ? "page" : undefined} onClick={onOpen}>
+      <span className="mon-icon spell-lvl" aria-hidden="true" style={{ width: 44, height: 44, background: `${c}1f`, borderColor: `${c}66`, color: c }}>
+        {s.level_int === 0 ? "C" : s.level_int}
+      </span>
+      <span className="mon-row-text">
+        <strong>{s.name}</strong>
+        <small>
+          {s.level_int === 0 ? `${s.school} cantrip` : `${ordinal(s.level_int)}-level ${s.school.toLowerCase()}`} · {s.casting_time} · {s.range}
+        </small>
+      </span>
+      <span className="spell-tags">
+        {s.requires_concentration && (
+          <span className="lk-tag conc" title="Concentration">
+            Conc.
+          </span>
+        )}
+        {s.can_be_cast_as_ritual && (
+          <span className="lk-tag" title="Can be cast as a ritual">
+            Ritual
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/** The spell open beside the list: everything about it. */
+function SpellPage({ slug, onBack }: { slug: string; onBack: () => void }) {
+  const [s, setS] = useState<Spell | null>(null);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    getSpell(slug).then(setS, (e) => setErr(e instanceof Error ? e.message : String(e)));
+  }, [slug]);
+  return (
+    <div className="mon-page spell-page">
+      <button type="button" className="link mon-back" onClick={onBack}>
+        ‹ Spells
+      </button>
+      {err ? <p className="auth-error">{err}</p> : s ? <SpellCard s={s} startOpen /> : <p className="muted">Loading…</p>}
+    </div>
+  );
+}
 /** "Monsters only": the types that are foes almost every time (no animals, people or angels). */
 const ENEMY_TYPES = ["Aberration", "Dragon", "Fiend", "Giant", "Monstrosity", "Ooze", "Undead"];
 
@@ -355,10 +406,12 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
   const [sort, setSort] = useState<"cr" | "az">("cr");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [brief, setBrief] = useState<MonsterBrief[] | null>(null);
-  const [spells, setSpells] = useState<Spell[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [spellBrief, setSpellBrief] = useState<SpellBrief[] | null>(null);
+  const [spellLevel, setSpellLevel] = useState<number | null>(null);
+  const [spellClass, setSpellClass] = useState("");
   const [error, setError] = useState("");
-  const [open, setOpen] = useState<string | null>(null);
+  /** The monster or spell open beside the list. */
+  const [open, setOpen] = useState<{ kind: "monster" | "spell"; slug: string } | null>(null);
   const [picked, setPicked] = useState<LookupRef | null>(null);
   const [, setTick] = useState(0);
 
@@ -370,26 +423,13 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
     allMonsters().then(setBrief, (e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
+  // The whole spell list (SRD, ~320) the first time spells are wanted: browsing and name search.
+  const wantSpells = kind === "spell" || (kind === "all" && query.length > 0);
   useEffect(() => {
-    if (query.length < 2 || !(kind === "all" || kind === "spell")) return setSpells([]);
-    let live = true;
-    setBusy(true);
-    const t = setTimeout(async () => {
-      try {
-        const ss = await searchSpells(query);
-        if (live) setSpells(ss);
-      } catch (e) {
-        if (live) setError(e instanceof Error ? e.message : String(e));
-      } finally {
-        if (live) setBusy(false);
-      }
-    }, 300);
-    return () => {
-      live = false;
-      clearTimeout(t);
-    };
-  }, [query, kind]);
-  useEffect(() => setLimit(PAGE_SIZE), [query, band, picks, place, sort, kind]);
+    if (!wantSpells || spellBrief) return;
+    allSpells().then(setSpellBrief, (e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [wantSpells, spellBrief]);
+  useEffect(() => setLimit(PAGE_SIZE), [query, band, picks, place, sort, kind, spellLevel, spellClass]);
 
   const types = useMemo(() => {
     const n = new Map<string, number>();
@@ -417,17 +457,38 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
     return out;
   }, [shown, sort]);
 
+  const spellClasses = useMemo(() => [...new Set((spellBrief ?? []).flatMap((x) => x.dnd_class.split(",").map((c) => c.trim())).filter((c) => c && c !== "Ritual Caster"))].sort(), [spellBrief]);
+  const spells = useMemo(() => {
+    if (!spellBrief || !wantSpells) return [];
+    const needle = query.toLowerCase();
+    return spellBrief
+      // Level and class filters only show (and apply) under "Spells".
+      .filter((x) => (!needle || x.name.toLowerCase().includes(needle)) && (kind !== "spell" || ((spellLevel == null || x.level_int === spellLevel) && (!spellClass || x.dnd_class.split(",").map((c) => c.trim()).includes(spellClass)))))
+      .sort((a, z) => a.level_int - z.level_int || a.name.localeCompare(z.name));
+  }, [spellBrief, wantSpells, query, spellLevel, spellClass, kind]);
+  const spellGroups = useMemo(() => {
+    const out: { title: string; rows: SpellBrief[] }[] = [];
+    for (const x of spells.slice(0, limit)) {
+      const title = x.level_int === 0 ? "Cantrips" : `${ordinal(x.level_int)} level`;
+      const last = out[out.length - 1];
+      if (last && last.title === title) last.rows.push(x);
+      else out.push({ title, rows: [x] });
+    }
+    return out;
+  }, [spells, limit]);
+
   const conds = kind === "all" || kind === "condition" ? CONDITION_IDS.filter((id) => !query || conditionName(id).toLowerCase().includes(query.toLowerCase())) : [];
   const favs = favorites();
   const recents = recent();
   const filtered = band || picks.length || place;
   // Clicking the monster that's already open closes its page (back to the full list).
-  const openMonster = (slug: string, name: string) => {
+  const openItem = (k: "monster" | "spell", slug: string, name: string) => {
     setPicked(null);
-    if (open === slug) return setOpen(null);
-    addRecent({ kind: "monster", slug, name });
-    setOpen(slug);
+    if (open?.kind === k && open.slug === slug) return setOpen(null);
+    addRecent({ kind: k, slug, name });
+    setOpen({ kind: k, slug });
   };
+  const openMonster = (slug: string, name: string) => openItem("monster", slug, name);
 
   const refList = (title: string, list: LookupRef[]) =>
     list.length > 0 && (
@@ -435,7 +496,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
         <h3 className="lk-group-title">{title}</h3>
         <div className="lk-refs">
           {list.map((r) => (
-            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => (r.kind === "monster" ? openMonster(r.slug, r.name) : setPicked(r))}>
+            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => (r.kind === "condition" ? setPicked(r) : openItem(r.kind, r.slug, r.name))}>
               {r.name}
               <small>{r.kind}</small>
             </button>
@@ -498,7 +559,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
           )}
           <div className="mon-rows">
             {g.rows.map((m) => (
-              <MonsterRow key={m.slug} m={m} current={open === m.slug} onOpen={() => openMonster(m.slug, m.name)} />
+              <MonsterRow key={m.slug} m={m} current={open?.kind === "monster" && open.slug === m.slug} onOpen={() => openMonster(m.slug, m.name)} />
             ))}
           </div>
         </div>
@@ -566,36 +627,56 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
               </section>
             )}
             {monsterList}
-            {(kind === "all" || kind === "spell") && query.length >= 2 && (
-              <>
-                {busy && <p className="muted">Searching spells…</p>}
-                {spells.length > 0 && (
-                  <section className="lk-group">
-                    <h3 className="lk-group-title">
-                      Spells <span className="counter">{spells.length}</span>
-                    </h3>
-                    <div
-                      className="lk-grid"
-                      onClickCapture={(e) => {
-                        const card = (e.target as Element).closest(".lk-card.spell");
-                        const name = card?.querySelector("h3")?.textContent;
-                        const s = spells.find((x) => x.name === name);
-                        if (s) addRecent({ kind: "spell", slug: s.slug, name: s.name });
-                      }}
-                    >
-                      {spells.map((s) => (
-                        <SpellCard key={s.slug} s={s} />
+            {wantSpells && (
+              <section className="lk-group" aria-label="Spells">
+                {kind === "spell" && (
+                  <div className="spell-browse-filters">
+                    <div className="lk-filters spell-levels" role="radiogroup" aria-label="Spell level">
+                      {[null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => (
+                        <button key={String(l)} type="button" role="radio" aria-checked={spellLevel === l} className={`lk-kind ${spellLevel === l ? "on" : ""}`} onClick={() => setSpellLevel(l)}>
+                          {l == null ? "Any level" : l === 0 ? "Cantrips" : ordinal(l)}
+                        </button>
                       ))}
                     </div>
-                  </section>
+                    <label className="spell-class-pick">
+                      <span>Class</span>
+                      <select value={spellClass} onChange={(e) => setSpellClass(e.target.value)}>
+                        <option value="">Any class</option>
+                        {spellClasses.map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <span className="mon-count muted">{spellBrief ? `${spells.length} spell${spells.length === 1 ? "" : "s"}` : "Loading spells…"}</span>
+                  </div>
                 )}
-              </>
+                {kind === "all" && spells.length > 0 && <h3 className="lk-group-title">Spells <span className="counter">{spells.length}</span></h3>}
+                {spellGroups.map((g) => (
+                  <div key={g.title} className="mon-group">
+                    {kind === "spell" && <h3 className="mon-group-title"><span>{g.title}</span></h3>}
+                    <div className="mon-rows">
+                      {g.rows.map((x) => (
+                        <SpellRow key={x.slug} s={x} current={open?.kind === "spell" && open.slug === x.slug} onOpen={() => openItem("spell", x.slug, x.name)} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {spells.length > limit && (
+                  <button type="button" className="btn mon-more" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+                    Show {Math.min(PAGE_SIZE, spells.length - limit)} more
+                  </button>
+                )}
+                {spellBrief && kind === "spell" && !spells.length && <p className="muted">No spell matches{query ? ` “${query}”` : ""}. Try another level or class.</p>}
+              </section>
             )}
-            {kind === "spell" && query.length < 2 && <p className="muted lk-empty">Type at least two letters of a spell, e.g. <em>fireball</em>.</p>}
           </div>
           {open && (
             <div className="lk-page">
-              <MonsterPage key={open} slug={open} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} />
+              {open.kind === "monster" ? (
+                <MonsterPage key={open.slug} slug={open.slug} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} />
+              ) : (
+                <SpellPage key={open.slug} slug={open.slug} onBack={() => setOpen(null)} />
+              )}
             </div>
           )}
         </div>

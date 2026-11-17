@@ -7,6 +7,11 @@ import { supabase } from "../cloud";
 import { getErrors, getState, getSteps } from "../trail";
 import { shrinkImage } from "../images";
 
+/** Mac or iPhone/iPad: different shortcuts in the hints. */
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const PASTE_KEY = IS_MAC ? "⌘V" : "Ctrl+V";
+const PASTE_HINT = "Ctrl + V for Windows, ⌘ + V for Mac";
+
 export interface FeedbackItem {
   id: string;
   created: number;
@@ -144,6 +149,7 @@ export function FeedbackWidget() {
   const [hover, setHover] = useState<DOMRect | null>(null);
   const [status, setStatus] = useState("");
   const [showFixed, setShowFixed] = useState(false);
+  const [pasteNote, setPasteNote] = useState("");
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const refresh = useCallback(async () => {
@@ -229,11 +235,47 @@ export function FeedbackWidget() {
     for (const f of imgs.slice(0, 6)) urls.push(await shrinkImage(f)); // one at a time: easier on phones
     if (urls.length) setImages((x) => [...x, ...urls].slice(0, 6));
   };
+  // Safari (2026-11-17 tester report): it only fires "paste" when an editable element has focus, so the
+  // paste box is editable (typing blocked), and a Paste button reads the clipboard directly.
+  // Array.from, not spread: works on any browser's item list; `files` as a fallback.
+  const pastedFiles = (dt: DataTransfer) => {
+    const fromItems = Array.from(dt.items ?? [])
+      .filter((i) => i.kind === "file" && i.type.startsWith("image/"))
+      .map((i) => i.getAsFile())
+      .filter(Boolean) as File[];
+    return fromItems.length ? fromItems : Array.from(dt.files ?? []).filter((f) => f.type.startsWith("image/"));
+  };
   const onPaste = (e: React.ClipboardEvent) => {
-    const files = [...e.clipboardData.items].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean) as File[];
+    const files = pastedFiles(e.clipboardData);
     if (files.length) {
       e.preventDefault();
+      setPasteNote("");
       addFiles(files);
+    }
+  };
+  /** The paste box: always swallow the paste (no text lands in it), and say so when there was no picture. */
+  const onBoxPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = pastedFiles(e.clipboardData);
+    if (files.length) {
+      setPasteNote("");
+      addFiles(files);
+    } else setPasteNote("There's no picture on the clipboard. Copy a screenshot first.");
+  };
+  const pasteButton = async () => {
+    try {
+      const found: File[] = [];
+      for (const item of await navigator.clipboard.read()) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) found.push(new File([await item.getType(type)], `pasted.${type.split("/")[1]}`, { type }));
+      }
+      if (found.length) {
+        setPasteNote("");
+        addFiles(found);
+      } else setPasteNote("There's no picture on the clipboard. Copy a screenshot first.");
+    } catch {
+      setPasteNote(`The browser didn't let the app read the clipboard. Click the dashed box and press ${PASTE_KEY} instead.`);
     }
   };
 
@@ -408,16 +450,43 @@ export function FeedbackWidget() {
                       </button>
                     </div>
                   ))}
-                  <label className="fb-add">
-                    <input type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && addFiles(e.target.files)} />
-                    <span>
-                      Paste (Ctrl+V), drop,
+                  <div
+                    className="fb-add fb-paste"
+                    contentEditable
+                    suppressContentEditableWarning
+                    role="textbox"
+                    aria-label={`Paste a screenshot here (${PASTE_KEY})`}
+                    onPaste={onBoxPaste}
+                    onBeforeInput={(e) => e.preventDefault()}
+                    onKeyDown={(e) => {
+                      if ((e.key.length === 1 && !e.metaKey && !e.ctrlKey) || ["Backspace", "Delete", "Enter"].includes(e.key)) e.preventDefault();
+                    }}
+                    onCut={(e) => e.preventDefault()}
+                  >
+                    <span contentEditable={false}>
+                      Click here, then {PASTE_KEY}
                       <br />
-                      or <u>choose a file</u>
+                      or drop a picture
                     </span>
+                  </div>
+                </div>
+                <div className="fb-pick">
+                  {typeof navigator !== "undefined" && "clipboard" in navigator && "read" in navigator.clipboard && (
+                    <button type="button" className="btn small" onClick={pasteButton}>
+                      Paste
+                    </button>
+                  )}
+                  <label className="btn small">
+                    <input type="file" accept="image/*" multiple hidden onChange={(e) => (setPasteNote(""), e.target.files && addFiles(e.target.files), (e.target.value = ""))} />
+                    Choose a file
                   </label>
                 </div>
-                <p className="fb-muted fb-hint">Tip: Win+Shift+S takes a screenshot, then Ctrl+V here.</p>
+                {pasteNote && (
+                  <p className="fb-hint fb-paste-note" role="status">
+                    {pasteNote}
+                  </p>
+                )}
+                <p className="fb-muted fb-hint">{PASTE_HINT}</p>
               </div>
 
               <div className="fb-section fb-also">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
 import type { AnySystem, BaseCharacter } from "../systems/types";
 import { clearDraft, loadDraft, newRecordId, saveDraft, type StoredCharacter, type Theme } from "../storage";
@@ -53,6 +53,19 @@ export function NewCharacterWizard({
   };
 
   const template = system?.templates.find((t) => t.id === templateId);
+
+  // Leaving while building a character: ask first (user, 2026-11-17). The choices so far stay on
+  // this device as a draft, but the character isn't on the account until "Create character".
+  const leave = () => {
+    if (building && !confirm("Leave without creating this character?\n\nIt isn't saved to your account yet. Your choices so far stay on this device, so you can continue later from “+ New character”.")) return;
+    onCancel();
+  };
+  useEffect(() => {
+    if (!building) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [building]);
 
   const save = (data: BaseCharacter) => {
     if (!system) return;
@@ -111,13 +124,13 @@ export function NewCharacterWizard({
 
   const header = (
     <header className="topbar">
-      <Brand onClick={onCancel} />
+      <Brand onClick={leave} />
       <div className="identity">
         <h1 className="page-title">New character{building && system ? ` · ${system.short}` : ""}</h1>
       </div>
       <div className="actions">
         <SkinPicker theme={theme} onChange={onTheme} />
-        <button type="button" className="btn ghost" onClick={onCancel}>
+        <button type="button" className="btn ghost" onClick={leave}>
           Cancel
         </button>
       </div>
@@ -129,11 +142,11 @@ export function NewCharacterWizard({
       <CreationStepper
         system={system}
         books={normalizeBooks(system, books)}
-        onBack={() => (preset ? onCancel() : setBuilding(false))}
+        onBack={() => (preset ? leave() : setBuilding(false))}
         onCreate={save}
         resume={resume}
         onProgress={progress}
-        hero={{ onCancel, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
+        hero={{ onCancel: leave, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
       />
     );
 
@@ -141,7 +154,7 @@ export function NewCharacterWizard({
     return (
       <div className="app">
         {header}
-        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? onCancel() : setBuilding(false))} onCreate={save} resume={resume} onProgress={progress} />
+        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? leave() : setBuilding(false))} onCreate={save} resume={resume} onProgress={progress} />
       </div>
     );
 

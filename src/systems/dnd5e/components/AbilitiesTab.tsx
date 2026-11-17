@@ -5,12 +5,73 @@ import type { TabProps } from "../../types";
 import type { AbilityMethod, Character } from "../character";
 import { POINT_BUY_BUDGET, POINT_BUY_COST, STANDARD_ARRAY, type Derived } from "../derive";
 import { FeatChoicesEditor } from "./FeatChoicesEditor";
+import { assignRoll, baseFromRolls, roll4d6, rollTotal, ROLL_COUNT } from "../rolls";
 import { Card, Field, Segmented, Select } from "../../../components/ui";
 
-const roll4d6 = () => {
-  const dice = Array.from({ length: 4 }, () => 1 + Math.floor(Math.random() * 6)).sort((a, b) => a - b);
-  return dice[1] + dice[2] + dice[3];
-};
+/** One die face, drawn (the dropped one is faded and struck through). */
+function Die({ n, dropped }: { n: number; dropped?: boolean }) {
+  return (
+    <span className={`die ${dropped ? "dropped" : ""}`} aria-label={dropped ? `${n}, dropped` : String(n)}>
+      {n}
+    </span>
+  );
+}
+
+/** Rolled scores, one roll at a time; each total is then put on an ability in the table below. */
+function RollPanel({ c, set }: { c: Character; set: (p: Partial<Character>) => void }) {
+  const rolls = c.rolls ?? [];
+  const usedBy = (i: number) => ABILITIES.find((a) => c.rollFor?.[a] === i);
+  const rollNext = () => set({ rolls: [...rolls, roll4d6()] });
+  const rollRest = () => set({ rolls: [...rolls, ...Array.from({ length: ROLL_COUNT - rolls.length }, () => roll4d6())] });
+  const startOver = () => confirm("Throw away these rolls and roll again?") && set({ rolls: [], rollFor: {}, base: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
+  return (
+    <div className="roll-panel">
+      <p className="muted">
+        Roll 4d6 six times; the lowest die of each roll is dropped. Then put each total on the ability you want in the table below.
+      </p>
+      <ol className="roll-slots">
+        {Array.from({ length: ROLL_COUNT }, (_, i) => {
+          const dice = rolls[i];
+          const who = dice ? usedBy(i) : undefined;
+          return (
+            <li key={i} className={`roll-slot ${dice ? "done" : ""} ${who ? "used" : ""}`}>
+              {dice ? (
+                <>
+                  <span className="roll-dice">
+                    {dice.map((n, k) => (
+                      <Die key={k} n={n} dropped={k === 3} />
+                    ))}
+                  </span>
+                  <strong className="roll-total">{rollTotal(dice)}</strong>
+                  <small className="muted">{who ? `on ${ABILITY_NAMES[who]}` : "not used yet"}</small>
+                </>
+              ) : i === rolls.length ? (
+                <button type="button" className="btn primary small" onClick={rollNext}>
+                  Roll {i + 1}
+                </button>
+              ) : (
+                <span className="muted roll-wait">Roll {i + 1}</span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <div className="row-actions">
+        {rolls.length > 0 && rolls.length < ROLL_COUNT && (
+          <button type="button" className="link" onClick={rollRest}>
+            Roll the rest at once
+          </button>
+        )}
+        {rolls.length > 0 && (
+          <button type="button" className="link" onClick={startOver}>
+            Start over
+          </button>
+        )}
+        <span className="muted">Rolled at the table? Pick “Manual” and type them.</span>
+      </div>
+    </div>
+  );
+}
 
 /** What each ability does, in plain words (shown next to it). */
 const ABILITY_WHAT: Record<Ability, string> = {
@@ -32,7 +93,16 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
   const changeMethod = (m: AbilityMethod) => {
     if (m === "standard") set({ abilityMethod: m, base: { STR: 8, DEX: 13, CON: 14, INT: 10, WIS: 12, CHA: 15 } });
     else if (m === "pointbuy") set({ abilityMethod: m, base: { STR: 8, DEX: 14, CON: 14, INT: 8, WIS: 10, CHA: 15 } });
+    else if (m === "rolled") set({ abilityMethod: m, rolls: [], rollFor: {}, base: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
     else set({ abilityMethod: m });
+  };
+  // Older rolled characters have typed scores and no saved dice: keep the number boxes for them.
+  const rolledDice = c.abilityMethod === "rolled" && (c.rolls?.length ?? 0) > 0;
+  const freshRolled = c.abilityMethod === "rolled" && !(c.rolls?.length ?? 0) && ABILITIES.every((a) => c.base[a] === 10);
+  const typedRolled = c.abilityMethod === "rolled" && !rolledDice && !freshRolled;
+  const putRoll = (a: Ability, v: string) => {
+    const rollFor = assignRoll(c.rollFor ?? {}, a, v === "" ? undefined : Number(v));
+    set({ rollFor, base: baseFromRolls(c.rolls, rollFor) });
   };
 
   /** Standard array: picking a value swaps it with whichever ability had it. */
@@ -57,19 +127,17 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
           ]}
           onChange={changeMethod}
         />
-        {c.abilityMethod === "rolled" && (
+        {(rolledDice || freshRolled) && <RollPanel c={c} set={set} />}
+        {typedRolled && (
           <div className="row-actions">
+            <span className="muted">These are the scores you typed in.</span>
             <button
               type="button"
-              className="btn ghost"
-              onClick={() => {
-                if (confirm("Roll new base scores (4d6, drop the lowest) for all six abilities?"))
-                  set({ base: Object.fromEntries(ABILITIES.map((a) => [a, roll4d6()])) as Character["base"] });
-              }}
+              className="link"
+              onClick={() => confirm("Replace these scores with new rolls, one at a time?") && set({ rolls: [], rollFor: {}, base: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } })}
             >
-              🎲 Roll 4d6 drop lowest
+              Roll new ones with dice
             </button>
-            <span className="muted">Or type the scores your table rolled.</span>
           </div>
         )}
 
@@ -115,6 +183,24 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
                         +
                       </button>
                     </div>
+                  ) : rolledDice || freshRolled ? (
+                    <select
+                      value={c.rollFor?.[a] ?? ""}
+                      onChange={(e) => putRoll(a, e.target.value)}
+                      aria-label={`${ABILITY_NAMES[a]}: which roll`}
+                      disabled={!c.rolls?.length}
+                      className={`roll-pick ${c.rollFor?.[a] == null ? "roll-unset" : ""}`}
+                    >
+                      <option value="">{c.rolls?.length ? "Choose…" : "Roll first"}</option>
+                      {(c.rolls ?? []).map((dice, i) => {
+                        const who = ABILITIES.find((x) => c.rollFor?.[x] === i);
+                        return (
+                          <option key={i} value={i}>
+                            {rollTotal(dice)} (roll {i + 1}){who && who !== a ? ` · now on ${who}` : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
                   ) : (
                     <input type="number" min={3} max={18} value={c.base[a]} onChange={(e) => setBase(a, Number(e.target.value) || 0)} aria-label={`${ABILITY_NAMES[a]} base`} />
                   )}

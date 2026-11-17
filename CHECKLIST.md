@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster page).
+Last updated: 2026-11-17 (suggested loot; browse spells; rolled ability scores; leave warning in creation).
 
 ---
 
@@ -22,6 +22,8 @@ Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster pa
 - [x] Sidebar keeps portrait, name, To do, Level up, ⋯ menu
 - [x] Works in Hero, Dark and Parchment
 - [x] One column on narrow screens (slots and points on top)
+- [x] Rolled ability scores with real dice (4d6, drop the lowest; pick which roll goes where, swap between abilities) (2026-11-17)
+- [x] Leaving character creation asks first (Cancel, back, logo, closing the tab); the draft stays on this device (2026-11-17)
 
 ## 2. Accounts, part 1 (login + characters online)
 - [x] Supabase tables: `profiles`, `characters`, with security rules (each account sees only its own)
@@ -115,7 +117,7 @@ Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster pa
 - [x] Browse monsters without typing (challenge / type / place / sort), an icon per monster (game-icons.net), monster page beside the list on PC (full page on phone): numbers, At the table, stat block with Roll buttons, Monster Manual page, + Add to an encounter, your own picture (⋯ → Add a picture)
 - [x] Session side panel folds to a thin strip on PC
 - [x] Main page: "Your sessions" cards at the top (hosting / playing, players, last activity) · Sessions page: All / Hosting / Playing, Active / Ended, sort by last activity / newest / name
-- [ ] Browse spells by level / class
+- [x] Browse spells by level / class (Spells chip: level chips + class menu, spell page beside the list)
 - [ ] Spell names inside a stat block open that spell
 - [ ] Environment filter; favorites saved to the account (any device)
 
@@ -133,6 +135,9 @@ Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster pa
 
 ## 10. Polish (every screen, every size)
 - [x] Phone: sidebar becomes a compact top bar (sheet, library, session page) so the Sheet tab is reachable right away
+- [x] Creation: "the character so far" panel on the left in every skin, open on PC (Hero: a wider sidebar), folded on phones; nothing spills out of its box (2026-11-17, tester feedback)
+- [x] Carrying limit enforced (Strength × 15, doubled by Powerful Build): Add, custom items, quantities and coins stop at it and say why (2026-11-17)
+- [x] Class hexagon chart draws in Safari (2026-11-17)
 - [ ] Screen-size check at 375 / 768 / 1280 / 1920 px in Hero, Dark, Parchment
 - [ ] Check on a real phone (iPhone Safari, Android Chrome)
 - [ ] Hover cards and previews open by tap
@@ -153,6 +158,8 @@ Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster pa
 - [ ] Condition durations ("until the end of its next turn")
 - [x] Add someone mid-fight (NPC, reinforcements, a player who joined late); change initiative mid-fight
 - [x] End fight: rounds, defeated monsters, XP total and per player
+- [x] Suggested loot (our own simple scheme): coins by challenge rating on the monster page and the Fight over screen; animals, oozes, plants, constructs, elementals and mindless creatures carry none; once in a while (2–15% per fight) an SRD magic item, rarer with tougher monsters; Roll again; total + share per player
+- [ ] Hand out the loot after a fight: pick who gets which coins / item, straight into their character's inventory
 - [x] Survives a page refresh / another device (saved on the encounter, `encounters.combat`)
 - [x] Tests (turn order, skipping, ties, XP, resistances) · browser test at 375 / 768 / 1280 / 1920
 

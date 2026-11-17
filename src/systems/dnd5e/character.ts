@@ -104,6 +104,10 @@ export interface Character {
 
   abilityMethod: AbilityMethod;
   base: AbilityScores;
+  /** "Rolled": each roll's four d6, rolled one at a time (the lowest is dropped). */
+  rolls: number[][];
+  /** "Rolled": which roll (index into `rolls`) each ability uses; the player puts them where they want. */
+  rollFor: Partial<Record<Ability, number>>;
 
   level4Feat: FeatId;
   level4AsiMode: "+2" | "+1+1";
@@ -254,6 +258,8 @@ export function blankCharacter(edition: Edition): Character {
     bgFeatChoices: emptyFeatChoices(),
     abilityMethod: "standard",
     base: { STR: 8, DEX: 13, CON: 14, INT: 10, WIS: 12, CHA: 15 },
+    rolls: [],
+    rollFor: {},
     level4Feat: "asi",
     level4AsiMode: "+2",
     level4A: "CHA",

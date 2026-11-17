@@ -1,5 +1,6 @@
 // Hexagon (or any polygon) radar chart. One shape, plus an optional "compare" shape drawn
 // under it (e.g. your scores now vs. with a race). Shapes morph smoothly (CSS `d` transition).
+// Safari has no CSS `d`, so each shape also carries the plain `d` attribute (drawn, just not animated).
 import type { CSSProperties, ReactNode } from "react";
 
 export interface RadarProps {
@@ -38,8 +39,8 @@ export function Radar({ axes, values, compare, min = 0, max, color, compareColor
         {[1, 0.75, 0.5, 0.25].map((f) => (
           <path key={f} d={ring(f)} className="radar-ring" />
         ))}
-        {compare && <path className="radar-shape" style={shape(compare, compareColor, false)} strokeWidth={2.5} strokeLinejoin="round" />}
-        <path className="radar-shape" style={shape(values, color, true)} strokeWidth={3.5} strokeLinejoin="round" />
+        {compare && <path className="radar-shape" d={path((i) => r(compare[i]))} style={shape(compare, compareColor, false)} strokeWidth={2.5} strokeLinejoin="round" />}
+        <path className="radar-shape" d={path((i) => r(values[i]))} style={shape(values, color, true)} strokeWidth={3.5} strokeLinejoin="round" />
       </svg>
       {axes.map((a, i) => {
         const [x, y] = pt(R + 30, i);

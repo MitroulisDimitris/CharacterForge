@@ -1,6 +1,7 @@
 // Turns the player's choices into everything the sheet shows, plus warnings.
 // Works for both the 2014 and 2024 rules (see rules.ts for what differs) and for every class
 // (data/classes.ts: 2024 has only the Sorcerer).
+import { assignedCount, ROLL_COUNT } from "./rolls";
 import {
   ABILITIES,
   ABILITY_NAMES,
@@ -198,6 +199,12 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     if (bad) warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: "Point buy: base scores must be between 8 and 15." });
     else if (spent > POINT_BUY_BUDGET) warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: `Point buy: ${spent} of ${POINT_BUY_BUDGET} points spent.` });
     else if (spent < POINT_BUY_BUDGET) warnings.push({ level: "info", tab: "abilities", section: "ability-scores", text: `Point buy: ${POINT_BUY_BUDGET - spent} point(s) left to spend.` });
+  } else if (c.abilityMethod === "rolled" && (c.rolls?.length || baseVals.every((v) => v === 10))) {
+    // Rolled one by one, then each roll put on an ability (rolls.ts).
+    const n = c.rolls?.length ?? 0;
+    const put = assignedCount(c);
+    if (n < ROLL_COUNT) warnings.push({ level: "warn", tab: "abilities", section: "ability-scores", text: `Roll ${ROLL_COUNT - n} more ability score${ROLL_COUNT - n > 1 ? "s" : ""} (${n} of ${ROLL_COUNT}).` });
+    else if (put < ROLL_COUNT) warnings.push({ level: "warn", tab: "abilities", section: "ability-scores", text: `Put ${ROLL_COUNT - put} more roll${ROLL_COUNT - put > 1 ? "s" : ""} on an ability (${put} of ${ROLL_COUNT}).` });
   } else if (baseVals.some((v) => v < 3 || v > 18)) {
     warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: "Base scores must be between 3 and 18." });
   }
@@ -631,8 +638,9 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const carried = c.inventory.reduce((s, i) => s + i.qty * i.weight, 0);
   const coinCount = c.coins.cp + c.coins.sp + c.coins.ep + c.coins.gp + c.coins.pp;
   const carriedTotal = carried + coinCount / 50;
-  const capacity = scores.STR * 15;
-  if (carriedTotal > capacity) warnings.push({ level: "warn", tab: "equipment", section: "inventory", text: `Carrying ${carriedTotal.toFixed(1)} lb, over your ${capacity} lb capacity.` });
+  // Powerful Build counts as one size larger: double capacity.
+  const capacity = scores.STR * 15 * (speciesFeatures.some((f) => f.name === "Powerful Build") ? 2 : 1);
+  if (carriedTotal > capacity) warnings.push({ level: "warn", tab: "equipment", section: "inventory", text: `Carrying ${carriedTotal.toFixed(1)} lb, over the ${capacity} lb you can carry. Drop or remove something.` });
 
   // ---------- other choices ----------
   if (species.lineages && !lineage && c.species) warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `Choose a ${species.lineageLabel}.` });

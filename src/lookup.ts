@@ -191,6 +191,33 @@ export function allMonsters(): Promise<MonsterBrief[]> {
   return allCache;
 }
 
+// ---------- the whole SRD spell list (browse spells) ----------
+
+export interface SpellBrief {
+  slug: string;
+  name: string;
+  level_int: number;
+  school: string;
+  dnd_class: string;
+  casting_time: string;
+  range: string;
+  duration: string;
+  requires_concentration: boolean;
+  can_be_cast_as_ritual: boolean;
+}
+
+let spellCache: Promise<SpellBrief[]> | null = null;
+/** All ~320 SRD spells with what the list shows (loaded once, the first time Spells opens). */
+export function allSpells(): Promise<SpellBrief[]> {
+  spellCache ??= get<{ results: SpellBrief[] }>(`/spells/?${SRD}&limit=500&fields=slug,name,level_int,school,dnd_class,casting_time,range,duration,requires_concentration,can_be_cast_as_ritual`)
+    .then((r) => r.results)
+    .catch((e) => {
+      spellCache = null;
+      throw e;
+    });
+  return spellCache;
+}
+
 /** Places to pick from, each covering the data's own (messier) names. */
 export const PLACES: { id: string; label: string; match: string[] }[] = [
   { id: "arctic", label: "Arctic / tundra", match: ["Arctic", "Tundra"] },

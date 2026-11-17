@@ -12,10 +12,41 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
   const setItems = (inventory: InventoryItem[]) => set({ inventory });
   const update = (id: string, patch: Partial<InventoryItem>) => setItems(c.inventory.map((i) => (i.id === id ? { ...i, ...patch } : i)));
 
+  // Carrying capacity is a hard limit (PHB: Strength × 15 lb; more can only be pushed or dragged).
+  // Anything that adds weight stops at the limit and says why; taking things away always works.
+  const [weightNote, setWeightNote] = useState("");
+  const room = d.capacity - d.carried;
+  const limit = `${d.capacity} lb you can carry (Strength × 15)`;
+  const tooHeavy = (what: string) => setWeightNote(`${what}: more would go over the ${limit}.`);
   const add = (name: string, weight: number, qty = 1) => {
+    if (weight * qty > room + 1e-9) return setWeightNote(`Can't add ${name} (${weight} lb): you're carrying ${+d.carried.toFixed(1)} of the ${limit}. Drop something first.`);
+    setWeightNote("");
     const existing = c.inventory.find((i) => i.name.toLowerCase() === name.toLowerCase());
     if (existing) update(existing.id, { qty: existing.qty + qty });
     else setItems([...c.inventory, { id: newId(), name, qty, weight }]);
+  };
+  /** A typed quantity or weight: kept as typed when it fits, else capped at what fits (never below the old value). */
+  const setLoad = (i: InventoryItem, field: "qty" | "weight", value: number) => {
+    const next = { ...i, [field]: value };
+    const others = d.carried - i.qty * i.weight;
+    if (others + next.qty * next.weight <= d.capacity + 1e-9 || value <= i[field]) {
+      setWeightNote("");
+      return update(i.id, { [field]: value });
+    }
+    const other = field === "qty" ? i.weight : i.qty;
+    const fit = other > 0 ? (d.capacity - others) / other : value;
+    const capped = Math.max(i[field], field === "qty" ? Math.floor(fit + 1e-9) : Math.floor(fit * 100 + 1e-6) / 100);
+    update(i.id, { [field]: capped });
+    tooHeavy(`${i.name} capped at ${field === "qty" ? capped : `${capped} lb each`}`);
+  };
+  const setCoin = (k: keyof Coins, value: number) => {
+    const old = c.coins[k];
+    if (value > old && (value - old) / 50 > room + 1e-9) {
+      set({ coins: { ...c.coins, [k]: Math.max(old, old + Math.floor(room * 50 + 1e-6)) } });
+      return tooHeavy(`${k.toUpperCase()} capped (50 coins weigh 1 lb)`);
+    }
+    setWeightNote("");
+    set({ coins: { ...c.coins, [k]: value } });
   };
 
   return (
@@ -74,10 +105,10 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
                   <input value={i.name} onChange={(e) => update(i.id, { name: e.target.value })} aria-label="Item name" />
                 </td>
                 <td>
-                  <input type="number" min={0} value={i.qty} onChange={(e) => update(i.id, { qty: Math.max(0, Number(e.target.value) || 0) })} aria-label="Quantity" />
+                  <input type="number" min={0} value={i.qty} onChange={(e) => setLoad(i, "qty", Math.max(0, Math.floor(Number(e.target.value) || 0)))} aria-label="Quantity" />
                 </td>
                 <td>
-                  <input type="number" min={0} step={0.1} value={i.weight} onChange={(e) => update(i.id, { weight: Math.max(0, Number(e.target.value) || 0) })} aria-label="Weight" />
+                  <input type="number" min={0} step={0.1} value={i.weight} onChange={(e) => setLoad(i, "weight", Math.max(0, Number(e.target.value) || 0))} aria-label="Weight" />
                 </td>
                 <td className="muted">{+(i.qty * i.weight).toFixed(2)} lb</td>
                 <td>
@@ -89,6 +120,11 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
             ))}
           </tbody>
         </table>
+        {weightNote && (
+          <p className="weight-note" role="status">
+            {weightNote}
+          </p>
+        )}
         <div className="row-actions">
           <select value={preset} onChange={(e) => setPreset(e.target.value)} aria-label="Common item">
             {GEAR.map((g) => (
@@ -100,7 +136,7 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
           <button type="button" className="btn ghost" onClick={() => add(preset, GEAR.find((g) => g.name === preset)!.weight)}>
             Add
           </button>
-          <button type="button" className="btn ghost" onClick={() => setItems([...c.inventory, { id: newId(), name: "New item", qty: 1, weight: 0 }])}>
+          <button type="button" className="btn ghost" onClick={() => (setWeightNote(""), setItems([...c.inventory, { id: newId(), name: "New item", qty: 1, weight: 0 }]))}>
             Add custom
           </button>
           {c.edition === "2024" && <button
@@ -121,7 +157,7 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
           {(["cp", "sp", "ep", "gp", "pp"] as (keyof Coins)[]).map((k) => (
             <label key={k} className="coin">
               <span>{k.toUpperCase()}</span>
-              <input type="number" min={0} value={c.coins[k]} onChange={(e) => set({ coins: { ...c.coins, [k]: Math.max(0, Number(e.target.value) || 0) } })} />
+              <input type="number" min={0} value={c.coins[k]} onChange={(e) => setCoin(k, Math.max(0, Math.floor(Number(e.target.value) || 0)))} />
             </label>
           ))}
         </div>
