@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
 
-export function Card({ title, aside, children, className = "" }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({ title, aside, children, className = "", todo }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string; /** Section id the To do list jumps to. */ todo?: string }) {
   return (
-    <section className={`card ${className}`}>
+    <section className={`card ${className}`} data-todo={todo}>
       {title && (
         <header className="card-head">
           <h3>{title}</h3>

@@ -26,7 +26,7 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
   if (!d.caster) {
     return (
       <div className="stack">
-        <Card title="Spellcasting">
+        <Card todo="spellcasting" title="Spellcasting">
           <p className="lead">
             {SP
               ? `${d.cls.name}s start casting spells at level ${SP.startLevel}.`
@@ -51,7 +51,7 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
 
   return (
     <div className="stack">
-      <Card title="Spellcasting" aside={<span className="muted">{ABILITY_NAMES[d.castAbility]} · {SP?.focus}</span>}>
+      <Card todo="spellcasting" title="Spellcasting" aside={<span className="muted">{ABILITY_NAMES[d.castAbility]} · {SP?.focus}</span>}>
         <div className="spell-stats">
           <div>
             <strong>{d.spellDc}</strong>
@@ -85,6 +85,9 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
           ]}
         />
         {view === "learn" && <span className="muted">{howTo}</span>}
+        {/* The To do list asks for these when it jumps to a spell list (hidden, not tabbable). */}
+        <button type="button" hidden tabIndex={-1} data-todo-reveals="cantrips spells-1 spells-2 spells-3 spells-4 spells-5" onClick={() => setView("learn")} />
+        <button type="button" hidden tabIndex={-1} data-todo-reveals="your-spells" onClick={() => setView("mine")} />
       </div>
 
       {view === "mine" ? <MySpells c={c} d={d} core={core} onLearn={() => setView("learn")} /> : <LearnSpells c={c} d={d} set={set} core={core} always={always} />}
@@ -112,7 +115,7 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
 
   if (!rows.length && !bookOnly.length)
     return (
-      <Card title="Your spells">
+      <Card todo="your-spells" title="Your spells">
         <p className="muted">You haven't picked any spells yet.</p>
         {onLearn && (
           <button type="button" className="btn primary" onClick={onLearn}>
@@ -277,7 +280,7 @@ function LearnSpells({ c, d, set, core, always }: { c: Character; d: Derived; se
         const chosen = isCantrip ? c.cantrips : c.prepared;
         const full = isCantrip ? c.cantrips.length >= d.cantripLimit : c.prepared.length >= d.preparedLimit;
         return (
-          <Card key={lvl} title={isCantrip ? "Cantrips" : `${levelLabel(lvl)} spells`} aside={!isCantrip && <span className="muted">{d.slots[lvl - 1] || "no"} slots</span>}>
+          <Card key={lvl} todo={isCantrip ? "cantrips" : `spells-${lvl}`} title={isCantrip ? "Cantrips" : `${levelLabel(lvl)} spells`} aside={!isCantrip && <span className="muted">{d.slots[lvl - 1] || "no"} slots</span>}>
             <ul className="spell-list">
               {list.map((s) => {
                 const on = chosen.includes(s.name);

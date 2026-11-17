@@ -1,6 +1,7 @@
 // Level changes as a promotion (or demotion): show gains/losses, then walk through new choices.
 import { useMemo, useState } from "react";
-import type { AnySystem, BaseCharacter, DerivedBase, Gain, StatLine, Unlock } from "../systems/types";
+import type { AnySystem, BaseCharacter, DerivedBase, Gain, StatLine, Unlock, Warning } from "../systems/types";
+import { liveTitle } from "../todo";
 
 type Mode = { kind: "change"; target: number } | { kind: "resume"; ids: string[] };
 
@@ -251,7 +252,7 @@ export function LevelChangeDialog({ system, char: liveChar, books, pending, mode
               <span className="hero-kicker">
                 Choice {step + 1} of {steps.length} · Level {unlock.level}
               </span>
-              <h2>{unlock.title}</h2>
+              <h2>{liveTitle(unlock, dNow.warnings as Warning[])}</h2>
               <p>{unlock.detail}</p>
               {done !== undefined && <span className={`counter ${done ? "ok" : "under"}`}>{done ? "✓ Done" : "Not done yet"}</span>}
               {notes.length > 0 && (
@@ -289,7 +290,7 @@ export function LevelChangeDialog({ system, char: liveChar, books, pending, mode
                 <ul className="choice-preview">
                   {waiting.map((u) => (
                     <li key={u.id}>
-                      <span className="pill">Level {u.level}</span> {u.title}
+                      <span className="pill">Level {u.level}</span> {liveTitle(u, dNow.warnings as Warning[])}
                     </li>
                   ))}
                 </ul>

@@ -114,6 +114,7 @@ Last updated: 2026-11-17 (moved to Cloudflare Pages; monster browse + monster pa
 - [x] "Only you see this" (lock line) on every host tab: Lookup, Party, Encounters, Notes, and the fight
 - [x] Browse monsters without typing (challenge / type / place / sort), an icon per monster (game-icons.net), monster page beside the list on PC (full page on phone): numbers, At the table, stat block with Roll buttons, Monster Manual page, + Add to an encounter, your own picture (⋯ → Add a picture)
 - [x] Session side panel folds to a thin strip on PC
+- [x] Main page: "Your sessions" cards at the top (hosting / playing, players, last activity) · Sessions page: All / Hosting / Playing, Active / Ended, sort by last activity / newest / name
 - [ ] Browse spells by level / class
 - [ ] Spell names inside a stat block open that spell
 - [ ] Environment filter; favorites saved to the account (any device)

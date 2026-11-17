@@ -1,9 +1,10 @@
 // Lookup (REQUIREMENTS §4.4): one search for monsters, spells and conditions. Monster cards show
 // what a host needs first (CR, AC, HP, speed, Weak to / Resists / Immune to, 1–4 key traits);
 // the full stat block is one tap away.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { xpForCr } from "../encounters";
 import { MonsterPage, MonsterRow } from "./MonsterPage";
+import { typeColor } from "../monsters";
 import { CONDITIONS, EXHAUSTION } from "../live";
 import {
   abilityMod,
@@ -286,12 +287,70 @@ const MONSTER_BANDS: { id: string; label: string; test: (cr: number) => boolean 
   { id: "13", label: "CR 13+", test: (c) => c >= 13 },
 ];
 const PAGE_SIZE = 60;
+/** "Monsters only": the types that are foes almost every time (no animals, people or angels). */
+const ENEMY_TYPES = ["Aberration", "Dragon", "Fiend", "Giant", "Monstrosity", "Ooze", "Undead"];
+
+const same = (a: string[], b: string[]) => a.length === b.length && b.every((x) => a.includes(x));
+
+/** Creature types, several at a time: a button that opens a list of checkboxes. */
+function TypePicker({ types, picks, onChange }: { types: { t: string; count: number }[]; picks: string[]; onChange: (p: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+  const label = !picks.length ? "Any type" : same(picks, ENEMY_TYPES) ? "Monsters only" : picks.length <= 2 ? picks.join(", ") : `${picks.length} types`;
+  const toggle = (t: string) => onChange(picks.includes(t) ? picks.filter((x) => x !== t) : [...picks, t]);
+  return (
+    <div className="type-pick" ref={ref}>
+      <span className="type-pick-label">Type</span>
+      <button type="button" className={`type-pick-btn ${picks.length ? "on" : ""}`} aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((o) => !o)}>
+        <span>{label}</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="type-pick-menu" role="group" aria-label="Creature types">
+          <div className="type-pick-presets">
+            <button type="button" className={`lk-kind ${same(picks, ENEMY_TYPES) ? "on" : ""}`} onClick={() => onChange(ENEMY_TYPES)}>
+              Monsters only
+            </button>
+            <button type="button" className={`lk-kind ${!picks.length ? "on" : ""}`} onClick={() => onChange([])}>
+              All types
+            </button>
+          </div>
+          <p className="type-pick-hint">Or pick one or more:</p>
+          {types.map(({ t, count }) => (
+            <label key={t} className={`type-pick-row ${picks.includes(t) ? "on" : ""}`}>
+              <input type="checkbox" checked={picks.includes(t)} onChange={() => toggle(t)} />
+              <span className="type-dot" style={{ background: typeColor(t) }} aria-hidden="true" />
+              <span className="type-pick-name">{t}</span>
+              <small>{count}</small>
+            </label>
+          ))}
+          <button type="button" className="btn small type-pick-done" onClick={() => setOpen(false)}>
+            Done
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?: string }) {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<Kind>("all");
   const [band, setBand] = useState("");
-  const [type, setType] = useState("");
+  const [picks, setPicks] = useState<string[]>([]);
   const [place, setPlace] = useState("");
   const [sort, setSort] = useState<"cr" | "az">("cr");
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -330,18 +389,22 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
       clearTimeout(t);
     };
   }, [query, kind]);
-  useEffect(() => setLimit(PAGE_SIZE), [query, band, type, place, sort, kind]);
+  useEffect(() => setLimit(PAGE_SIZE), [query, band, picks, place, sort, kind]);
 
-  const types = useMemo(() => [...new Set((brief ?? []).map((m) => m.type))].sort(), [brief]);
+  const types = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const m of brief ?? []) n.set(m.type, (n.get(m.type) ?? 0) + 1);
+    return [...n].sort((a, z) => a[0].localeCompare(z[0])).map(([t, count]) => ({ t, count }));
+  }, [brief]);
   const monsters = useMemo(() => {
     if (!brief || !wantMonsters) return [];
     const b = MONSTER_BANDS.find((x) => x.id === band)!;
     const p = PLACES.find((x) => x.id === place);
     const needle = query.toLowerCase();
     return brief
-      .filter((m) => (!needle || m.name.toLowerCase().includes(needle)) && b.test(m.cr) && (!type || m.type === type) && (!p || m.environments?.some((e) => p.match.includes(e))))
+      .filter((m) => (!needle || m.name.toLowerCase().includes(needle)) && b.test(m.cr) && (!picks.length || picks.includes(m.type)) && (!p || m.environments?.some((e) => p.match.includes(e))))
       .sort((a, z) => (sort === "cr" ? a.cr - z.cr || a.name.localeCompare(z.name) : a.name.localeCompare(z.name)));
-  }, [brief, wantMonsters, query, band, type, place, sort]);
+  }, [brief, wantMonsters, query, band, picks, place, sort]);
   const shown = monsters.slice(0, limit);
   const groups = useMemo(() => {
     if (sort !== "cr") return [{ title: "", xp: "", rows: shown }];
@@ -357,7 +420,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
   const conds = kind === "all" || kind === "condition" ? CONDITION_IDS.filter((id) => !query || conditionName(id).toLowerCase().includes(query.toLowerCase())) : [];
   const favs = favorites();
   const recents = recent();
-  const filtered = band || type || place;
+  const filtered = band || picks.length || place;
   // Clicking the monster that's already open closes its page (back to the full list).
   const openMonster = (slug: string, name: string) => {
     setPicked(null);
@@ -394,15 +457,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
             ))}
           </select>
         </label>
-        <label>
-          <span>Type</span>
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Any type</option>
-            {types.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </label>
+        <TypePicker types={types} picks={picks} onChange={setPicks} />
         <label>
           <span>Place</span>
           <select value={place} onChange={(e) => setPlace(e.target.value)}>
@@ -426,7 +481,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
           {filtered ? (
             <>
               {" · "}
-              <button type="button" className="link" onClick={() => (setBand(""), setType(""), setPlace(""))}>
+              <button type="button" className="link" onClick={() => (setBand(""), setPicks([]), setPlace(""))}>
                 clear filters
               </button>
             </>
@@ -477,7 +532,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
       </label>
       <div className="lk-filters" role="group" aria-label="What to look up">
         {(["all", "monster", "spell", "condition"] as Kind[]).map((k) => (
-          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null))}>
+          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null), k === "monster" && setPicks(ENEMY_TYPES))}>
             {k === "all" ? "Everything" : k === "monster" ? "Monsters" : k === "spell" ? "Spells" : "Conditions"}
           </button>
         ))}

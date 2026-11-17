@@ -5,6 +5,7 @@ import { Editor } from "./components/Editor";
 import { Loading, Login, NewPassword } from "./components/Login";
 import { AccountDialog } from "./components/AccountDialog";
 import { HostDialog, JoinDialog, SessionPage, SessionsNav } from "./components/Sessions";
+import { SessionsPage, SessionsStrip, sessionRows } from "./components/SessionsOverview";
 import { skinOf } from "./skins";
 import { loadLastOpen, loadTheme, saveLastOpen, saveTheme, type StoredCharacter, type Theme } from "./storage";
 import { arrivedFrom, claimIfFresh, cloudConfigured, deleteCharacters, kickedOut, markFreshLogin, stillActiveLogin, loadCharacters, loadProfile, saveCharacters, supabase, type Profile, type Session } from "./cloud";
@@ -14,6 +15,7 @@ import {
   joinSession,
   loadMyLive,
   loadMemberships,
+  loadOverview,
   loadSessions,
   loadVersion,
   pendingJoin,
@@ -23,6 +25,7 @@ import {
   summarize,
   takeJoinFromUrl,
   type Membership,
+  type Overview,
   type Preview,
   type SessionInfo,
 } from "./sessions";
@@ -32,7 +35,8 @@ type View =
   | { kind: "library" }
   | { kind: "new"; forSession?: { preview: Preview; code: string } }
   | { kind: "edit"; id: string }
-  | { kind: "session"; id: string };
+  | { kind: "session"; id: string }
+  | { kind: "sessions" };
 export type SaveState = "saved" | "saving" | "error";
 
 /** Login gate: the login page, or the logged-in account's app. */
@@ -108,6 +112,7 @@ function useAutosave<T>(list: T[] | null, keyOf: (x: T) => string, save: (change
 function Account({ session, userId, email, theme, setTheme }: { session: Session; userId: string; email: string; theme: Theme; setTheme: (t: Theme) => void }) {
   const [lib, setLib] = useState<StoredCharacter[] | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [overview, setOverview] = useState<Overview[]>([]);
   const [memberships, setMemberships] = useState<Membership[] | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -206,6 +211,21 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     };
   }, [userId]);
 
+  // Players, encounters and last activity per session (main page cards + Sessions page).
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      loadOverview()
+        .then((o) => live && setOverview(o))
+        .catch(() => {});
+    load();
+    window.addEventListener("focus", load);
+    return () => {
+      live = false;
+      window.removeEventListener("focus", load);
+    };
+  }, [sessions, view.kind]);
+
   // Warn before closing the page while a change isn't saved yet.
   useEffect(() => {
     if (save === "saved") return;
@@ -245,6 +265,7 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     clearPendingJoin();
     setDialog(null);
   };
+  const rows = sessionRows(sessions, memberships, lib, overview, userId);
   const openSession = (id: string) => {
     setDialog(null);
     setView({ kind: "session", id });
@@ -360,36 +381,47 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
   const inSessions = (charId: string) => memberships.filter((m) => m.character_id === charId).map((m) => sessionName(m.session_id));
   return (
     <>
-      <Library
-        lib={lib}
-        theme={theme}
-        account={account}
-        welcome={welcome}
-        notice={notice}
-        onDismissNotice={() => setNotice("")}
-        inSessions={inSessions}
-        sessionsNav={
-          <SessionsNav
-            sessions={sessions}
-            memberships={memberships}
-            lib={lib}
-            userId={userId}
-            onOpen={openSession}
-            onHost={() => setDialog({ kind: "host" })}
-            onJoin={() => setDialog({ kind: "join", code: "" })}
-          />
-        }
-        onDismissWelcome={() => setWelcome(false)}
-        onTheme={setTheme}
-        onOpen={(id) => setView({ kind: "edit", id })}
-        onNew={() => setView({ kind: "new" })}
-        onImport={(rec) => upsert(rec)}
-        onDelete={(id) => {
-          setLib((l) => l!.filter((r) => r.id !== id));
-          setMemberships((list) => list!.filter((m) => m.character_id !== id));
-        }}
-        onDuplicate={(rec) => upsert(rec)}
-      />
+      {view.kind === "sessions" ? (
+        <SessionsPage
+          rows={rows}
+          theme={theme}
+          onTheme={setTheme}
+          onBack={() => setView({ kind: "library" })}
+          onOpen={openSession}
+          onHost={() => setDialog({ kind: "host" })}
+          onJoin={() => setDialog({ kind: "join", code: "" })}
+        />
+      ) : (
+        <Library
+          lib={lib}
+          theme={theme}
+          account={account}
+          welcome={welcome}
+          notice={notice}
+          onDismissNotice={() => setNotice("")}
+          inSessions={inSessions}
+          sessionsNav={<SessionsNav count={sessions.length} onAll={() => setView({ kind: "sessions" })} onHost={() => setDialog({ kind: "host" })} onJoin={() => setDialog({ kind: "join", code: "" })} />}
+          sessionsStrip={
+            <SessionsStrip
+              rows={rows}
+              onOpen={openSession}
+              onAll={() => setView({ kind: "sessions" })}
+              onHost={() => setDialog({ kind: "host" })}
+              onJoin={() => setDialog({ kind: "join", code: "" })}
+            />
+          }
+          onDismissWelcome={() => setWelcome(false)}
+          onTheme={setTheme}
+          onOpen={(id) => setView({ kind: "edit", id })}
+          onNew={() => setView({ kind: "new" })}
+          onImport={(rec) => upsert(rec)}
+          onDelete={(id) => {
+            setLib((l) => l!.filter((r) => r.id !== id));
+            setMemberships((list) => list!.filter((m) => m.character_id !== id));
+          }}
+          onDuplicate={(rec) => upsert(rec)}
+        />
+      )}
       {dialog?.kind === "settings" && profile && <AccountDialog profile={profile} email={email} onSaved={setProfile} onClose={() => setDialog(null)} />}
       {dialog?.kind === "host" && <HostDialog onClose={() => setDialog(null)} onCreated={reloadSessions} onOpen={openSession} />}
       {dialog?.kind === "join" && (

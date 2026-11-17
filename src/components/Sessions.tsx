@@ -42,37 +42,7 @@ const charName = (rec: StoredCharacter) => ((rec.data as { name?: string }).name
 // ---------------------------------------------------------------------------------------------
 // Library sidebar: Host, Join, and the active sessions.
 
-export function SessionsNav({
-  sessions,
-  memberships,
-  lib,
-  userId,
-  onOpen,
-  onHost,
-  onJoin,
-}: {
-  sessions: SessionInfo[];
-  memberships: Membership[];
-  lib: StoredCharacter[];
-  userId: string;
-  onOpen: (id: string) => void;
-  onHost: () => void;
-  onJoin: () => void;
-}) {
-  const active = sessions.filter((s) => s.status === "active");
-  const past = sessions.filter((s) => s.status !== "active");
-  const line = (s: SessionInfo) => {
-    if (s.host_id === userId) return "You host";
-    const m = memberships.find((x) => x.session_id === s.id);
-    const rec = m && lib.find((r) => r.id === m.character_id);
-    return rec ? `Playing ${charName(rec)}` : "Playing";
-  };
-  const item = (s: SessionInfo) => (
-    <button key={s.id} type="button" className="session-link" onClick={() => onOpen(s.id)}>
-      <span className="session-link-name">{s.name}</span>
-      <span className="session-link-sub">{line(s)}</span>
-    </button>
-  );
+export function SessionsNav({ count, onAll, onHost, onJoin }: { count: number; onAll: () => void; onHost: () => void; onJoin: () => void }) {
   return (
     <nav className="sessions-nav" aria-label="Sessions">
       <span className="hero-label">Sessions</span>
@@ -84,12 +54,11 @@ export function SessionsNav({
           Join a session
         </button>
       </div>
-      {active.map(item)}
-      {past.length > 0 && (
-        <details className="sessions-past">
-          <summary>Past sessions ({past.length})</summary>
-          {past.map(item)}
-        </details>
+      {count > 0 && (
+        <button type="button" className="session-link" onClick={onAll}>
+          <span className="session-link-name">All sessions ({count}) ›</span>
+          <span className="session-link-sub">Hosting and playing, last activity</span>
+        </button>
       )}
     </nav>
   );

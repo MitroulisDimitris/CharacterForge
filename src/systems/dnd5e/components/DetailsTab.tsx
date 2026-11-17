@@ -30,7 +30,7 @@ export function DetailsTab({ c, set }: TabProps<Character, Derived>) {
   const setD = (k: keyof Details, v: string) => set({ details: { ...c.details, [k]: v } });
   return (
     <div className="stack">
-      <Card title="Identity">
+      <Card todo="identity" title="Identity">
         <div className="grid-3">
           <Field label="Character name">
             <input value={c.name} onChange={(e) => set({ name: e.target.value })} />
@@ -45,7 +45,7 @@ export function DetailsTab({ c, set }: TabProps<Character, Derived>) {
           ))}
         </div>
       </Card>
-      <Card title="Personality & story">
+      <Card todo="story" title="Personality & story">
         <div className="grid-2">
           {LONG.map(([k, label, rows]) => (
             <Field key={k} label={label}>

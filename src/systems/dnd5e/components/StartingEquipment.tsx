@@ -42,7 +42,7 @@ export function StartingEquipment({ c, d, set, books, applyLabel = "Put it in my
   };
 
   return (
-    <Card title="Starting equipment" aside={<span className="muted">Level 1 only</span>}>
+    <Card todo="starting-equipment" title="Starting equipment" aside={<span className="muted">Level 1 only</span>}>
       <p className="muted">
         Take the {CL.name.toLowerCase()}'s equipment plus your background's, <em>or</em> take starting gold ({goldFormula(CL)}) and buy everything yourself. Gold replaces both kits.
       </p>

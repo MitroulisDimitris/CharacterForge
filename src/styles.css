@@ -5675,3 +5675,472 @@ button.hero-system:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Main page: "Your sessions" cards; Sessions page (2026-11-17) ---------- */
+.sess-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 24px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 166, 74, 0.45);
+  background: linear-gradient(180deg, var(--gold-soft), transparent 70%), var(--surface);
+  box-shadow: var(--shadow);
+}
+.sess-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sess-strip-head .section-title {
+  margin: 0;
+}
+.sess-strip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sess-strip-actions .btn {
+  min-height: 40px;
+}
+.sess-all {
+  min-height: 40px;
+  font-size: 14px;
+}
+.sess-empty {
+  margin: 0;
+}
+.sess-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.sess-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sess-card:hover,
+.sess-card:focus-visible {
+  border-color: var(--gold);
+}
+.sess-card.host {
+  border-top: 3px solid var(--gold);
+}
+.sess-card.player {
+  border-top: 3px solid #8fb6e3;
+}
+.sess-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.sess-when {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sess-name {
+  font-family: var(--font-head);
+  font-size: 20px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.sess-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.sess-open {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+}
+.sess-role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.sess-role.host {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.sess-role.player {
+  color: #8fb6e3;
+  border-color: rgba(143, 182, 227, 0.6);
+}
+:root[data-theme="parchment"] .sess-role.player,
+:root[data-theme="parchment"] .sess-card.player {
+  color: #2f5c8c;
+  border-color: rgba(47, 92, 140, 0.6);
+}
+:root[data-theme="parchment"] .sess-card.player {
+  color: var(--text);
+  border-top-color: #2f5c8c;
+}
+
+.sess-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app > .sess-page {
+  padding: 0 0 40px;
+}
+.sess-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.sess-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sess-controls select {
+  min-height: 40px;
+  width: auto;
+}
+.sess-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sess-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sess-tr {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) 0.7fr 0.8fr 0.9fr 1fr 0.9fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+button.sess-tr {
+  cursor: pointer;
+  min-height: 64px;
+}
+button.sess-tr:hover,
+button.sess-tr:focus-visible {
+  border-color: var(--gold);
+}
+.sess-th {
+  padding-top: 0;
+  padding-bottom: 0;
+  border: 0;
+  background: none;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sess-td-name {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 10px;
+}
+.sess-td-name strong {
+  font-family: var(--font-head);
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.sess-td-name small {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--muted);
+}
+.muted-pill {
+  opacity: 0.6;
+}
+.sess-note {
+  font-size: 12px;
+  margin: 0;
+}
+.sess-none {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 760px) {
+  .sess-th {
+    display: none;
+  }
+  .sess-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+  }
+  .sess-td-name {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+  }
+  .sess-tr > [data-label] {
+    font-size: 13px;
+  }
+  .sess-tr > [data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--muted);
+  }
+  .sess-controls label {
+    flex: 1 1 130px;
+  }
+  .sess-controls select {
+    width: 100%;
+  }
+}
+
+/* ---------- Lookup: several creature types at once (2026-11-17) ---------- */
+.type-pick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.type-pick-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.type-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.type-pick-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.type-pick-btn.on {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.type-pick-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 25;
+  width: 260px;
+  max-height: min(440px, 70vh);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.type-pick-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.type-pick-presets .lk-kind {
+  min-height: 38px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+.type-pick-hint {
+  margin: 8px 4px 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mon-filters .type-pick-row,
+.type-pick-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.type-pick-row:hover {
+  background: var(--surface-2);
+}
+.type-pick-row.on {
+  background: var(--gold-soft);
+}
+.type-pick-row input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--gold);
+}
+.type-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.type-pick-name {
+  flex: 1;
+  text-align: left;
+}
+.type-pick-row small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.type-pick-done {
+  margin-top: 8px;
+  min-height: 40px;
+}
+@media (max-width: 640px) {
+  /* Its own row on phones, so the list opens inside the screen. */
+  .type-pick {
+    flex: 1 1 100%;
+  }
+  .type-pick-btn {
+    max-width: none;
+    width: 100%;
+  }
+  .type-pick-menu {
+    width: min(280px, calc(100vw - 32px));
+  }
+}
+
+/* ---------- One To do list; clicking an item makes its section glow (2026-11-17) ---------- */
+.todo-count {
+  margin-left: 6px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1c1815;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.todo-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.todo-go {
+  flex: 1;
+  min-height: 32px;
+  padding: 4px 0;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.todo-go.note {
+  color: var(--muted);
+  text-decoration-color: var(--border-strong);
+}
+.todo-notes {
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.todo-notes summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.todo-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.todo-box.has {
+  border-color: rgba(212, 166, 74, 0.6);
+  background: var(--gold-soft);
+}
+.todo-box .btn {
+  align-self: flex-start;
+}
+.todo-flash {
+  animation: todo-glow 2.4s ease-out;
+  border-radius: 12px;
+}
+@keyframes todo-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 166, 74, 0);
+    outline: 2px solid rgba(212, 166, 74, 0);
+  }
+  15% {
+    box-shadow: 0 0 0 6px rgba(212, 166, 74, 0.35), 0 0 28px rgba(212, 166, 74, 0.55);
+    outline: 2px solid var(--gold);
+  }
+  45% {
+    box-shadow: 0 0 0 3px rgba(212, 166, 74, 0.2), 0 0 18px rgba(212, 166, 74, 0.35);
+    outline: 2px solid var(--gold);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 166, 74, 0);
+    outline: 2px solid rgba(212, 166, 74, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .todo-flash {
+    animation: none;
+    outline: 2px solid var(--gold);
+  }
+}

@@ -91,6 +91,19 @@ export const sessionError = (e: unknown) => {
   return /fetch|network/i.test(m) ? "Can't reach the server. Check your internet connection and try again." : m;
 };
 
+/** Per session I host or play in: players, encounters (host only), last activity. */
+export interface Overview {
+  session_id: string;
+  players: number;
+  encounters: number | null;
+  last_activity: string;
+}
+export async function loadOverview(): Promise<Overview[]> {
+  const { data, error } = await supabase.rpc("my_sessions_overview");
+  if (error) throw error;
+  return (data ?? []) as Overview[];
+}
+
 export async function loadSessions(): Promise<SessionInfo[]> {
   const { data, error } = await supabase.from("sessions").select(SESSION_COLS).order("created_at", { ascending: false });
   if (error) throw error;

@@ -1,6 +1,8 @@
 import { useRef, useState, type ReactNode } from "react";
 import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
-import { bookAbbr, type AnySystem, type BaseCharacter, type DerivedBase } from "../systems/types";
+import { bookAbbr, type AnySystem, type BaseCharacter, type DerivedBase, type Warning } from "../systems/types";
+import { buildTodos } from "../todo";
+import { openUnlocks } from "./LevelChange";
 import { exportJson, importFile, newRecordId, type StoredCharacter, type Theme } from "../storage";
 import { skinOf } from "../skins";
 import { Brand, SkinPicker } from "./Brand";
@@ -29,6 +31,7 @@ export function Library({
   onDismissNotice,
   inSessions = () => [],
   sessionsNav,
+  sessionsStrip,
   onTheme,
   onOpen,
   onNew,
@@ -46,6 +49,8 @@ export function Library({
   /** Names of the sessions a character plays in. */
   inSessions?: (id: string) => string[];
   sessionsNav?: ReactNode;
+  /** "Your sessions" cards at the top of the main area. */
+  sessionsStrip?: ReactNode;
   onTheme: (t: Theme) => void;
   onOpen: (id: string) => void;
   onNew: () => void;
@@ -87,7 +92,8 @@ export function Library({
     try {
       const d: DerivedBase = system.derive(c, rec.books);
       identity = d.identity;
-      problems = d.warnings.filter((w) => w.level !== "info").length;
+      // Same count as the character's To do list (rule problems + postponed level-up choices).
+      problems = buildTodos(d.warnings as Warning[], openUnlocks(system, c, rec.books, rec.pending ?? [])).todos.length;
     } catch {
       identity = "Couldn't read this character";
     }
@@ -166,6 +172,7 @@ export function Library({
           </header>
           {welcomeNote}
           {noticeNote}
+          {sessionsStrip}
           {rows.length === 0 ? (
             empty
           ) : shown.length === 0 ? (
@@ -183,7 +190,7 @@ export function Library({
                       </span>
                       <span className="hero-card-tags">
                         <span className="hero-system">{system.short}</span>
-                        {problems > 0 && <span className="hero-todo-chip">{problems} to fix</span>}
+                        {problems > 0 && <span className="hero-todo-chip">{problems} to do</span>}
                         {inSessions(rec.id).length > 0 && (
                           <span className="session-chip" title={inSessions(rec.id).join(", ")}>
                             In {inSessions(rec.id).length === 1 ? inSessions(rec.id)[0] : `${inSessions(rec.id).length} sessions`}
@@ -236,7 +243,7 @@ export function Library({
 
       {welcomeNote}
       {noticeNote}
-      {sessionsNav && <div className="card sessions-card">{sessionsNav}</div>}
+      {sessionsStrip}
       {rows.length === 0 ? (
         empty
       ) : (
@@ -248,7 +255,7 @@ export function Library({
                 <strong className="char-name">{c.name || "Unnamed"}</strong>
                 <span className="muted">{identity}</span>
                 <span className="char-books">{rec.books.map((b) => bookAbbr(system, b)).join(" · ")}</span>
-                {problems > 0 && <span className="counter under">{problems} to fix</span>}
+                {problems > 0 && <span className="counter under">{problems} to do</span>}
               </button>
               <div className="char-actions">
                 <button type="button" className="link" onClick={() => exportJson(rec)}>

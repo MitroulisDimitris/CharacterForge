@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { setState as setFeedbackState } from "../trail";
 import { getSystem } from "../systems/registry";
 import { bookName, type BaseCharacter, type Warning } from "../systems/types";
 import { downloadBlob, exportJson, fileSafe, type StoredCharacter, type Theme } from "../storage";
 import { Brand, SkinPicker } from "./Brand";
-import { Warnings } from "./Warnings";
+import { TodoBox } from "./TodoBox";
+import { buildTodos, flashSection, type Todo } from "../todo";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
 import { Crest, MoreMenu, SideToggle } from "./Hero";
@@ -93,6 +94,21 @@ export function Editor({
   }, [rec.id, rec.system, rec.books, char, pending, tab, d, sessionCopy]);
 
   const waiting = useMemo(() => openUnlocks(system, char, rec.books, pending), [system, char, rec.books, pending]);
+  const { todos, notes } = useMemo(() => buildTodos(d.warnings as Warning[], waiting), [d, waiting]);
+
+  // Clicking a to-do: open its tab, then scroll to the section and make it glow.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [flash, setFlash] = useState<{ section?: string; words: string[]; n: number } | null>(null);
+  useEffect(() => {
+    if (!flash) return;
+    const t = window.setTimeout(() => flashSection(bodyRef.current, flash.section, flash.words), 60);
+    return () => window.clearTimeout(t);
+  }, [flash, tab]);
+  const go = (t: Todo) => {
+    if (t.tab) setTab(t.tab);
+    setSideOpen(false);
+    setFlash((f) => ({ section: t.section, words: t.find, n: (f?.n ?? 0) + 1 }));
+  };
 
   const onPdf = async () => {
     setPdfBusy(true);
@@ -218,36 +234,18 @@ export function Editor({
               </span>
             )}
           </div>
-          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} dot={waiting.length > 0 || !!award} />
+          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} dot={todos.length > 0 || !!award} />
           <div className="hero-side-extra">
           {versionPick}
           {sessionNote}
-          <section className={`hero-todo ${waiting.length || award ? "has" : ""}`} aria-label="To do">
-            <span className="hero-label">To do</span>
-            {awardItem}
-            {waiting.length === 0 ? (
-              award ? null : 
-              <span className="muted">Nothing to choose right now.</span>
-            ) : (
-              <>
-                <ul>
-                  {waiting.map((u) => (
-                    <li key={u.id}>
-                      <button type="button" className="link" onClick={() => setDialog({ kind: "resume", ids: [u.id] })}>
-                        {u.title}
-                      </button>
-                      <button type="button" className="hero-dismiss" title="Remove from the list (it may still show as a warning)" aria-label={`Dismiss ${u.title}`} onClick={() => dismiss(u.id)}>
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <button type="button" className="btn small" onClick={() => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) })}>
-                  Choose now
-                </button>
-              </>
-            )}
-          </section>
+          <TodoBox
+            todos={todos}
+            notes={notes}
+            top={awardItem}
+            onGo={go}
+            onDismiss={dismiss}
+            onChooseNow={waiting.length ? () => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) }) : undefined}
+          />
           <div className="hero-foot">
             {char.level < maxLevel && (
               <button type="button" className="btn primary hero-levelup" onClick={() => setDialog({ kind: "change", target: char.level + 1 })}>
@@ -290,8 +288,9 @@ export function Editor({
         </aside>
         <main className="hero-main">
           {tabsNav}
-          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
-          <div className="tab-body">{body}</div>
+          <div className="tab-body" ref={bodyRef}>
+            {body}
+          </div>
           <p className="credits muted">{system.credits}</p>
         </main>
         {dialogs}
@@ -353,41 +352,19 @@ export function Editor({
 
       <div className="layout single">
         <main className="main">
+          <TodoBox
+            variant="banner"
+            todos={todos}
+            notes={notes}
+            top={awardItem}
+            onGo={go}
+            onDismiss={dismiss}
+            onChooseNow={waiting.length ? () => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) }) : undefined}
+          />
           {tabsNav}
-          {awardItem}
-          {waiting.length > 0 && (
-            <div className="todo-banner">
-              <div className="todo-head">
-                <strong>
-                  🎁 {waiting.length} level-up choice{waiting.length > 1 ? "s" : ""} waiting
-                </strong>
-                <button type="button" className="btn primary small" onClick={() => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) })}>
-                  Choose now
-                </button>
-              </div>
-              <ul>
-                {waiting.map((u) => (
-                  <li key={u.id}>
-                    <span className="pill">Level {u.level}</span>
-                    <span>{u.title}</span>
-                    <button type="button" className="link" onClick={() => setDialog({ kind: "resume", ids: [u.id] })}>
-                      Do it
-                    </button>
-                    <button
-                      type="button"
-                      className="link muted-link"
-                      title="Remove from the list (it may still show as a warning)"
-                      onClick={() => dismiss(u.id)}
-                    >
-                      Dismiss
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <Warnings warnings={d.warnings} onJump={(t) => setTab(t)} startOpen={false} />
-          <div className="tab-body">{body}</div>
+          <div className="tab-body" ref={bodyRef}>
+            {body}
+          </div>
           <p className="credits muted">{system.credits}</p>
         </main>
       </div>

@@ -152,12 +152,12 @@ export function ClassTab(props: TabProps<Character, Derived>) {
     <div className="stack">
       {/* The class is picked at level 1; past that, changing it would mean multiclassing (not supported). */}
       {is2014 && c.level === 1 && (
-        <Card title="Class" aside={<span className="muted">Changing it clears your class choices</span>}>
+        <Card todo="class" title="Class" aside={<span className="muted">Changing it clears your class choices</span>}>
           <ClassPicker {...props} />
         </Card>
       )}
 
-      <Card title={`${CL.name} (${c.edition} rules)`} aside={<span className="muted">Hit Die d{CL.hitDie} · Saves {CL.saves.join(", ")}</span>}>
+      <Card todo="class-features" title={`${CL.name} (${c.edition} rules)`} aside={<span className="muted">Hit Die d{CL.hitDie} · Saves {CL.saves.join(", ")}</span>}>
         <p className="lead">{CL.summary}</p>
         <dl className="prof-list">
           <dt>Armor</dt>
@@ -201,7 +201,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         {CL.maxLevel < 5 && <p className="muted note">Levels above {CL.maxLevel} for the {CL.name} are coming with level-up support. Until then the character stays at level {CL.maxLevel}.</p>}
       </Card>
 
-      <Card title={`${CL.name} skills`} aside={<Counter count={c.classSkills.length} max={CL.skills.count} label="Chosen" />}>
+      <Card todo="class-skills" title={`${CL.name} skills`} aside={<Counter count={c.classSkills.length} max={CL.skills.count} label="Chosen" />}>
         <p className="muted">{CL.skills.from === "any" ? `Choose any ${CL.skills.count} skills.` : `Choose ${CL.skills.count} from the ${CL.name.toLowerCase()} list.`}</p>
         <ChipPicker
           options={skillPool.map((s) => ({ value: s, label: skillName(s), hint: SKILL_INFO[s] }))}
@@ -214,7 +214,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       </Card>
 
       {CL.toolChoice && (
-        <Card title="Tool proficiencies" aside={<Counter count={c.classTools.filter(Boolean).length} max={CL.toolChoice.count} label="Chosen" />}>
+        <Card todo="tools" title="Tool proficiencies" aside={<Counter count={c.classTools.filter(Boolean).length} max={CL.toolChoice.count} label="Chosen" />}>
           <p className="muted">{CL.toolChoice.label}.</p>
           <ChipPicker
             options={(CL.toolChoice.pool === "instrument" ? MUSICAL_INSTRUMENTS : CL.toolChoice.pool === "artisan" ? ARTISAN_TOOLS : [...ARTISAN_TOOLS, ...MUSICAL_INSTRUMENTS]).map((t) => ({ value: t, label: t }))}
@@ -226,7 +226,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.fightingStyle && c.level >= CL.fightingStyle.level && (
-        <Card title="Fighting Style" aside={<span className="muted">Pick one</span>}>
+        <Card todo="fighting-style" title="Fighting Style" aside={<span className="muted">Pick one</span>}>
           <div className="option-grid compact">
             {stylesFor(CL).filter((s) => inBooks(books, s.book)).map((s) => (
               <button type="button" key={s.id} className={`option ${c.fightingStyle === s.id ? "on" : ""}`} aria-pressed={c.fightingStyle === s.id} onClick={() => set({ fightingStyle: s.id, styleCantrips: [] })}>
@@ -241,7 +241,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {(c.fightingStyle === "blessedWarrior" || c.fightingStyle === "druidicWarrior") && CL.fightingStyle && c.level >= CL.fightingStyle.level && (
-        <Card title={c.fightingStyle === "blessedWarrior" ? "Blessed Warrior cantrips" : "Druidic Warrior cantrips"} aside={<Counter count={c.styleCantrips.length} max={2} label="Chosen" />}>
+        <Card todo="style-cantrips" title={c.fightingStyle === "blessedWarrior" ? "Blessed Warrior cantrips" : "Druidic Warrior cantrips"} aside={<Counter count={c.styleCantrips.length} max={2} label="Chosen" />}>
           <ChipPicker
             options={R.spells.filter((s) => s.level === 0 && onClassList(s, c.fightingStyle === "blessedWarrior" ? "cleric" : "druid", books)).map((s) => ({ value: s.name, label: s.name }))}
             selected={c.styleCantrips}
@@ -252,7 +252,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.expertise && c.level >= CL.expertise.level && (
-        <Card title="Expertise" aside={<Counter count={c.expertise.length} max={CL.expertise.count} label="Chosen" />}>
+        <Card todo="expertise" title="Expertise" aside={<Counter count={c.expertise.length} max={CL.expertise.count} label="Chosen" />}>
           <p className="muted">
             Double your Proficiency Bonus for {CL.expertise.count} of your skill proficiencies{CL.expertise.thieves ? ", or one skill and thieves' tools" : ""}. Pick your skills first.
           </p>
@@ -268,7 +268,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.invocations && (CL.invocations[c.level] ?? 0) > 0 && (
-        <Card title="Eldritch Invocations" aside={<Counter count={c.invocations.length} max={CL.invocations[c.level]} label="Known" />}>
+        <Card todo="invocations" title="Eldritch Invocations" aside={<Counter count={c.invocations.length} max={CL.invocations[c.level]} label="Known" />}>
           <div className="option-grid compact">
             {INVOCATIONS.filter((x) => inBooks(books, x.book)).map((x) => {
               const on = c.invocations.includes(x.id);
@@ -296,7 +296,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.pactBoonLevel && c.level >= CL.pactBoonLevel && (
-        <Card title="Pact Boon">
+        <Card todo="pact-boon" title="Pact Boon">
           <div className="option-grid compact">
             {PACT_BOONS.filter((b) => inBooks(books, b.book)).map((b) => (
               <button type="button" key={b.id} className={`option ${c.pactBoon === b.id ? "on" : ""}`} aria-pressed={c.pactBoon === b.id} onClick={() => set({ pactBoon: b.id })}>
@@ -315,7 +315,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.infusions && (CL.infusions[c.level] ?? 0) > 0 && (
-        <Card title="Infusions" aside={<Counter count={c.infusions.length} max={CL.infusions[c.level]} label="Known" />}>
+        <Card todo="infusions" title="Infusions" aside={<Counter count={c.infusions.length} max={CL.infusions[c.level]} label="Known" />}>
           <div className="option-grid compact">
             {INFUSIONS.map((x) => {
               const on = c.infusions.includes(x.id);
@@ -331,7 +331,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {(CL.choices?.includes("favoredEnemy") || CL.choices?.includes("naturalExplorer")) && (
-        <Card title="Ranger: Favored Enemy & Natural Explorer">
+        <Card todo="ranger" title="Ranger: Favored Enemy & Natural Explorer">
           {tashaOk && (
             <label className="check">
               <input type="checkbox" checked={c.rangerTasha} onChange={(e) => set({ rangerTasha: e.target.checked })} /> Use Tasha's optional replacements instead: Favored Foe (extra 1d4 damage on a marked creature) and Deft Explorer (expertise in one skill, two languages). Most players find these stronger in play.
@@ -357,7 +357,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       )}
 
       {CL.subclasses.length > 0 && c.level >= CL.subclassLevel ? (
-        <Card title={CL.subclassLabel}>
+        <Card todo="subclass" title={CL.subclassLabel}>
           {subclasses.length > 0 && <SubclassPicker {...props} />}
           {sub && d.subclassActive && sub.options && (
             <div className="grid-3">
@@ -424,7 +424,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
       ) : null}
 
       {CL.sorcery && c.level >= d.metamagicLevel && (
-        <Card
+        <Card todo="metamagic"
           title="Metamagic"
           aside={<Counter count={c.metamagic.length} max={d.metamagicLimit} label="Known" />}
         >
@@ -452,7 +452,7 @@ export function ClassTab(props: TabProps<Character, Derived>) {
         </Card>
       )}
 
-      <Card title="Hit Points" aside={<strong className="hp-total">{d.hpMax} HP</strong>}>
+      <Card todo="hit-points" title="Hit Points" aside={<strong className="hp-total">{d.hpMax} HP</strong>}>
         <p className="muted">At level 1 you get the maximum of your hit die ({CL.hitDie}) plus your Constitution modifier. Each later level adds a roll (or the average) plus CON.</p>
         <Segmented
           value={c.hpMethod}

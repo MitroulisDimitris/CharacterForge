@@ -41,7 +41,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
 
   return (
     <div className="stack">
-      <Card title="Background">
+      <Card todo="background" title="Background">
         <WithPreview
           panel={<Panel before={before} after={after} title={shownBg ? shownBg.name : "Your background"} previewing={!!previewId} chips={bgChips} empty="Hover a background to see the skills and extras it gives you." />}
         >
@@ -63,7 +63,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
       </Card>
 
       {bg.abilities && !is2014 ? (
-        <Card title="Ability score increases" aside={<span className="muted">{bg.abilities.join(", ")}</span>}>
+        <Card todo="background-asi" title="Ability score increases" aside={<span className="muted">{bg.abilities.join(", ")}</span>}>
           <Segmented
             value={c.bgAsiMode}
             options={[
@@ -92,7 +92,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
           )}
         </Card>
       ) : !is2014 ? (
-        <Card title="Legacy background">
+        <Card todo="legacy-background" title="Legacy background">
           <p className="muted">
             2014 backgrounds don't give ability increases or an origin feat. Your ability increases come from a legacy species like the Half-Elf. Switch to a 2024 background to get a free
             origin feat (for example, the 2024 Criminal gives Alert).
@@ -101,14 +101,14 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
       ) : null}
 
       {!is2014 && !bg.legacy && bg.feat && (
-        <Card title={`Origin feat: ${featIn(R, bg.feat).name}`}>
+        <Card todo="origin-feat" title={`Origin feat: ${featIn(R, bg.feat).name}`}>
           <p>{featIn(R, bg.feat).text}</p>
           <FeatChoicesEditor feat={bg.feat} value={c.bgFeatChoices} fixedList={bg.featList} onChange={(bgFeatChoices) => set({ bgFeatChoices })} takenSkills={takenSkills} edition={c.edition} />
         </Card>
       )}
 
       {is2014 && bg.custom && (
-        <Card title="Custom background" aside={<span className="muted">Player's Handbook rule: agree it with your DM</span>}>
+        <Card todo="custom-background" title="Custom background" aside={<span className="muted">Player's Handbook rule: agree it with your DM</span>}>
           <p className="muted">Build a background that fits your story: any two skills, a total of two tool proficiencies or languages, and the feature of any background.</p>
           <div className="sub-head">
             <strong>Skills</strong>
@@ -144,7 +144,7 @@ export function BackgroundTab({ c, d, set, books }: TabProps<Character, Derived>
         </Card>
       )}
 
-      <Card title="Proficiencies & equipment">
+      <Card todo="background-profs" title="Proficiencies & equipment">
         <dl className="kv wide">
           <dt>Skills</dt>
           <dd>{(bg.custom ? c.bgCustomSkills : bg.skills).map(skillName).join(", ") || "—"}</dd>

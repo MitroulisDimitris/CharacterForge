@@ -18,6 +18,8 @@ export interface Warning {
   text: string;
   /** Tab id to jump to. */
   tab?: string;
+  /** The section on that tab that fixes it (a card's `todo` id). */
+  section?: string;
 }
 
 /** Fields every system's character has, so the shell can show and edit them. */
@@ -95,6 +97,8 @@ export interface Unlock<D = any> {
   detail: string;
   /** Tab whose controls make the choice. */
   tab: string;
+  /** The section on that tab (a card's `todo` id). */
+  section?: string;
   /** Lets the app tell when the choice has been made; without it the player marks it done. */
   isDone?: (d: D) => boolean;
   /** Nice-to-know, not required (e.g. "you may swap a spell"). */

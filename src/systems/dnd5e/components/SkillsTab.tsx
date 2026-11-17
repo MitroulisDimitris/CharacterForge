@@ -7,7 +7,7 @@ import { Card, ChipPicker, Counter, Field } from "../../../components/ui";
 export function SkillsTab({ c, d, set }: TabProps<Character, Derived>) {
   return (
     <div className="stack">
-      <Card title="Skills" aside={<span className="muted">Change picks on the Class, {d.rules.speciesWord} and Background tabs</span>}>
+      <Card todo="skills" title="Skills" aside={<span className="muted">Change picks on the Class, {d.rules.speciesWord} and Background tabs</span>}>
         <table className="skill-table">
           <thead>
             <tr>
@@ -34,7 +34,7 @@ export function SkillsTab({ c, d, set }: TabProps<Character, Derived>) {
         </table>
       </Card>
 
-      <Card title="Languages" aside={<Counter count={c.languages.length} max={d.languageLimit} label="Known" />}>
+      <Card todo="languages" title="Languages" aside={<Counter count={c.languages.length} max={d.languageLimit} label="Known" />}>
         <p className="muted">
           {d.species.languages
             ? `${d.species.name}: ${d.species.languages.join(", ")}. You can know ${d.languageLimit} in total, counting picks from your ${d.rules.speciesWord.toLowerCase()}, background and subclass.`
@@ -46,7 +46,7 @@ export function SkillsTab({ c, d, set }: TabProps<Character, Derived>) {
         <ChipPicker options={RARE_LANGUAGES.map((l) => ({ value: l, label: l }))} selected={c.languages} max={d.languageLimit} onChange={(languages) => set({ languages })} />
       </Card>
 
-      <Card title="Tools & other proficiencies">
+      <Card todo="tools-other" title="Tools & other proficiencies">
         <dl className="kv wide">
           <dt>Weapons</dt>
           <dd>Simple Weapons</dd>

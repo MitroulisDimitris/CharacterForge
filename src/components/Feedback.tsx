@@ -117,6 +117,16 @@ function labelOf(el: Element) {
   return el.tagName.toLowerCase();
 }
 
+/** A plain reason for a failed send, from the error (not always "the internet"). */
+function sendProblem(e: unknown): string {
+  const msg = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : String(e);
+  if (!navigator.onLine || /failed to fetch|networkerror|load failed|network request failed/i.test(msg)) return "no internet connection right now";
+  if (/exceeded the maximum allowed size|too large|payload/i.test(msg)) return "the picture is too big";
+  if (/mime|type .* not supported|invalid.*type/i.test(msg)) return "that kind of file can't be attached";
+  if (/jwt|expired|not authorized|unauthorized|row-level security|permission/i.test(msg)) return "your login has expired (log in again)";
+  return msg ? `the server said “${msg.slice(0, 120)}”` : "something went wrong";
+}
+
 export function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"new" | "list">("new");
@@ -238,6 +248,7 @@ export function FeedbackWidget() {
       const paths: string[] = [];
       // A screenshot that still can't be stored never blocks the note itself.
       let failedImages = 0;
+      let imageProblem = "";
       for (const [i, u] of images.entries()) {
         try {
           const blob = await dataUrlToBlob(u);
@@ -249,6 +260,7 @@ export function FeedbackWidget() {
         } catch (e) {
           console.error("screenshot upload failed", e);
           failedImages++;
+          imageProblem ||= sendProblem(e);
         }
       }
       const { error } = await supabase.from("feedback").insert({
@@ -270,7 +282,7 @@ export function FeedbackWidget() {
         },
       });
       if (error) throw error;
-      const lost = failedImages ? ` (${failedImages === 1 ? "the screenshot" : `${failedImages} screenshots`} couldn't be attached)` : "";
+      const lost = failedImages ? ` (${failedImages === 1 ? "the screenshot" : `${failedImages} screenshots`} couldn't be attached: ${imageProblem})` : "";
       setStatus((uid ? "Sent. Thank you! You can see it under Saved." : "Sent. Thank you!") + lost);
       setNote("");
       setImages([]);
@@ -278,7 +290,8 @@ export function FeedbackWidget() {
       refresh();
     } catch (e) {
       console.error(e);
-      setStatus("Couldn't send it. Check your internet connection and try again.");
+      // Say what really went wrong; only blame the internet when it is the internet.
+      setStatus(`Couldn't send it: ${sendProblem(e)}. Your note is still here, so you can try again.`);
     } finally {
       setBusy(false);
     }

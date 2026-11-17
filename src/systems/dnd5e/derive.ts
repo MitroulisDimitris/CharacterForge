@@ -103,17 +103,17 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const subOption = subclass?.options?.find((o) => o.id === c.subclassOption);
   const L4 = `${CL.name} 4`;
   const warnings: Warning[] = [];
-  const bookWarn = (what: string, book: string | undefined, tab: string) => {
-    if (!inBooks(books, book)) warnings.push({ level: "error", tab, text: `${what} is from ${BOOK_NAMES[book!] ?? book}, which isn't allowed for this character.` });
+  const bookWarn = (what: string, book: string | undefined, tab: string, section?: string) => {
+    if (!inBooks(books, book)) warnings.push({ level: "error", tab, section, text: `${what} is from ${BOOK_NAMES[book!] ?? book}, which isn't allowed for this character.` });
   };
 
-  if (is2014 && !R.classes.some((x) => x.id === c.cls)) warnings.push({ level: "error", tab: "class", text: "Choose a class." });
-  if (is2014 && !c.species) warnings.push({ level: "warn", tab: "species", text: `Choose a ${R.speciesWord.toLowerCase()}.` });
-  if (is2014 && !c.background) warnings.push({ level: "warn", tab: "background", text: "Choose a background." });
-  bookWarn(`The ${CL.name} class`, CL.book, "class");
-  bookWarn(species.name, species.book, "species");
-  bookWarn(bg.name, bg.book, "background");
-  if (subclassActive) bookWarn(subclass!.name, subclass!.book, "class");
+  if (is2014 && !R.classes.some((x) => x.id === c.cls)) warnings.push({ level: "error", tab: "class", section: "class", text: "Choose a class." });
+  if (is2014 && !c.species) warnings.push({ level: "warn", tab: "species", section: "species", text: `Choose a ${R.speciesWord.toLowerCase()}.` });
+  if (is2014 && !c.background) warnings.push({ level: "warn", tab: "background", section: "background", text: "Choose a background." });
+  bookWarn(`The ${CL.name} class`, CL.book, "class", "class");
+  bookWarn(species.name, species.book, "species", "species");
+  bookWarn(bg.name, bg.book, "background", "background");
+  if (subclassActive) bookWarn(subclass!.name, subclass!.book, "class", "subclass");
 
   // ---------- feats ----------
   const feats: FeatEntry[] = [];
@@ -122,7 +122,9 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   if (level >= 4) feats.push({ id: c.level4Feat, from: L4, choices: c.level4Choices, plusOne: c.level4PlusOne });
   const hasFeat = (id: FeatId) => feats.some((f) => f.id === id);
   const featTab = (f: FeatEntry) => (f.from === L4 ? "abilities" : f.from.startsWith("Background") ? "background" : "species");
-  for (const f of feats) bookWarn(`The ${featIn(R, f.id).name} feat`, featIn(R, f.id).book, featTab(f));
+  /** Where a feat's choices are made: the level 4 feat card, the background's origin feat, or the race's choices. */
+  const featSection = (f: FeatEntry) => (f.from === L4 ? "feat" : f.from.startsWith("Background") ? "origin-feat" : "species-choices");
+  for (const f of feats) bookWarn(`The ${featIn(R, f.id).name} feat`, featIn(R, f.id).book, featTab(f), featSection(f));
 
   // ---------- ability scores ----------
   const bonuses: Record<Ability, { amount: number; from: string }[]> = { STR: [], DEX: [], CON: [], INT: [], WIS: [], CHA: [] };
@@ -138,19 +140,19 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     const picks = c.legacyAsi.filter((a, i, arr) => arr.indexOf(a) === i && !(species.asi?.exclude ?? []).includes(a)).slice(0, chooseCount);
     picks.forEach((a) => grants.push({ amount: chooseAmount, ability: a }));
     for (let i = picks.length; i < chooseCount; i++) grants.push({ amount: chooseAmount });
-    if (picks.length < chooseCount) warnings.push({ level: "warn", tab: "species", text: `Choose ${chooseCount - picks.length} more ability score(s) for ${species.name}.` });
+    if (picks.length < chooseCount) warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `Choose ${chooseCount - picks.length} more ability score(s) for ${species.name}.` });
 
     if (is2014 && c.customOrigin && books.includes("TCE")) {
       // Tasha's: move every bonus to abilities of your choice (each to a different ability).
       const amounts = grants.map((g) => g.amount).sort((a, b) => b - a);
       const targets = c.customAsi.filter((a, i, arr) => arr.indexOf(a) === i).slice(0, amounts.length);
       targets.forEach((a, i) => addBonus(a, amounts[i], `${species.name} (custom origin)`));
-      if (targets.length < amounts.length) warnings.push({ level: "warn", tab: "species", text: `Custom origin: assign ${amounts.length - targets.length} more ability bonus(es).` });
+      if (targets.length < amounts.length) warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `Custom origin: assign ${amounts.length - targets.length} more ability bonus(es).` });
     } else {
       grants.filter((g) => g.ability).forEach((g) => addBonus(g.ability!, g.amount, lineage?.asi && g.ability && lineage.asi[g.ability] === g.amount ? lineage.name : species.name));
     }
   } else if (!is2014 && bg.legacy) {
-    warnings.push({ level: "warn", tab: "background", text: "A 2014 background with a 2024 species gives no ability score increases. Pick a 2024 background or the Half-Elf." });
+    warnings.push({ level: "warn", tab: "background", section: "background", text: "A 2014 background with a 2024 species gives no ability score increases. Pick a 2024 background or the Half-Elf." });
   }
   if (!is2014 && !bg.legacy && bg.abilities) {
     if (c.bgAsiMode === "1-1-1") bg.abilities.forEach((a) => addBonus(a, 1, bg.name));
@@ -161,7 +163,7 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
       addBonus(p2, 2, bg.name);
       addBonus(p1, 1, bg.name);
     }
-    if (species.asi) warnings.push({ level: "info", tab: "species", text: `With a 2024 background, ${species.name}'s own ability increases are ignored (2024 rule for older species).` });
+    if (species.asi) warnings.push({ level: "info", tab: "species", section: "species-choices", text: `With a 2024 background, ${species.name}'s own ability increases are ignored (2024 rule for older species).` });
   }
 
   for (const f of feats) {
@@ -183,21 +185,21 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     const raw = c.base[a] + bonuses[a].reduce((s, b) => s + b.amount, 0);
     scores[a] = Math.min(20, raw);
     mods[a] = mod(scores[a]);
-    if (raw > 20) warnings.push({ level: "warn", tab: "abilities", text: `${ABILITY_NAMES[a]} would be ${raw}; ability scores cap at 20, so ${raw - 20} point(s) are wasted.` });
+    if (raw > 20) warnings.push({ level: "warn", tab: "abilities", section: "ability-scores", text: `${ABILITY_NAMES[a]} would be ${raw}; ability scores cap at 20, so ${raw - 20} point(s) are wasted.` });
   }
 
   const baseVals = ABILITIES.map((a) => c.base[a]);
   if (c.abilityMethod === "standard") {
     const sorted = [...baseVals].sort((x, y) => y - x);
-    if (sorted.join() !== STANDARD_ARRAY.join()) warnings.push({ level: "error", tab: "abilities", text: "Standard array: use each of 15, 14, 13, 12, 10, 8 exactly once." });
+    if (sorted.join() !== STANDARD_ARRAY.join()) warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: "Standard array: use each of 15, 14, 13, 12, 10, 8 exactly once." });
   } else if (c.abilityMethod === "pointbuy") {
     const bad = baseVals.some((v) => !(v in POINT_BUY_COST));
     const spent = baseVals.reduce((s, v) => s + (POINT_BUY_COST[v] ?? 99), 0);
-    if (bad) warnings.push({ level: "error", tab: "abilities", text: "Point buy: base scores must be between 8 and 15." });
-    else if (spent > POINT_BUY_BUDGET) warnings.push({ level: "error", tab: "abilities", text: `Point buy: ${spent} of ${POINT_BUY_BUDGET} points spent.` });
-    else if (spent < POINT_BUY_BUDGET) warnings.push({ level: "info", tab: "abilities", text: `Point buy: ${POINT_BUY_BUDGET - spent} point(s) left to spend.` });
+    if (bad) warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: "Point buy: base scores must be between 8 and 15." });
+    else if (spent > POINT_BUY_BUDGET) warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: `Point buy: ${spent} of ${POINT_BUY_BUDGET} points spent.` });
+    else if (spent < POINT_BUY_BUDGET) warnings.push({ level: "info", tab: "abilities", section: "ability-scores", text: `Point buy: ${POINT_BUY_BUDGET - spent} point(s) left to spend.` });
   } else if (baseVals.some((v) => v < 3 || v > 18)) {
-    warnings.push({ level: "error", tab: "abilities", text: "Base scores must be between 3 and 18." });
+    warnings.push({ level: "error", tab: "abilities", section: "ability-scores", text: "Base scores must be between 3 and 18." });
   }
 
   // ---------- armor and weapon proficiencies ----------
@@ -228,7 +230,7 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     const req = featIn(R, f.id).req;
     if (!req) continue;
     const name = featIn(R, f.id).name;
-    const fail = (why: string) => warnings.push({ level: "warn", tab: featTab(f), text: `${name} needs ${why}.` });
+    const fail = (why: string) => warnings.push({ level: "warn", tab: featTab(f), section: featSection(f), text: `${name} needs ${why}.` });
     if (req.ability && !req.ability[0].some((a) => c.base[a] + bonuses[a].filter((b) => b.from !== name).reduce((s, b) => s + b.amount, 0) >= req.ability![1]))
       fail(`${req.ability[0].map((a) => ABILITY_NAMES[a]).join(" or ")} ${req.ability[1]} or higher`);
     if (req.spellcasting && !isCaster) fail("the ability to cast at least one spell");
@@ -259,7 +261,7 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   }
   for (const [s, from] of skillSources) {
     if (from.length > 1)
-      warnings.push({ level: "warn", tab: from.includes(CL.name) ? "class" : "skills", text: `${skillName(s)} is granted twice (${from.join(" + ")}). Pick a different skill for one of them.` });
+      warnings.push({ level: "warn", tab: from.includes(CL.name) ? "class" : "skills", section: from.includes(CL.name) ? "class-skills" : "skills", text: `${skillName(s)} is granted twice (${from.join(" + ")}). Pick a different skill for one of them.` });
   }
 
   // Expertise (double proficiency).
@@ -271,14 +273,14 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   if (deftExplorer && c.deftExpertise) expertise.set(c.deftExpertise, "Deft Explorer");
   for (const f of feats) if ((f.id === "skillExpert" || f.id === "prodigy") && f.choices.expertise) expertise.set(f.choices.expertise, featIn(R, f.id).name);
   for (const [s, from] of expertise) {
-    if (s !== "thieves" && !skillSources.has(s as SkillId)) warnings.push({ level: "warn", tab: "skills", text: `${from}: you need proficiency in ${skillName(s as SkillId)} to have expertise in it.` });
+    if (s !== "thieves" && !skillSources.has(s as SkillId)) warnings.push({ level: "warn", tab: "skills", section: "expertise", text: `${from}: you need proficiency in ${skillName(s as SkillId)} to have expertise in it.` });
   }
 
   const saveProfs = new Set<Ability>(CL.saves);
   for (const f of feats) {
     if (f.id !== "resilient") continue;
     const a = f.plusOne;
-    if (saveProfs.has(a)) warnings.push({ level: "warn", tab: featTab(f), text: `Resilient (${a}) gives a save you already have. Pick a different ability for full value.` });
+    if (saveProfs.has(a)) warnings.push({ level: "warn", tab: featTab(f), section: featSection(f), text: `Resilient (${a}) gives a save you already have. Pick a different ability for full value.` });
     saveProfs.add(a);
   }
   const saves = ABILITIES.map((a) => ({ ability: a, proficient: saveProfs.has(a), bonus: mods[a] + (saveProfs.has(a) ? pb : 0) }));
@@ -301,13 +303,13 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   if (CL.choices?.includes("favoredEnemy") && !deftExplorer) languageLimit += 1;
   if (deftExplorer) languageLimit += 2;
   for (const f of feats) languageLimit += featIn(R, f.id).languages ?? 0;
-  if (c.languages.length < languageLimit) warnings.push({ level: "info", tab: "skills", text: `You can know ${languageLimit} languages; ${c.languages.length} chosen.` });
-  if (c.languages.length > languageLimit) warnings.push({ level: "warn", tab: "skills", text: `${c.languages.length} languages chosen but only ${languageLimit} allowed.` });
-  for (const l of [...subclassLanguages, ...classLanguages]) if (!c.languages.includes(l)) warnings.push({ level: "info", tab: "skills", text: `${l === "Druidic" || l === "Thieves' Cant" ? CL.name : subclass?.name} lets you speak ${l}; add it to your languages.` });
+  if (c.languages.length < languageLimit) warnings.push({ level: "info", tab: "skills", section: "languages", text: `You can know ${languageLimit} languages; ${c.languages.length} chosen.` });
+  if (c.languages.length > languageLimit) warnings.push({ level: "warn", tab: "skills", section: "languages", text: `${c.languages.length} languages chosen but only ${languageLimit} allowed.` });
+  for (const l of [...subclassLanguages, ...classLanguages]) if (!c.languages.includes(l)) warnings.push({ level: "info", tab: "skills", section: "languages", text: `${l === "Druidic" || l === "Thieves' Cant" ? CL.name : subclass?.name} lets you speak ${l}; add it to your languages.` });
   const toolList = [bg.custom ? c.bgCustomTools : bg.tools, ...CL.tools, ...c.classTools.slice(0, CL.toolChoice?.count ?? 0), ...(subclassActive ? (subclass!.tools ?? []) : []), c.extraTools].filter(Boolean);
   const tools = [...new Set(toolList)].join(", ");
   if (CL.toolChoice && c.classTools.filter(Boolean).length < CL.toolChoice.count)
-    warnings.push({ level: "warn", tab: "class", text: `${CL.name}: choose ${CL.toolChoice.label.toLowerCase()}.` });
+    warnings.push({ level: "warn", tab: "class", section: "tools", text: `${CL.name}: choose ${CL.toolChoice.label.toLowerCase()}.` });
 
   // ---------- HP ----------
   const hd = CL.hitDie;
@@ -337,10 +339,10 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   // ---------- armor class ----------
   const owned = c.inventory.filter((i) => i.qty > 0).map((i) => armorByName(i.name)).filter((a): a is Armor => !!a);
   const bodyArmor = owned.filter((a) => a.category !== "shield");
-  for (const a of bodyArmor) if (!armorProficient(a)) warnings.push({ level: "info", tab: "equipment", text: `You aren't proficient with ${a.name}, so it isn't counted in your AC (wearing it would block spellcasting and give Disadvantage on STR/DEX rolls).` });
+  for (const a of bodyArmor) if (!armorProficient(a)) warnings.push({ level: "info", tab: "equipment", section: "armor-class", text: `You aren't proficient with ${a.name}, so it isn't counted in your AC (wearing it would block spellcasting and give Disadvantage on STR/DEX rolls).` });
   const shield = owned.find((a) => a.category === "shield");
   const shieldUsable = !!shield && armorProfs.has("shield");
-  if (shield && !shieldUsable) warnings.push({ level: "info", tab: "equipment", text: "You aren't proficient with shields, so your shield isn't counted in your AC." });
+  if (shield && !shieldUsable) warnings.push({ level: "info", tab: "equipment", section: "armor-class", text: "You aren't proficient with shields, so your shield isn't counted in your AC." });
   const medMax = hasFeat("mediumArmorMaster") ? 3 : 2;
   const styleActive = !!CL.fightingStyle && level >= CL.fightingStyle.level;
   const style = styleActive ? c.fightingStyle : "";
@@ -359,8 +361,8 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const ac = best.total;
   const acNote = best.note + (shieldUsable && best.shieldOk ? " + Shield" : "");
   const wornArmor = best.armored ? bodyArmor.find((a) => best.note.startsWith(a.name)) : undefined;
-  if (wornArmor?.strength && scores.STR < wornArmor.strength) warnings.push({ level: "info", tab: "equipment", text: `${wornArmor.name} needs STR ${wornArmor.strength}: your speed drops by 10 ft while wearing it.` });
-  if (CL.id === "druid" && owned.some((a) => /mail|plate|chain|splint|breastplate/i.test(a.name))) warnings.push({ level: "info", tab: "equipment", text: "Druids refuse to wear metal armor; pick hide, leather or padded armor and a wooden shield." });
+  if (wornArmor?.strength && scores.STR < wornArmor.strength) warnings.push({ level: "info", tab: "equipment", section: "inventory", text: `${wornArmor.name} needs STR ${wornArmor.strength}: your speed drops by 10 ft while wearing it.` });
+  if (CL.id === "druid" && owned.some((a) => /mail|plate|chain|splint|breastplate/i.test(a.name))) warnings.push({ level: "info", tab: "equipment", section: "inventory", text: "Druids refuse to wear metal armor; pick hide, leather or padded armor and a wooden shield." });
 
   const initBonus = subclassActive && subclass!.initiativeBonus ? mods[subclass!.initiativeBonus] : 0;
   const initiative = mods.DEX + (hasFeat("alert") ? (is2014 ? 5 : pb) : 0) + initBonus + jack;
@@ -409,22 +411,22 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     subOption?.spells?.filter((g) => level >= g.minLevel).forEach((g) => spellRows.push(casterRow(g.spell, `${g.source} (${always})`, "Always", castAbility, g.note)));
     if (subclass!.cantripOptions) {
       if (c.subclassCantrip && subclass!.cantripOptions.includes(c.subclassCantrip)) spellRows.push(casterRow(c.subclassCantrip, `${subclass!.name} (bonus cantrip)`, "Always", subclass!.spell?.ability ?? "INT"));
-      else warnings.push({ level: "warn", tab: "class", text: `${subclass!.name}: choose ${subclass!.cantripOptions.join(" or ")}.` });
+      else warnings.push({ level: "warn", tab: "class", section: "subclass", text: `${subclass!.name}: choose ${subclass!.cantripOptions.join(" or ")}.` });
     }
     subclass!.bonusCantrips?.forEach((n) => spellRows.push(casterRow(n, `${subclass!.name} (bonus cantrip)`, "Always", castAbility)));
     if (subclass!.cantripChoice) {
       if (c.subclassCantrip) spellRows.push(casterRow(c.subclassCantrip, `${subclass!.name} (${subclass!.cantripChoice} cantrip)`, "Always", castAbility));
-      else warnings.push({ level: "warn", tab: "class", text: `${subclass!.name}: choose a ${subclass!.cantripChoice} cantrip.` });
+      else warnings.push({ level: "warn", tab: "class", section: "subclass", text: `${subclass!.name}: choose a ${subclass!.cantripChoice} cantrip.` });
     }
   }
   // Warlock Pact of the Tome and Blessed/Druidic Warrior cantrips (counted apart from the class limit).
   if (CL.pactBoonLevel && level >= CL.pactBoonLevel && c.pactBoon === "tome") {
     c.tomeCantrips.slice(0, 3).filter(Boolean).forEach((n) => spellRows.push(casterRow(n, "Book of Shadows", "Always", "CHA")));
-    if (c.tomeCantrips.filter(Boolean).length < 3) warnings.push({ level: "warn", tab: "class", text: `Pact of the Tome: choose ${3 - c.tomeCantrips.filter(Boolean).length} more cantrip(s) from any class's list.` });
+    if (c.tomeCantrips.filter(Boolean).length < 3) warnings.push({ level: "warn", tab: "class", section: "pact-boon", text: `Pact of the Tome: choose ${3 - c.tomeCantrips.filter(Boolean).length} more cantrip(s) from any class's list.` });
   }
   if (style === "blessedWarrior" || style === "druidicWarrior") {
     c.styleCantrips.slice(0, 2).filter(Boolean).forEach((n) => spellRows.push(casterRow(n, style === "blessedWarrior" ? "Blessed Warrior" : "Druidic Warrior", "Always", style === "blessedWarrior" ? "CHA" : "WIS")));
-    if (c.styleCantrips.filter(Boolean).length < 2) warnings.push({ level: "warn", tab: "class", text: `${style === "blessedWarrior" ? "Blessed Warrior: choose two cleric" : "Druidic Warrior: choose two druid"} cantrips.` });
+    if (c.styleCantrips.filter(Boolean).length < 2) warnings.push({ level: "warn", tab: "class", section: "style-cantrips", text: `${style === "blessedWarrior" ? "Blessed Warrior: choose two cleric" : "Druidic Warrior: choose two druid"} cantrips.` });
   }
   const speciesAbility: Ability = species.spellAbilityChoice ? c.speciesSpellAbility : (lineage?.spellAbility ?? species.spellAbility ?? "CHA");
   [...(species.spells ?? []), ...(lineage?.spells ?? [])]
@@ -432,7 +434,7 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     .forEach((g) => spellRows.push(casterRow(g.spell, g.source, "Innate", speciesAbility, g.note)));
   if (lineage?.cantripChoice) {
     if (c.speciesCantrip) spellRows.push(casterRow(c.speciesCantrip, `${lineage.name} (${lineage.cantripChoice} cantrip)`, "Innate", speciesAbility, "Cantrip"));
-    else warnings.push({ level: "warn", tab: "species", text: `${lineage.name}: choose a ${lineage.cantripChoice.toLowerCase()} cantrip.` });
+    else warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `${lineage.name}: choose a ${lineage.cantripChoice.toLowerCase()} cantrip.` });
   }
   const halfFeatAbility = (f: FeatEntry, fallback: Ability) => {
     const p = featIn(R, f.id).plusOne;
@@ -468,31 +470,31 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const kindWord = SP?.label === "Prepared" ? "Prepared spells" : "Spells known";
   if (SP && level >= SP.startLevel) {
     if (c.cantrips.length !== cantripLimit)
-      warnings.push({ level: c.cantrips.length > cantripLimit ? "error" : "warn", tab: "spells", text: `Cantrips: ${c.cantrips.length} of ${cantripLimit} chosen.` });
+      warnings.push({ level: c.cantrips.length > cantripLimit ? "error" : "warn", tab: "spells", section: "cantrips", text: `Cantrips: ${c.cantrips.length} of ${cantripLimit} chosen.` });
     if (SP.spellbook) {
       if (c.spellbook.length !== spellbookLimit)
-        warnings.push({ level: c.spellbook.length > spellbookLimit ? "error" : "warn", tab: "spells", text: `Spellbook: ${c.spellbook.length} of ${spellbookLimit} spells written in.` });
-      for (const n of c.prepared) if (!c.spellbook.includes(n)) warnings.push({ level: "error", tab: "spells", text: `${n} is prepared but not in your spellbook.` });
+        warnings.push({ level: c.spellbook.length > spellbookLimit ? "error" : "warn", tab: "spells", section: "spells-1", text: `Spellbook: ${c.spellbook.length} of ${spellbookLimit} spells written in.` });
+      for (const n of c.prepared) if (!c.spellbook.includes(n)) warnings.push({ level: "error", tab: "spells", section: "your-spells", text: `${n} is prepared but not in your spellbook.` });
     }
     if (c.prepared.length !== preparedLimit)
-      warnings.push({ level: c.prepared.length > preparedLimit ? "error" : SP.label === "Prepared" ? "info" : "warn", tab: "spells", text: `${kindWord}: ${c.prepared.length} of ${preparedLimit} chosen.` });
+      warnings.push({ level: c.prepared.length > preparedLimit ? "error" : SP.label === "Prepared" ? "info" : "warn", tab: "spells", section: "spells-1", text: `${kindWord}: ${c.prepared.length} of ${preparedLimit} chosen.` });
     for (const n of [...c.cantrips, ...c.prepared, ...c.spellbook.filter((x) => !c.prepared.includes(x))]) {
       const s = R.getSpell(n);
       if (!s) {
-        warnings.push({ level: "warn", tab: "spells", text: `${n} isn't a ${c.edition} ${classWord} spell in this app.` });
+        warnings.push({ level: "warn", tab: "spells", section: "your-spells", text: `${n} isn't a ${c.edition} ${classWord} spell in this app.` });
         continue;
       }
       if (s.level > maxSpellLevel && s.level > 0)
-        warnings.push({ level: "error", tab: "spells", text: `${n} is a ${ORD[s.level]}-level spell; at ${CL.name} ${level} you can only use up to ${ORD[maxSpellLevel]}-level spells.` });
+        warnings.push({ level: "error", tab: "spells", section: "your-spells", text: `${n} is a ${ORD[s.level]}-level spell; at ${CL.name} ${level} you can only use up to ${ORD[maxSpellLevel]}-level spells.` });
       if (!onList(s)) {
         const listBook = SP.list === "sorcerer" ? (s.sorcerer ? s.listBook : undefined) : (s.lists ?? []).find((l) => l.startsWith(`${SP.list}@`))?.split("@")[1];
         const missing = !inBooks(books, s.book) ? s.book : listBook && !inBooks(books, listBook) ? listBook : undefined;
         const why = missing ? `needs ${BOOK_NAMES[missing] ?? missing}, which isn't allowed` : `isn't on the ${classWord} spell list`;
-        warnings.push({ level: "error", tab: "spells", text: `${n} ${why}.` });
+        warnings.push({ level: "error", tab: "spells", section: "your-spells", text: `${n} ${why}.` });
       }
     }
   } else if (c.cantrips.length || c.prepared.length) {
-    warnings.push({ level: "warn", tab: "spells", text: `${CL.name}s don't cast spells at level ${level}; remove the chosen spells.` });
+    warnings.push({ level: "warn", tab: "spells", section: "your-spells", text: `${CL.name}s don't cast spells at level ${level}; remove the chosen spells.` });
   }
   if (subclassActive && subclass!.spellSchools && SP === subclass!.spell) {
     const off = c.prepared.filter((n) => {
@@ -500,17 +502,17 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
       return s && !subclass!.spellSchools!.includes(s.school);
     });
     if (off.length > 1)
-      warnings.push({ level: "warn", tab: "spells", text: `${subclass!.name}: only one of your spells may be from outside ${subclass!.spellSchools.join(" and ")} at this level (${off.join(", ")}).` });
+      warnings.push({ level: "warn", tab: "spells", section: "your-spells", text: `${subclass!.name}: only one of your spells may be from outside ${subclass!.spellSchools.join(" and ")} at this level (${off.join(", ")}).` });
   }
   const alwaysNames = new Set(spellRows.filter((r) => r.kind === "Always").map((r) => r.name));
-  for (const n of [...c.prepared, ...c.cantrips]) if (alwaysNames.has(n)) warnings.push({ level: "warn", tab: "spells", text: `${n} is already granted by your subclass; choose another spell.` });
+  for (const n of [...c.prepared, ...c.cantrips]) if (alwaysNames.has(n)) warnings.push({ level: "warn", tab: "spells", section: "your-spells", text: `${n} is already granted by your subclass; choose another spell.` });
   if (CL.sorcery && level >= metamagicLevel) {
     if (c.metamagic.length !== metamagicLimit)
-      warnings.push({ level: c.metamagic.length > metamagicLimit ? "error" : "warn", tab: "class", text: `Metamagic: ${c.metamagic.length} of ${metamagicLimit} chosen.` });
+      warnings.push({ level: c.metamagic.length > metamagicLimit ? "error" : "warn", tab: "class", section: "metamagic", text: `Metamagic: ${c.metamagic.length} of ${metamagicLimit} chosen.` });
     for (const id of c.metamagic) {
       const m = metamagicList.find((x) => x.id === id);
-      if (!m) warnings.push({ level: "warn", tab: "class", text: `Unknown Metamagic option "${id}".` });
-      else bookWarn(m.name, m.book, "class");
+      if (!m) warnings.push({ level: "warn", tab: "class", section: "metamagic", text: `Unknown Metamagic option "${id}".` });
+      else bookWarn(m.name, m.book, "class", "metamagic");
     }
   }
 
@@ -520,7 +522,7 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     if (!cost) continue;
     const key = cost.item.split(" ")[0].toLowerCase();
     if (!itemNames.some((n) => n.includes(key)))
-      warnings.push({ level: "warn", tab: "equipment", text: `${r.name} needs ${cost.item}${cost.consumed ? " (used up)" : ""}. A focus can't replace a component with a gold cost, and you don't have one.` });
+      warnings.push({ level: "warn", tab: "equipment", section: "inventory", text: `${r.name} needs ${cost.item}${cost.consumed ? " (used up)" : ""}. A focus can't replace a component with a gold cost, and you don't have one.` });
   }
 
   // ---------- attacks ----------
@@ -630,65 +632,65 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const coinCount = c.coins.cp + c.coins.sp + c.coins.ep + c.coins.gp + c.coins.pp;
   const carriedTotal = carried + coinCount / 50;
   const capacity = scores.STR * 15;
-  if (carriedTotal > capacity) warnings.push({ level: "warn", tab: "equipment", text: `Carrying ${carriedTotal.toFixed(1)} lb, over your ${capacity} lb capacity.` });
+  if (carriedTotal > capacity) warnings.push({ level: "warn", tab: "equipment", section: "inventory", text: `Carrying ${carriedTotal.toFixed(1)} lb, over your ${capacity} lb capacity.` });
 
   // ---------- other choices ----------
-  if (species.lineages && !lineage && c.species) warnings.push({ level: "warn", tab: "species", text: `Choose a ${species.lineageLabel}.` });
+  if (species.lineages && !lineage && c.species) warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `Choose a ${species.lineageLabel}.` });
   if (speciesSkillCount && c.speciesSkills.length < speciesSkillCount)
-    warnings.push({ level: "warn", tab: "species", text: `Choose ${speciesSkillCount - c.speciesSkills.length} more ${species.name} skill(s).` });
-  if (c.classSkills.length < CL.skills.count) warnings.push({ level: "warn", tab: "class", text: `Choose ${CL.skills.count - c.classSkills.length} more ${CL.name} skill(s).` });
-  if (is2014 && level >= CL.subclassLevel && CL.subclasses.length && !subclass) warnings.push({ level: "warn", tab: "class", text: `Choose your ${CL.subclassLabel}.` });
-  if (subclassActive && subclass!.options && !subOption) warnings.push({ level: "warn", tab: "class", text: `Choose your ${subclass!.optionLabel}.` });
+    warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `Choose ${speciesSkillCount - c.speciesSkills.length} more ${species.name} skill(s).` });
+  if (c.classSkills.length < CL.skills.count) warnings.push({ level: "warn", tab: "class", section: "class-skills", text: `Choose ${CL.skills.count - c.classSkills.length} more ${CL.name} skill(s).` });
+  if (is2014 && level >= CL.subclassLevel && CL.subclasses.length && !subclass) warnings.push({ level: "warn", tab: "class", section: "subclass", text: `Choose your ${CL.subclassLabel}.` });
+  if (subclassActive && subclass!.options && !subOption) warnings.push({ level: "warn", tab: "class", section: "subclass", text: `Choose your ${subclass!.optionLabel}.` });
   if (subclassActive && subclass!.skillChoice && c.subclassSkills.length < subclass!.skillChoice.count)
-    warnings.push({ level: "warn", tab: "class", text: `${subclass!.name}: choose ${subclass!.skillChoice.count - c.subclassSkills.length} skill(s).` });
-  if (styleActive && !stylesFor(CL).some((s) => s.id === c.fightingStyle && inBooks(books, s.book))) warnings.push({ level: "warn", tab: "class", text: "Choose a Fighting Style." });
+    warnings.push({ level: "warn", tab: "class", section: "subclass", text: `${subclass!.name}: choose ${subclass!.skillChoice.count - c.subclassSkills.length} skill(s).` });
+  if (styleActive && !stylesFor(CL).some((s) => s.id === c.fightingStyle && inBooks(books, s.book))) warnings.push({ level: "warn", tab: "class", section: "fighting-style", text: "Choose a Fighting Style." });
   if (CL.expertise && level >= CL.expertise.level && c.expertise.length < CL.expertise.count)
-    warnings.push({ level: "warn", tab: "class", text: `Expertise: choose ${CL.expertise.count - c.expertise.length} more.` });
+    warnings.push({ level: "warn", tab: "class", section: "expertise", text: `Expertise: choose ${CL.expertise.count - c.expertise.length} more.` });
   if (subclassActive && subclass!.picks) {
     const want = subclass!.picks.count[level] ?? 0;
     const have = c.subclassPicks.filter((p) => subclass!.picks!.options.some((o) => o.id === p)).length;
-    if (have !== want) warnings.push({ level: have > want ? "error" : "warn", tab: "class", text: `${subclass!.picks.label}: ${have} of ${want} chosen.` });
+    if (have !== want) warnings.push({ level: have > want ? "error" : "warn", tab: "class", section: "subclass", text: `${subclass!.picks.label}: ${have} of ${want} chosen.` });
     if (subclass!.picks.rule === "meleeAndRanged" && have === 2) {
       const ranged = pickedWeapons.filter((n) => weaponByName(n)?.ranged).length;
-      if (ranged !== 1) warnings.push({ level: "error", tab: "class", text: `${subclass!.picks.label}: choose one melee and one ranged weapon.` });
+      if (ranged !== 1) warnings.push({ level: "error", tab: "class", section: "subclass", text: `${subclass!.picks.label}: choose one melee and one ranged weapon.` });
     }
   }
   if (CL.invocations && level >= 2) {
     const want = CL.invocations[level];
-    if (c.invocations.length !== want) warnings.push({ level: c.invocations.length > want ? "error" : "warn", tab: "class", text: `Eldritch Invocations: ${c.invocations.length} of ${want} chosen.` });
+    if (c.invocations.length !== want) warnings.push({ level: c.invocations.length > want ? "error" : "warn", tab: "class", section: "invocations", text: `Eldritch Invocations: ${c.invocations.length} of ${want} chosen.` });
     for (const id of c.invocations) {
       const x = INVOCATIONS.find((i) => i.id === id);
       if (!x) continue;
-      bookWarn(`The ${x.name} invocation`, x.book, "class");
-      if (x.level && level < x.level) warnings.push({ level: "error", tab: "class", text: `${x.name} needs warlock level ${x.level}.` });
-      if (x.eldritchBlast && !c.cantrips.includes("Eldritch Blast")) warnings.push({ level: "error", tab: "class", text: `${x.name} needs the Eldritch Blast cantrip.` });
+      bookWarn(`The ${x.name} invocation`, x.book, "class", "invocations");
+      if (x.level && level < x.level) warnings.push({ level: "error", tab: "class", section: "invocations", text: `${x.name} needs warlock level ${x.level}.` });
+      if (x.eldritchBlast && !c.cantrips.includes("Eldritch Blast")) warnings.push({ level: "error", tab: "class", section: "invocations", text: `${x.name} needs the Eldritch Blast cantrip.` });
       if (x.hex && !(c.prepared.includes("Hex") || c.subclass === "hexblade"))
-        warnings.push({ level: "error", tab: "class", text: `${x.name} needs the Hex spell or a warlock feature that curses (Hexblade).` });
-      if (x.pact && (c.pactBoon !== x.pact || level < (CL.pactBoonLevel ?? 99))) warnings.push({ level: "error", tab: "class", text: `${x.name} needs the Pact of the ${x.pact[0].toUpperCase() + x.pact.slice(1)}.` });
+        warnings.push({ level: "error", tab: "class", section: "invocations", text: `${x.name} needs the Hex spell or a warlock feature that curses (Hexblade).` });
+      if (x.pact && (c.pactBoon !== x.pact || level < (CL.pactBoonLevel ?? 99))) warnings.push({ level: "error", tab: "class", section: "invocations", text: `${x.name} needs the Pact of the ${x.pact[0].toUpperCase() + x.pact.slice(1)}.` });
     }
   }
-  if (CL.pactBoonLevel && level >= CL.pactBoonLevel && !PACT_BOONS.some((b) => b.id === c.pactBoon)) warnings.push({ level: "warn", tab: "class", text: "Choose your Pact Boon." });
+  if (CL.pactBoonLevel && level >= CL.pactBoonLevel && !PACT_BOONS.some((b) => b.id === c.pactBoon)) warnings.push({ level: "warn", tab: "class", section: "pact-boon", text: "Choose your Pact Boon." });
   if (CL.infusions && level >= 2 && c.infusions.length !== CL.infusions[level])
-    warnings.push({ level: c.infusions.length > CL.infusions[level] ? "error" : "warn", tab: "class", text: `Infusions: ${c.infusions.length} of ${CL.infusions[level]} known.` });
-  if (CL.choices?.includes("favoredEnemy") && !tashaRanger && !FAVORED_ENEMIES.includes(c.favoredEnemy)) warnings.push({ level: "warn", tab: "class", text: "Choose a favored enemy." });
-  if (CL.choices?.includes("naturalExplorer") && !tashaRanger && !c.favoredTerrain) warnings.push({ level: "warn", tab: "class", text: "Choose a favored terrain." });
-  if (tashaRanger && !c.deftExpertise) warnings.push({ level: "warn", tab: "class", text: "Deft Explorer: choose a skill for expertise." });
+    warnings.push({ level: c.infusions.length > CL.infusions[level] ? "error" : "warn", tab: "class", section: "infusions", text: `Infusions: ${c.infusions.length} of ${CL.infusions[level]} known.` });
+  if (CL.choices?.includes("favoredEnemy") && !tashaRanger && !FAVORED_ENEMIES.includes(c.favoredEnemy)) warnings.push({ level: "warn", tab: "class", section: "ranger", text: "Choose a favored enemy." });
+  if (CL.choices?.includes("naturalExplorer") && !tashaRanger && !c.favoredTerrain) warnings.push({ level: "warn", tab: "class", section: "ranger", text: "Choose a favored terrain." });
+  if (tashaRanger && !c.deftExpertise) warnings.push({ level: "warn", tab: "class", section: "ranger", text: "Deft Explorer: choose a skill for expertise." });
   if (bg.custom) {
-    if (c.bgCustomSkills.length < 2) warnings.push({ level: "warn", tab: "background", text: `Custom background: choose ${2 - c.bgCustomSkills.length} more skill(s).` });
-    if (!c.bgCustomFeature) warnings.push({ level: "info", tab: "background", text: "Custom background: pick the feature you borrow (agree it with your DM)." });
+    if (c.bgCustomSkills.length < 2) warnings.push({ level: "warn", tab: "background", section: "custom-background", text: `Custom background: choose ${2 - c.bgCustomSkills.length} more skill(s).` });
+    if (!c.bgCustomFeature) warnings.push({ level: "info", tab: "background", section: "custom-background", text: "Custom background: pick the feature you borrow (agree it with your DM)." });
   }
   for (const f of feats) {
     const tab = featTab(f);
-    if (f.id === "skilled" && f.choices.skills.length < 3) warnings.push({ level: "warn", tab, text: `Skilled (${f.from}): choose ${3 - f.choices.skills.length} more skill(s).` });
+    if (f.id === "skilled" && f.choices.skills.length < 3) warnings.push({ level: "warn", tab, section: featSection(f), text: `Skilled (${f.from}): choose ${3 - f.choices.skills.length} more skill(s).` });
     if (f.id === "magicInitiate" && (!f.choices.miSpell || f.choices.miCantrips.some((x) => !x)))
-      warnings.push({ level: "warn", tab, text: `Magic Initiate (${f.from}): fill in two cantrips and one 1st-level spell.` });
-    if (f.id === "feyTouched" && !f.choices.miSpell) warnings.push({ level: "warn", tab, text: `Fey Touched (${f.from}): choose a 1st-level divination or enchantment spell.` });
-    if (f.id === "shadowTouched" && !f.choices.miSpell) warnings.push({ level: "warn", tab, text: `Shadow Touched (${f.from}): choose a 1st-level illusion or necromancy spell.` });
+      warnings.push({ level: "warn", tab, section: featSection(f), text: `Magic Initiate (${f.from}): fill in two cantrips and one 1st-level spell.` });
+    if (f.id === "feyTouched" && !f.choices.miSpell) warnings.push({ level: "warn", tab, section: featSection(f), text: `Fey Touched (${f.from}): choose a 1st-level divination or enchantment spell.` });
+    if (f.id === "shadowTouched" && !f.choices.miSpell) warnings.push({ level: "warn", tab, section: featSection(f), text: `Shadow Touched (${f.from}): choose a 1st-level illusion or necromancy spell.` });
     if ((f.id === "skillExpert" || f.id === "prodigy") && (!f.choices.skills[0] || !f.choices.expertise))
-      warnings.push({ level: "warn", tab, text: `${featIn(R, f.id).name} (${f.from}): choose a skill and a skill for expertise.` });
-    if (f.id === "fightingInitiate" && !f.choices.style) warnings.push({ level: "warn", tab, text: `Fighting Initiate (${f.from}): choose a fighting style.` });
+      warnings.push({ level: "warn", tab, section: featSection(f), text: `${featIn(R, f.id).name} (${f.from}): choose a skill and a skill for expertise.` });
+    if (f.id === "fightingInitiate" && !f.choices.style) warnings.push({ level: "warn", tab, section: featSection(f), text: `Fighting Initiate (${f.from}): choose a fighting style.` });
   }
-  if (!species.sizes.includes(c.size)) warnings.push({ level: "warn", tab: "species", text: `${species.name} can't be ${c.size}.` });
+  if (!species.sizes.includes(c.size)) warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `${species.name} can't be ${c.size}.` });
 
   const observant = is2014 && hasFeat("observant") ? 5 : 0;
   const passive = (id: SkillId) => 10 + skillBonus(id);

@@ -21,10 +21,10 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
   return (
     <div className="stack">
       {c.edition === "2014" && c.level === 1 && <StartingEquipment {...props} />}
-      <Card title="Armor Class" aside={<strong>{d.ac}</strong>}>
+      <Card todo="armor-class" title="Armor Class" aside={<strong>{d.ac}</strong>}>
         <p className="muted">{d.acNote}. The app wears the best armor and shield you own and are proficient with.</p>
       </Card>
-      <Card title="Attacks" aside={<span className="muted">From weapons in your inventory and damage cantrips</span>}>
+      <Card todo="attacks" title="Attacks" aside={<span className="muted">From weapons in your inventory and damage cantrips</span>}>
         <table className="attack-table">
           <thead>
             <tr>
@@ -49,7 +49,7 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
         </table>
       </Card>
 
-      <Card
+      <Card todo="inventory"
         title="Inventory"
         aside={
           <span className={d.carried > d.capacity ? "counter over" : "muted"}>
@@ -116,7 +116,7 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
         </div>
       </Card>
 
-      <Card title="Coins">
+      <Card todo="coins" title="Coins">
         <div className="coins">
           {(["cp", "sp", "ep", "gp", "pp"] as (keyof Coins)[]).map((k) => (
             <label key={k} className="coin">

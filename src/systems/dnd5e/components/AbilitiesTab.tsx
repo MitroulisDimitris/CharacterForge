@@ -43,7 +43,7 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
 
   return (
     <div className="stack">
-      <Card
+      <Card todo="ability-scores"
         title="Ability scores"
         aside={c.abilityMethod === "pointbuy" ? <span className={`counter ${spent > POINT_BUY_BUDGET ? "over" : spent === POINT_BUY_BUDGET ? "ok" : "under"}`}>Points {spent} / {POINT_BUY_BUDGET}</span> : undefined}
       >
@@ -131,7 +131,7 @@ export function AbilitiesTab({ c, d, set, books }: TabProps<Character, Derived>)
       </Card>
 
       {c.level >= 4 && (
-      <Card title="Level 4 feat">
+      <Card todo="feat" title="Level 4 feat">
         <fieldset className="plain">
           <Field label="Feat" hint={l4.text}>
             <Select<FeatId> value={c.level4Feat} options={R.level4Feats.filter((f) => inBooks(books, f.book)).map((f) => ({ value: f.id, label: `${f.name}${f.category === "origin" ? " (origin)" : ""}${f.plusOne?.includes(d.cls.recommended[0]) && f.plusOne.length < 6 ? ` ★ good for ${d.cls.name}` : ""}` }))} onChange={(level4Feat) => set({ level4Feat })} />

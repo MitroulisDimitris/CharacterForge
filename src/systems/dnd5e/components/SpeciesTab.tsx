@@ -62,7 +62,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
 
   return (
     <div className="stack">
-      <Card title={word}>
+      <Card todo="species" title={word}>
         <WithPreview
           panel={
             <AbilityPreview
@@ -93,7 +93,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
         </WithPreview>
       </Card>
 
-      <Card title={`${sp.name} choices`}>
+      <Card todo="species-choices" title={`${sp.name} choices`}>
         <div className="grid-3">
           {sp.sizes.length > 1 && (
             <Field label="Size">
@@ -219,7 +219,7 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
         )}
       </Card>
 
-      <Card title="Traits">
+      <Card todo="traits" title="Traits">
         <ul className="feature-list">
           {sp.traits.map((t) => (
             <li key={t.name} className={t.minLevel && t.minLevel > c.level ? "future" : ""}>
