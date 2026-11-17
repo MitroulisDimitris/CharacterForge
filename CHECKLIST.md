@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-16 (suggest an encounter).
+Last updated: 2026-11-17 (combat tracker, "Only you see this", Browse lists mockup).
 
 ---
 
@@ -110,6 +110,10 @@ Last updated: 2026-11-16 (suggest an encounter).
 - [x] Monster filters: CR range, creature type
 - [x] Spells (SRD, every level) with "What it does"; conditions + exhaustion in plain words
 - [x] Favorites and Recently viewed (saved in this browser for now)
+- [x] "Only you see this" (lock line) on every host tab: Lookup, Party, Encounters, Notes, and the fight
+- [x] Browse monsters without typing (challenge / type / place / sort), an icon per monster (game-icons.net), monster page beside the list on PC (full page on phone): numbers, At the table, stat block with Roll buttons, Monster Manual page, + Add to an encounter, your own picture (⋯ → Add a picture)
+- [x] Session side panel folds to a thin strip on PC
+- [ ] Browse spells by level / class
 - [ ] Spell names inside a stat block open that spell
 - [ ] Environment filter; favorites saved to the account (any device)
 
@@ -133,13 +137,22 @@ Last updated: 2026-11-16 (suggest an encounter).
 - [ ] Touch targets ≥ 44 px everywhere
 - [ ] Install to home screen (PWA), app icon, opens full screen
 
-## 11. Combat tracker (optional)
-- [ ] Start from a saved encounter or from scratch
-- [ ] Initiative (bonuses pre-filled), turn order, Next turn, round counter
-- [ ] Damage / healing, HP bars, down / dead
-- [ ] Numbered monster copies with separate HP
-- [ ] Conditions per creature, optional duration
-- [ ] Survives a page refresh / phone lock
+## 11. Combat tracker
+- [x] Start from a saved encounter ("Run this fight"); a fight in progress shows "Continue the fight" on the Encounters tab
+- [ ] Start from scratch (no saved encounter)
+- [x] Initiative: monsters rolled (one roll per kind), players type their roll (bonus shown), or "Roll for the players"; reroll; leave someone out
+- [x] Turn order, "Now" marker, Next turn, round counter, Back one turn; ties: higher bonus, then players first
+- [x] Damage / healing / temp HP, HP bars; monsters at 0 HP are "Down" and skipped; players at 0 HP get a death-save tip
+- [x] Monster resistances / immunities / vulnerabilities from the stat block (asks when it says "nonmagical")
+- [x] Concentration tip after damage (Con save DC)
+- [x] Players' HP and conditions go to their sheet (they see their own); monsters' stay with the host
+- [x] Numbered monster copies with separate HP
+- [x] Conditions per creature
+- [ ] Condition durations ("until the end of its next turn")
+- [x] Add someone mid-fight (NPC, reinforcements, a player who joined late); change initiative mid-fight
+- [x] End fight: rounds, defeated monsters, XP total and per player
+- [x] Survives a page refresh / another device (saved on the encounter, `encounters.combat`)
+- [x] Tests (turn order, skipping, ties, XP, resistances) · browser test at 375 / 768 / 1280 / 1920
 
 ## Later
 - [ ] Monster pictures, typo-tolerant search, search inside abilities

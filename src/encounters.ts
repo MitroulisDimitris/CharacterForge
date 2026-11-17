@@ -2,6 +2,7 @@
 // XP thresholds per character level, monster XP by challenge rating, and a multiplier for the
 // number of monsters (shifted for parties under 3 or over 5). Saved encounters: table `encounters`.
 import { supabase } from "./cloud";
+import type { Combat } from "./combat";
 
 /** Easy, Medium, Hard, Deadly XP threshold for one character of each level (index = level). */
 export const THRESHOLDS: [number, number, number, number][] = [
@@ -113,9 +114,11 @@ export interface Encounter {
   monsters: EncounterMonster[];
   notes: string;
   updated_at: string;
+  /** The fight in progress, if any (combat tracker). */
+  combat?: Combat | null;
 }
 
-const COLS = "id, session_id, name, monsters, notes, updated_at";
+const COLS = "id, session_id, name, monsters, notes, updated_at, combat";
 
 export async function loadEncounters(sessionId: string): Promise<Encounter[]> {
   const { data, error } = await supabase.from("encounters").select(COLS).eq("session_id", sessionId).order("updated_at", { ascending: false });

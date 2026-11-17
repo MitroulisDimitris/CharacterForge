@@ -33,9 +33,10 @@ import { Brand, SkinPicker } from "./Brand";
 import { Crest, MoreMenu, SideToggle } from "./Hero";
 import { Lookup } from "./Lookup";
 import { EncountersTab } from "./Encounters";
-import { MemberView, NotesTab, PartyTab } from "./Party";
+import { MemberView, NotesTab, OnlyYou, PartyTab } from "./Party";
 import { setState as setFeedbackState } from "../trail";
 
+const FOLD_KEY = "character-forge:session-side-folded";
 const charName = (rec: StoredCharacter) => ((rec.data as { name?: string }).name || "Unnamed").trim();
 
 // ---------------------------------------------------------------------------------------------
@@ -557,6 +558,23 @@ export function SessionPage({
   const [tick, setTick] = useState(0);
   const ended = session.status !== "active";
   const [sideOpen, setSideOpen] = useState(false);
+  // PC: the side panel folds to a thin strip (remembered on this device).
+  const [folded, setFolded] = useState(() => {
+    try {
+      return localStorage.getItem(FOLD_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const fold = () =>
+    setFolded((f) => {
+      try {
+        localStorage.setItem(FOLD_KEY, f ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      return !f;
+    });
   const [hostTab, setHostTab] = useState<"lookup" | "party" | "encounters" | "notes">("lookup");
   const [members, setMembers] = useState<Awaited<ReturnType<typeof loadHostMembers>>>([]);
   const [viewMember, setViewMember] = useState<string | null>(null);
@@ -758,7 +776,12 @@ export function SessionPage({
         ))}
       </nav>
       <div className="tab-body">
-        {hostTab === "lookup" && <Lookup />}
+        {hostTab === "lookup" && (
+          <>
+            <OnlyYou>Only you see what you look up.</OnlyYou>
+            <Lookup userId={userId} sessionId={session.id} />
+          </>
+        )}
         {hostTab === "party" &&
           (shown ? (
             <MemberView
@@ -772,13 +795,7 @@ export function SessionPage({
             <PartyTab sessionId={session.id} system={session.system} members={members} roster={roster ?? []} onOpen={setViewMember} onChanged={() => setTick((n) => n + 1)} />
           ))}
         {hostTab === "encounters" && (
-          <EncountersTab
-            sessionId={session.id}
-            members={members.map((m) => {
-              const d = m.data as { name?: string; level?: number };
-              return { name: d.name || "Unnamed", level: d.level ?? 1 };
-            })}
-          />
+          <EncountersTab sessionId={session.id} system={session.system} hostMembers={members} onPlayersChanged={() => setTick((n) => n + 1)} />
         )}
         {hostTab === "notes" && <NotesTab sessionId={session.id} />}
       </div>
@@ -799,10 +816,21 @@ export function SessionPage({
   if (skinOf(theme).layout === "hero")
     return (
       <div className="hero-shell">
-        <aside className={`hero-side session-side ${sideOpen ? "open" : ""}`}>
-          <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
-            ‹ <span className="back-label">My characters</span>
-          </button>
+        <aside className={`hero-side session-side ${sideOpen ? "open" : ""} ${folded ? "folded" : ""}`}>
+          <div className="side-top">
+            <button type="button" className="side-fold" onClick={fold} aria-expanded={!folded} aria-label={folded ? "Show the side panel" : "Hide the side panel"} title={folded ? "Show the side panel" : "Hide the side panel"}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M9 4v16" />
+              </svg>
+            </button>
+            <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
+              ‹ <span className="back-label">My characters</span>
+            </button>
+          </div>
+          <span className="side-mono" title={session.name} aria-hidden="true">
+            {session.name.trim().charAt(0).toUpperCase() || "S"}
+          </span>
           {identity}
           <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} label={isHost ? "Code & menu" : "Menu"} />
           <div className="hero-side-extra">

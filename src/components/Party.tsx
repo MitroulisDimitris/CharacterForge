@@ -1,7 +1,7 @@
 // Host tools (REQUIREMENTS §4.4, D3): the party's table cards, a member's read-only sheet with the
 // in-play state the host controls (HP, damage + type, conditions, exhaustion), level awards, and
 // private notes. Also the player's read-only view of that in-play state.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getSystem } from "../systems/registry";
 import type { TableCard } from "../systems/types";
 import { awardLevel, loadNotes, saveNotes, sessionError, setLive, type Membership, type RosterRow } from "../sessions";
@@ -22,9 +22,9 @@ import {
 } from "../live";
 import { Crest, MoreMenu } from "./Hero";
 
-type HostMember = Membership & { user_id: string };
+export type HostMember = Membership & { user_id: string };
 
-function cardOf(m: Membership, system: string): { card: TableCard | null; name: string; identity: string; level: number } {
+export function cardOf(m: Membership, system: string): { card: TableCard | null; name: string; identity: string; level: number } {
   const sys = getSystem(system);
   try {
     const c = sys!.normalize(m.data);
@@ -37,7 +37,7 @@ function cardOf(m: Membership, system: string): { card: TableCard | null; name: 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
 /** HP bar: green → gold → crimson as HP drops. */
-function HpBar({ live, max }: { live: Live; max: number }) {
+export function HpBar({ live, max }: { live: Live; max: number }) {
   const hp = currentHp(live, max);
   const pct = max ? Math.round((hp / max) * 100) : 0;
   const tone = pct > 50 ? "ok" : pct > 0 ? "hurt" : "down";
@@ -66,6 +66,19 @@ export function ConditionChips({ live }: { live: Live }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+/** "Only you see this" for the host's private screens: a small lock and one plain line. */
+export function OnlyYou({ children }: { children: ReactNode }) {
+  return (
+    <p className="only-you">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <rect x="5" y="11" width="14" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </svg>
+      <span>{children}</span>
+    </p>
   );
 }
 
@@ -98,7 +111,14 @@ export function PartyTab({
       setError(sessionError(e));
     }
   };
-  if (!members.length) return <p className="muted">Nobody has joined yet. Send your players the invite code.</p>;
+  const privacy = <OnlyYou>Only you see the whole party. Each player sees only their own HP and conditions.</OnlyYou>;
+  if (!members.length)
+    return (
+      <>
+        {privacy}
+        <p className="muted">Nobody has joined yet. Send your players the invite code.</p>
+      </>
+    );
   return (
     <section aria-label="Party">
       <div className="party-head">
@@ -109,6 +129,7 @@ export function PartyTab({
           Award a level to everyone
         </button>
       </div>
+      {privacy}
       {error && <p className="auth-error">{error}</p>}
       <div className="roster">
         {members.map((m) => {
@@ -350,7 +371,7 @@ export function NotesTab({ sessionId }: { sessionId: string }) {
           {state}
         </span>
       </div>
-      <p className="muted">Only you see these: plot threads, NPC names, what happened last time.</p>
+      <OnlyYou>Only you see these notes: plot threads, NPC names, what happened last time.</OnlyYou>
       <textarea value={notes} onChange={(e) => change(e.target.value)} rows={18} aria-label="Session notes" placeholder="Last time: the party reached the ruined chapel…" />
     </section>
   );

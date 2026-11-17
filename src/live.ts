@@ -51,12 +51,12 @@ const log = (l: Live, text: string): LiveLog[] => [{ t: Date.now(), text }, ...(
 export const currentHp = (l: Live, max: number) => Math.max(0, Math.min(max, l.hp ?? max));
 
 /** Damage: temporary HP first, then HP (never below 0). `halve` for resistance. */
-export function applyDamage(l: Live, max: number, amount: number, type: string, halve: boolean): Live {
-  const dmg = Math.max(0, Math.floor(halve ? amount / 2 : amount));
+export function applyDamage(l: Live, max: number, amount: number, type: string, halve: boolean, double = false): Live {
+  const dmg = Math.max(0, Math.floor(halve ? amount / 2 : double ? amount * 2 : amount));
   const temp = l.temp ?? 0;
   const fromTemp = Math.min(temp, dmg);
   const hp = Math.max(0, currentHp(l, max) - (dmg - fromTemp));
-  const what = `${dmg} ${type.toLowerCase()} damage${halve ? " (halved: resistant)" : ""}`;
+  const what = `${dmg} ${type.toLowerCase()} damage${halve ? " (halved: resistant)" : double ? " (doubled: vulnerable)" : ""}`;
   return { ...l, temp: temp - fromTemp || undefined, hp, log: log(l, `Took ${what}${hp === 0 ? " · down to 0 HP" : ""}`) };
 }
 

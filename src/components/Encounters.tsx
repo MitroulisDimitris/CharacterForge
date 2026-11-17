@@ -8,11 +8,8 @@ import { filterPool, SHAPE_TEXT, suggestEncounter, type Shape, type Suggestion, 
 import { sessionError } from "../sessions";
 import { MonsterCard } from "./Lookup";
 import { MoreMenu } from "./Hero";
-
-export interface PartyMember {
-  name: string;
-  level: number;
-}
+import { cardOf, OnlyYou, type HostMember } from "./Party";
+import { CombatView } from "./Combat";
 
 const fmt = (n: number) => n.toLocaleString();
 const monsterLine = (ms: EncounterMonster[]) => ms.map((m) => `${m.count} × ${m.name}`).join(", ") || "No monsters yet";
@@ -69,12 +66,15 @@ function Builder({
   start,
   party,
   onDone,
+  onRun,
   suggested,
 }: {
   sessionId: string;
   start: Encounter | null;
   party: number[];
   onDone: (saved: boolean) => void;
+  /** Save, then start the fight with this encounter. */
+  onRun: (e: Encounter) => void;
   /** Opened from "Suggest an encounter": show what it is and offer another. */
   suggested?: { shape: Shape; retry: () => Suggestion | null };
 }) {
@@ -124,12 +124,13 @@ function Builder({
     }
   };
 
-  const save = async () => {
+  const save = async (run = false) => {
     setBusy(true);
     setError("");
     try {
-      await saveEncounter({ id: start?.id || undefined, session_id: sessionId, name: name.trim() || "Untitled encounter", monsters, notes });
-      onDone(true);
+      const saved = await saveEncounter({ id: start?.id || undefined, session_id: sessionId, name: name.trim() || "Untitled encounter", monsters, notes });
+      if (run) onRun(saved);
+      else onDone(true);
     } catch (e) {
       setError(sessionError(e));
     } finally {
@@ -152,6 +153,10 @@ function Builder({
         <button type="button" className="link" onClick={() => onDone(false)}>
           ‹ Encounters
         </button>
+        <span className="combat-head-right">
+          <button type="button" className="btn small" disabled={busy || !monsters.length} onClick={() => save(true)} title="Saves it, then starts the fight: initiative, turns, HP">
+            {start?.combat ? "Continue the fight" : "Run this fight"}
+          </button>
         {start?.id && (
           <MoreMenu label="Encounter actions">
             <button type="button" className="danger" onClick={remove}>
@@ -159,6 +164,7 @@ function Builder({
             </button>
           </MoreMenu>
         )}
+        </span>
       </div>
       {suggested && shape && (
         <div className="enc-suggested" role="status">
@@ -259,7 +265,7 @@ function Builder({
           </label>
           {error && <p className="auth-error">{error}</p>}
           <div className="enc-save">
-            <button type="button" className="btn primary" disabled={busy} onClick={save}>
+            <button type="button" className="btn primary" disabled={busy} onClick={() => save()}>
               {busy ? "Saving…" : "Save encounter"}
             </button>
           </div>
@@ -339,9 +345,18 @@ function SuggestPanel({ party, onResult, onClose }: { party: number[]; onResult:
   );
 }
 
-export function EncountersTab({ sessionId, members }: { sessionId: string; members: PartyMember[] }) {
+export function EncountersTab({ sessionId, system, hostMembers, onPlayersChanged }: { sessionId: string; system: string; hostMembers: HostMember[]; onPlayersChanged: () => void }) {
+  const members = useMemo(
+    () =>
+      hostMembers.map((m) => {
+        const { name, level } = cardOf(m, system);
+        return { name, level };
+      }),
+    [hostMembers, system],
+  );
   const [list, setList] = useState<Encounter[] | null>(null);
   const [editing, setEditing] = useState<Encounter | "new" | null>(null);
+  const [fighting, setFighting] = useState<Encounter | null>(null);
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<{ shape: Shape; retry: () => Suggestion | null } | undefined>();
   const [error, setError] = useState("");
@@ -371,6 +386,21 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
     </div>
   );
 
+  if (fighting)
+    return (
+      <CombatView
+        key={fighting.id}
+        encounter={fighting}
+        members={hostMembers}
+        system={system}
+        onPlayersChanged={onPlayersChanged}
+        onExit={() => {
+          setFighting(null);
+          setTick((n) => n + 1);
+        }}
+      />
+    );
+
   if (editing)
     return (
       <>
@@ -380,6 +410,11 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
           start={editing === "new" ? null : editing}
           party={party}
           suggested={suggested}
+          onRun={(e) => {
+            setEditing(null);
+            setSuggested(undefined);
+            setFighting(e);
+          }}
           onDone={(saved) => {
             setEditing(null);
             setSuggested(undefined);
@@ -416,7 +451,19 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
           }}
         />
       )}
-      <p className="muted">Only you see these. Difficulty uses the 2014 rules: Easy, Medium, Hard or Deadly for this party.</p>
+      <OnlyYou>Only you see your encounters. Players don't know what's coming.</OnlyYou>
+      {list?.filter((e) => e.combat).map((e) => (
+        <div key={e.id} className="fight-on" role="status">
+          <span>
+            <strong>Fight in progress:</strong> {e.name}
+            {e.combat?.started ? ` · round ${e.combat.round}` : " · rolling initiative"}
+          </span>
+          <button type="button" className="btn primary" onClick={() => setFighting(e)}>
+            Continue the fight
+          </button>
+        </div>
+      ))}
+      <p className="muted">Difficulty uses the 2014 rules: Easy, Medium, Hard or Deadly for this party.</p>
       {error && <p className="auth-error">{error}</p>}
       {list && list.length === 0 && <p className="muted">No encounters yet. Build one before the game, then open it at the table.</p>}
       <div className="roster">
@@ -426,6 +473,7 @@ export function EncountersTab({ sessionId, members }: { sessionId: string; membe
             <button key={e.id} type="button" className="enc-card" onClick={() => setEditing(e)}>
               <span className="enc-card-top">
                 <strong>{e.name}</strong>
+                {e.combat && <span className="pill">Fight on</span>}
                 <DifficultyChip r={r} />
               </span>
               <span className="muted">{monsterLine(e.monsters)}</span>

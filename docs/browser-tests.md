@@ -160,18 +160,107 @@ short list of anything confusing even if it technically passed.
 1. Notes tab: type a line.
 - ✅ "Saved" shows; after a reload the text is still there.
 
-## F. Feedback
+**E6 · Combat tracker**
+1. Encounters → open **QA Goblins** → **Run this fight**.
+- ✅ "Roll initiative": every goblin already has the same number (one roll per kind); players
+  (if B joined) have an empty box with their bonus ("d20 +2"). "Start the fight" is greyed until
+  everyone has a number. Type a number for each player (or "Roll for the players").
+2. **Start the fight**.
+- ✅ A list in order, highest first, the first one marked **Now**; the top bar says "Round 1 ·
+  <name>'s turn".
+3. Tap **Goblin 1** → Amount 7 → **Damage**.
+- ✅ It shows 0/7 HP, "Down", faded, and a tip says it's skipped.
+4. Click **Next turn** until the round changes.
+- ✅ Goblin 1 is skipped; the round goes up by one after the last fighter.
+5. Reload the page, go to Encounters.
+- ✅ A box "Fight in progress: QA Goblins · round N" → **Continue the fight** brings back the same
+  turn and HP.
+6. Damage every goblin to 0.
+- ✅ "All monsters are down or gone"; the main button becomes **End fight**. Click it.
+- ✅ "Fight over": rounds, "4 × Goblin", the XP and XP each.
+- [B] If B was in the fight and took damage, B's sheet shows it ("In QA Session · set by your DM").
+7. Phone size: run a fight again and check nothing scrolls sideways; cancel it with ⋯ → Cancel fight.
 
-**F1 · Send feedback**
-1. Click the Feedback button. Type "QA: feedback test, please ignore".
-- ✅ Under the note: "Also sends: the steps you took, the screen you're on…" and **Show details**
-  shows the recorded steps (no passwords, no typed text).
-2. Send it.
-- ✅ "Sent. Thank you!" and it appears under **Saved**.
+## F. Feedback (a player said it "crashed" while sending feedback)
 
-**F2 · Phone** (phone-sized window)
-- ✅ The Feedback button is a small round icon and doesn't cover buttons you need (scroll to the
-  bottom of a long page to check).
+Background: an iPhone user tried 4 times to send feedback with a screenshot and nothing arrived
+(the server refused the image: it was too big). The app now shrinks images before sending and
+sends the note even if a screenshot fails. These cases check that, plus everything else around
+the Feedback panel. **After every case, check:** the page didn't go blank or freeze, and the app
+still works (click a tab). If the browser's console is available, note any red errors.
+
+**F1 · Text only (logged in)**
+1. Click the Feedback button. Type "QA F1: text only, please ignore". Send.
+- ✅ "Sent. Thank you! You can see it under Saved." The note is under **Saved** with "Open".
+
+**F2 · What it sends**
+1. Open Feedback, type "QA F2". Click **Show details** (under the note).
+- ✅ It lists the recent steps in plain words (e.g. "Clicked …", "Screen: …"), the window size and
+  browser. It must **not** contain any password or the text you typed in other fields
+  (it may say "Typed in Email" but never the email itself).
+2. Close the panel without sending.
+
+**F3 · Logged out, from the login page**
+1. Log out. On the login page open Feedback.
+- ✅ There's a "Your name (optional)" field.
+2. Type a name "QA tester" and "QA F3: logged out, please ignore". Send.
+- ✅ "Sent. Thank you!" (Saved is empty when logged out; that's expected.) Log in again.
+
+**F4 · One small screenshot**
+1. Take a screenshot of the app (Windows: Win+Shift+S, then click into the note box and Ctrl+V;
+   or use "choose a file").
+- ✅ A thumbnail appears within a second or two.
+2. Type "QA F4: one screenshot". Send.
+- ✅ "Sent…". Under **Saved**, the item shows the thumbnail; clicking it opens the image.
+
+**F5 · A big photo (the iPhone case)** — needs a file over 5 MB (a phone photo, or any large
+JPG/PNG on the computer). If you can't attach files, mark **Skipped**.
+1. Open Feedback, "choose a file", pick the big image.
+- ✅ The thumbnail appears (may take a few seconds); the page stays responsive.
+2. Type "QA F5: big photo". Send.
+- ✅ "Sent. Thank you!…" with **no** "couldn't be attached" warning, and the image shows under Saved.
+
+**F6 · Several screenshots, remove one**
+1. Add 3 images (paste or choose). Remove the middle one with its ×.
+- ✅ 2 thumbnails remain.
+2. Type "QA F6: two images". Send.
+- ✅ Saved shows the item with exactly 2 images.
+
+**F7 · Point at something**
+1. Open Feedback → **Point at something**. The panel hides and a banner says to click the part of
+   the screen you mean. Click (or tap) a button on the page, e.g. a tab.
+- ✅ The panel comes back showing what you pointed at (a label and a bit of its text).
+  The click must **not** have done anything else (e.g. the tab did not switch).
+2. Click **clear** next to it, then point again and press **Esc** (desktop).
+- ✅ Esc cancels pointing and brings the panel back.
+3. Type "QA F7: pointed". Send. ✅ Sent.
+
+**F8 · Long note**
+1. Paste or type a long note (about 2,000 characters; any text), starting "QA F8".
+- ✅ Sends fine.
+
+**F9 · No internet** (needs the browser's DevTools → Network → Offline, or turn Wi-Fi off; else Skipped)
+1. Go offline. Open Feedback, type "QA F9: offline test", add one screenshot, Send.
+- ✅ A plain message ("Couldn't send it. Check your internet connection…"). Your text and
+  screenshot are **still in the box**; nothing crashes.
+2. Go back online and press Send again. ✅ Sent.
+
+**F10 · Busy screens**
+1. Open a character, start **Level up** (the dialog opens), then open Feedback on top of it.
+- ✅ The panel opens above the dialog; "Screen" at the top names the dialog.
+2. Type "QA F10: over a dialog". Send. Close the panel, then close the Level up dialog with Cancel.
+- ✅ Nothing changed on the character.
+3. Open and close the Feedback panel 10 times quickly. ✅ No freeze, no blank page.
+
+**F11 · Phone size** (window ~400 px wide)
+1. The Feedback button is a small round ✎ icon at the bottom right.
+2. Open it. ✅ The panel fits the screen; the Send button can be reached by scrolling inside it.
+3. Send "QA F11: phone size" with one screenshot. ✅ Sent.
+
+**F12 · Delete your own feedback**
+1. Feedback → **Saved**. On each "QA …" item click **Delete** (confirm).
+- ✅ They disappear from the list. (Items sent while logged out in F3 can only be removed by the
+  admin; that's expected.)
 
 ## G. Clean up
 

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../cloud";
 import { getErrors, getState, getSteps } from "../trail";
+import { shrinkImage } from "../images";
 
 export interface FeedbackItem {
   id: string;
@@ -116,14 +117,6 @@ function labelOf(el: Element) {
   return el.tagName.toLowerCase();
 }
 
-const readImage = (f: File) =>
-  new Promise<string>((ok, fail) => {
-    const r = new FileReader();
-    r.onload = () => ok(String(r.result));
-    r.onerror = fail;
-    r.readAsDataURL(f);
-  });
-
 export function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"new" | "list">("new");
@@ -222,7 +215,8 @@ export function FeedbackWidget() {
   // ---------- images: paste anywhere in the panel, or drop, or choose a file ----------
   const addFiles = async (files: Iterable<File>) => {
     const imgs = [...files].filter((f) => f.type.startsWith("image/"));
-    const urls = await Promise.all(imgs.map(readImage));
+    const urls: string[] = [];
+    for (const f of imgs.slice(0, 6)) urls.push(await shrinkImage(f)); // one at a time: easier on phones
     if (urls.length) setImages((x) => [...x, ...urls].slice(0, 6));
   };
   const onPaste = (e: React.ClipboardEvent) => {
@@ -242,13 +236,20 @@ export function FeedbackWidget() {
     try {
       const folder = uid ?? "anon";
       const paths: string[] = [];
+      // A screenshot that still can't be stored never blocks the note itself.
+      let failedImages = 0;
       for (const [i, u] of images.entries()) {
-        const blob = await dataUrlToBlob(u);
-        const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png";
-        const path = `${folder}/${id}-${i + 1}.${ext}`;
-        const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || "image/png" });
-        if (error) throw error;
-        paths.push(path);
+        try {
+          const blob = await dataUrlToBlob(u);
+          const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png";
+          const path = `${folder}/${id}-${i + 1}.${ext}`;
+          const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || "image/png" });
+          if (error) throw error;
+          paths.push(path);
+        } catch (e) {
+          console.error("screenshot upload failed", e);
+          failedImages++;
+        }
       }
       const { error } = await supabase.from("feedback").insert({
         id,
@@ -265,10 +266,12 @@ export function FeedbackWidget() {
           browser: navigator.userAgent,
           app: appVersion(),
           skin: document.documentElement.dataset.theme,
+          screenshotsFailed: failedImages || undefined,
         },
       });
       if (error) throw error;
-      setStatus(uid ? "Sent. Thank you! You can see it under Saved." : "Sent. Thank you!");
+      const lost = failedImages ? ` (${failedImages === 1 ? "the screenshot" : `${failedImages} screenshots`} couldn't be attached)` : "";
+      setStatus((uid ? "Sent. Thank you! You can see it under Saved." : "Sent. Thank you!") + lost);
       setNote("");
       setImages([]);
       setTarget(undefined);

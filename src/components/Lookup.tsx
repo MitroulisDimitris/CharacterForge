@@ -1,18 +1,21 @@
 // Lookup (REQUIREMENTS §4.4): one search for monsters, spells and conditions. Monster cards show
 // what a host needs first (CR, AC, HP, speed, Weak to / Resists / Immune to, 1–4 key traits);
 // the full stat block is one tap away.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { xpForCr } from "../encounters";
+import { MonsterPage, MonsterRow } from "./MonsterPage";
 import { CONDITIONS, EXHAUSTION } from "../live";
 import {
   abilityMod,
   addRecent,
+  allMonsters,
   favorites,
   getMonster,
   getSpell,
   isFavorite,
   keyTraits,
+  PLACES,
   recent,
-  searchMonsters,
   searchSpells,
   speedText,
   splitList,
@@ -20,17 +23,11 @@ import {
   type LookupKind,
   type LookupRef,
   type Monster,
+  type MonsterBrief,
   type Spell,
 } from "../lookup";
 
 type Kind = "all" | "monster" | "spell" | "condition";
-const CR_BANDS: { id: string; label: string; test: (cr: number) => boolean }[] = [
-  { id: "", label: "Any CR", test: () => true },
-  { id: "low", label: "CR 0–1", test: (c) => c <= 1 },
-  { id: "mid", label: "CR 2–4", test: (c) => c >= 2 && c <= 4 },
-  { id: "high", label: "CR 5–10", test: (c) => c >= 5 && c <= 10 },
-  { id: "top", label: "CR 11+", test: (c) => c >= 11 },
-];
 
 function Star({ refItem, onChange }: { refItem: LookupRef; onChange?: () => void }) {
   const [on, setOn] = useState(isFavorite(refItem));
@@ -280,34 +277,48 @@ function OpenRef({ r }: { r: LookupRef }) {
   return <p className="muted">Loading {r.name}…</p>;
 }
 
-export function Lookup() {
+const MONSTER_BANDS: { id: string; label: string; test: (cr: number) => boolean }[] = [
+  { id: "", label: "Any challenge", test: () => true },
+  { id: "0", label: "CR 0 – ½", test: (c) => c <= 0.5 },
+  { id: "1", label: "CR 1 – 3", test: (c) => c >= 1 && c <= 3 },
+  { id: "4", label: "CR 4 – 7", test: (c) => c >= 4 && c <= 7 },
+  { id: "8", label: "CR 8 – 12", test: (c) => c >= 8 && c <= 12 },
+  { id: "13", label: "CR 13+", test: (c) => c >= 13 },
+];
+const PAGE_SIZE = 60;
+
+export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?: string }) {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<Kind>("all");
-  const [cr, setCr] = useState("");
+  const [band, setBand] = useState("");
   const [type, setType] = useState("");
-  const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [place, setPlace] = useState("");
+  const [sort, setSort] = useState<"cr" | "az">("cr");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [brief, setBrief] = useState<MonsterBrief[] | null>(null);
   const [spells, setSpells] = useState<Spell[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [open, setOpen] = useState<string | null>(null);
   const [picked, setPicked] = useState<LookupRef | null>(null);
   const [, setTick] = useState(0);
 
   const query = q.trim();
+  const wantMonsters = kind === "all" || kind === "monster";
+
+  // The whole monster list (SRD, ~320) once: browsing and name search work without the network.
   useEffect(() => {
-    setError("");
-    if (query.length < 2) {
-      setMonsters([]);
-      setSpells([]);
-      return;
-    }
+    allMonsters().then(setBrief, (e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  useEffect(() => {
+    if (query.length < 2 || !(kind === "all" || kind === "spell")) return setSpells([]);
     let live = true;
     setBusy(true);
     const t = setTimeout(async () => {
       try {
-        const [ms, ss] = await Promise.all([kind === "all" || kind === "monster" ? searchMonsters(query) : [], kind === "all" || kind === "spell" ? searchSpells(query) : []]);
-        if (!live) return;
-        setMonsters(ms);
-        setSpells(ss);
+        const ss = await searchSpells(query);
+        if (live) setSpells(ss);
       } catch (e) {
         if (live) setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -319,14 +330,39 @@ export function Lookup() {
       clearTimeout(t);
     };
   }, [query, kind]);
+  useEffect(() => setLimit(PAGE_SIZE), [query, band, type, place, sort, kind]);
 
-  const band = CR_BANDS.find((b) => b.id === cr)!;
-  const types = [...new Set(monsters.map((m) => m.type))].sort();
-  const shownMonsters = monsters.filter((m) => band.test(m.cr) && (!type || m.type === type));
+  const types = useMemo(() => [...new Set((brief ?? []).map((m) => m.type))].sort(), [brief]);
+  const monsters = useMemo(() => {
+    if (!brief || !wantMonsters) return [];
+    const b = MONSTER_BANDS.find((x) => x.id === band)!;
+    const p = PLACES.find((x) => x.id === place);
+    const needle = query.toLowerCase();
+    return brief
+      .filter((m) => (!needle || m.name.toLowerCase().includes(needle)) && b.test(m.cr) && (!type || m.type === type) && (!p || m.environments?.some((e) => p.match.includes(e))))
+      .sort((a, z) => (sort === "cr" ? a.cr - z.cr || a.name.localeCompare(z.name) : a.name.localeCompare(z.name)));
+  }, [brief, wantMonsters, query, band, type, place, sort]);
+  const shown = monsters.slice(0, limit);
+  const groups = useMemo(() => {
+    if (sort !== "cr") return [{ title: "", xp: "", rows: shown }];
+    const out: { title: string; xp: string; rows: MonsterBrief[] }[] = [];
+    for (const m of shown) {
+      const last = out[out.length - 1];
+      if (last && last.title === `CR ${m.challenge_rating}`) last.rows.push(m);
+      else out.push({ title: `CR ${m.challenge_rating}`, xp: `${xpForCr(m.challenge_rating).toLocaleString()} XP each`, rows: [m] });
+    }
+    return out;
+  }, [shown, sort]);
+
   const conds = kind === "all" || kind === "condition" ? CONDITION_IDS.filter((id) => !query || conditionName(id).toLowerCase().includes(query.toLowerCase())) : [];
-  const remember = (r: LookupRef) => addRecent(r);
   const favs = favorites();
   const recents = recent();
+  const filtered = band || type || place;
+  const openMonster = (slug: string, name: string) => {
+    addRecent({ kind: "monster", slug, name });
+    setOpen(slug);
+    setPicked(null);
+  };
 
   const refList = (title: string, list: LookupRef[]) =>
     list.length > 0 && (
@@ -334,7 +370,7 @@ export function Lookup() {
         <h3 className="lk-group-title">{title}</h3>
         <div className="lk-refs">
           {list.map((r) => (
-            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => setPicked(r)}>
+            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => (r.kind === "monster" ? openMonster(r.slug, r.name) : setPicked(r))}>
               {r.name}
               <small>{r.kind}</small>
             </button>
@@ -343,8 +379,84 @@ export function Lookup() {
       </section>
     );
 
+  const monsterList = wantMonsters && (
+    <section className="lk-group" aria-label="Monsters">
+      <div className="mon-filters">
+        <label>
+          <span>Challenge</span>
+          <select value={band} onChange={(e) => setBand(e.target.value)}>
+            {MONSTER_BANDS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Type</span>
+          <select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">Any type</option>
+            {types.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Place</span>
+          <select value={place} onChange={(e) => setPlace(e.target.value)}>
+            <option value="">Anywhere</option>
+            {PLACES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Sort</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as "cr" | "az")}>
+            <option value="cr">By challenge</option>
+            <option value="az">A to Z</option>
+          </select>
+        </label>
+        <span className="mon-count muted">
+          {brief ? `${monsters.length} monster${monsters.length === 1 ? "" : "s"}` : "Loading monsters…"}
+          {filtered ? (
+            <>
+              {" · "}
+              <button type="button" className="link" onClick={() => (setBand(""), setType(""), setPlace(""))}>
+                clear filters
+              </button>
+            </>
+          ) : null}
+        </span>
+      </div>
+      {groups.map((g, i) => (
+        <div key={g.title || i} className="mon-group">
+          {g.title && (
+            <h3 className="mon-group-title">
+              <span>{g.title}</span>
+              <span>{g.xp}</span>
+            </h3>
+          )}
+          <div className="mon-rows">
+            {g.rows.map((m) => (
+              <MonsterRow key={m.slug} m={m} current={open === m.slug} onOpen={() => openMonster(m.slug, m.name)} />
+            ))}
+          </div>
+        </div>
+      ))}
+      {monsters.length > limit && (
+        <button type="button" className="btn mon-more" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+          Show {Math.min(PAGE_SIZE, monsters.length - limit)} more
+        </button>
+      )}
+      {brief && !monsters.length && <p className="muted">No monster matches{query ? ` “${query}”` : ""}. Try fewer filters.</p>}
+    </section>
+  );
+
   return (
-    <div className="lookup">
+    <div className={`lookup ${open ? "has-page" : ""}`}>
       <label className="lk-search">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
@@ -357,36 +469,16 @@ export function Lookup() {
             setQ(e.target.value);
             setPicked(null);
           }}
-          placeholder="Look up a monster, spell or condition"
+          placeholder="Look up a monster, spell or condition, or browse below"
           aria-label="Look up a monster, spell or condition"
-          autoFocus
         />
       </label>
       <div className="lk-filters" role="group" aria-label="What to look up">
         {(["all", "monster", "spell", "condition"] as Kind[]).map((k) => (
-          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => setKind(k)}>
+          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null))}>
             {k === "all" ? "Everything" : k === "monster" ? "Monsters" : k === "spell" ? "Spells" : "Conditions"}
           </button>
         ))}
-        {(kind === "all" || kind === "monster") && query.length >= 2 && (
-          <>
-            <select value={cr} onChange={(e) => setCr(e.target.value)} aria-label="Challenge rating">
-              {CR_BANDS.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-            {types.length > 1 && (
-              <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Creature type">
-                <option value="">Any type</option>
-                {types.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            )}
-          </>
-        )}
       </div>
 
       {picked ? (
@@ -396,78 +488,62 @@ export function Lookup() {
           </button>
           <OpenRef r={picked} />
         </div>
-      ) : query.length < 2 ? (
-        <>
-          {refList("Favorites", favs)}
-          {refList("Recently viewed", recents)}
-          {!favs.length && !recents.length && (
-            <p className="muted lk-empty">
-              Type at least two letters, e.g. <em>goblin</em>, <em>fireball</em> or <em>prone</em>. Tip · Star what you use often; it stays one tap away here.
-            </p>
-          )}
-          {kind === "condition" && (
-            <section className="lk-group">
-              <h3 className="lk-group-title">Conditions</h3>
-              <div className="lk-grid">
-                {CONDITION_IDS.map((id) => (
-                  <ConditionCard key={id} id={id} />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
       ) : (
-        <>
-          {error && <p className="auth-error">{error}</p>}
-          {busy && <p className="muted">Searching…</p>}
-          {conds.length > 0 && (
-            <section className="lk-group">
-              <h3 className="lk-group-title">Conditions</h3>
-              <div className="lk-grid" onClickCapture={() => setTick((n) => n + 1)}>
-                {conds.map((id) => (
-                  <ConditionCard key={id} id={id} />
-                ))}
-              </div>
-            </section>
+        <div className="lk-browse">
+          <div className="lk-list">
+            {error && <p className="auth-error">{error}</p>}
+            {!query && kind === "all" && (
+              <>
+                {refList("Favorites", favs)}
+                {refList("Recently viewed", recents)}
+              </>
+            )}
+            {conds.length > 0 && (query || kind === "condition") && (
+              <section className="lk-group">
+                <h3 className="lk-group-title">Conditions</h3>
+                <div className="lk-grid" onClickCapture={() => setTick((n) => n + 1)}>
+                  {conds.map((id) => (
+                    <ConditionCard key={id} id={id} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {monsterList}
+            {(kind === "all" || kind === "spell") && query.length >= 2 && (
+              <>
+                {busy && <p className="muted">Searching spells…</p>}
+                {spells.length > 0 && (
+                  <section className="lk-group">
+                    <h3 className="lk-group-title">
+                      Spells <span className="counter">{spells.length}</span>
+                    </h3>
+                    <div
+                      className="lk-grid"
+                      onClickCapture={(e) => {
+                        const card = (e.target as Element).closest(".lk-card.spell");
+                        const name = card?.querySelector("h3")?.textContent;
+                        const s = spells.find((x) => x.name === name);
+                        if (s) addRecent({ kind: "spell", slug: s.slug, name: s.name });
+                      }}
+                    >
+                      {spells.map((s) => (
+                        <SpellCard key={s.slug} s={s} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+            {kind === "spell" && query.length < 2 && <p className="muted lk-empty">Type at least two letters of a spell, e.g. <em>fireball</em>.</p>}
+          </div>
+          {open && (
+            <div className="lk-page">
+              <MonsterPage key={open} slug={open} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} />
+            </div>
           )}
-          {shownMonsters.length > 0 && (
-            <section className="lk-group">
-              <h3 className="lk-group-title">
-                Monsters <span className="counter">{shownMonsters.length}</span>
-              </h3>
-              <div className="lk-grid" onClickCapture={(e) => {
-                const card = (e.target as Element).closest(".lk-card.monster");
-                const name = card?.querySelector("h3")?.textContent;
-                const m = shownMonsters.find((x) => x.name === name);
-                if (m) remember({ kind: "monster", slug: m.slug, name: m.name });
-              }}>
-                {shownMonsters.map((m) => (
-                  <MonsterCard key={m.slug} m={m} />
-                ))}
-              </div>
-            </section>
-          )}
-          {spells.length > 0 && (
-            <section className="lk-group">
-              <h3 className="lk-group-title">
-                Spells <span className="counter">{spells.length}</span>
-              </h3>
-              <div className="lk-grid" onClickCapture={(e) => {
-                const card = (e.target as Element).closest(".lk-card.spell");
-                const name = card?.querySelector("h3")?.textContent;
-                const s = spells.find((x) => x.name === name);
-                if (s) remember({ kind: "spell", slug: s.slug, name: s.name });
-              }}>
-                {spells.map((s) => (
-                  <SpellCard key={s.slug} s={s} />
-                ))}
-              </div>
-            </section>
-          )}
-          {!busy && !error && !shownMonsters.length && !spells.length && !conds.length && <p className="muted">Nothing found for “{query}”. Try a shorter word.</p>}
-        </>
+        </div>
       )}
-      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0), served by Open5e.</p>
+      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0), served by Open5e. Monster icons: game-icons.net (CC BY 3.0).</p>
     </div>
   );
 }
