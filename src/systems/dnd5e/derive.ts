@@ -20,12 +20,13 @@ import type { Species } from "./data/species";
 import type { Background } from "./data/backgrounds";
 import { cantripDamage, type Spell } from "./data/spells";
 import { armorByName, weaponByName, type Armor, type ArmorCategory, type Weapon } from "./data/equipment";
+import { MAX_ATTUNED, needsBase, readItem, type ExtraDamage, type ItemEffect } from "./magicItems";
 import { spellLimit } from "./data/classes";
 import { FAVORED_ENEMIES, FIGHTING_STYLES, stylesFor } from "./data2014/classes";
 import { INFUSIONS, INVOCATIONS, PACT_BOONS } from "./data2014/warlock";
 import { BACKGROUND_FEATURES } from "./data2014/backgrounds";
 import type { Warning } from "../types";
-import type { Character, FeatChoices } from "./character";
+import type { Character, FeatChoices, InventoryItem } from "./character";
 import { RULES, classOf, featIn, inBooks, onClassList, type Edition } from "./rules";
 
 export type { Warning };
@@ -79,6 +80,12 @@ export interface Attack {
   bonus: string;
   damage: string;
   notes: string;
+  /** Where the to-hit bonus comes from (the dice result window lists these). */
+  parts?: { label: string; value: number }[];
+  /** Where the damage bonus comes from. */
+  dmgParts?: { label: string; value: number }[];
+  /** Extra damage dice from the weapon's magic (some only "while lit", "against undead"). */
+  extra?: ExtraDamage[];
 }
 
 export interface FeatEntry {
@@ -189,6 +196,31 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     if (raw > 20) warnings.push({ level: "warn", tab: "abilities", section: "ability-scores", text: `${ABILITY_NAMES[a]} would be ${raw}; ability scores cap at 20, so ${raw - 20} point(s) are wasted.` });
   }
 
+  // ---------- equipped magic items (REQUIREMENTS 4.5a) ----------
+  // Only worn/held items count; items that need attunement count only when attuned.
+  const carriedItems = c.inventory.filter((i) => i.qty > 0);
+  const readItems = carriedItems.filter((i) => i.equipped !== false).map((i) => ({ i, r: readItem(i.name) }));
+  const isOn = (x: { i: InventoryItem; r: { effect: ItemEffect | null } }) => !!x.r.effect && (!x.r.effect.attune || !!x.i.attuned);
+  const activeItems = readItems.filter(isOn).map((x) => ({ name: x.i.name, e: x.r.effect! }));
+  const attunedCount = carriedItems.filter((i) => i.attuned).length;
+  if (attunedCount > MAX_ATTUNED) warnings.push({ level: "warn", tab: "equipment", section: "inventory", text: `Attuned to ${attunedCount} items; a character can be attuned to ${MAX_ATTUNED} at most. Un-attune one.` });
+  for (const x of readItems)
+    if (needsBase(x.r)) warnings.push({ level: "info", tab: "equipment", section: "inventory", text: `${x.i.name}: say which weapon it is, so your attacks can use it. Rename it like “${x.i.name} (Longsword)”.` });
+  const scoreFrom: Partial<Record<Ability, string>> = {};
+  for (const { name, e } of activeItems)
+    for (const [a, v] of Object.entries(e.setScore ?? {}) as [Ability, number][])
+      if (v > scores[a]) {
+        scores[a] = v;
+        mods[a] = mod(v);
+        scoreFrom[a] = name;
+      }
+  const itemParts = {
+    save: activeItems.filter((x) => x.e.saves).map((x) => ({ label: x.name, value: x.e.saves! })),
+    check: activeItems.filter((x) => x.e.checks).map((x) => ({ label: x.name, value: x.e.checks! })),
+  };
+  const itemSave = itemParts.save.reduce((s, p) => s + p.value, 0);
+  const itemCheck = itemParts.check.reduce((s, p) => s + p.value, 0);
+
   const baseVals = ABILITIES.map((a) => c.base[a]);
   if (c.abilityMethod === "standard") {
     const sorted = [...baseVals].sort((x, y) => y - x);
@@ -290,13 +322,13 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     if (saveProfs.has(a)) warnings.push({ level: "warn", tab: featTab(f), section: featSection(f), text: `Resilient (${a}) gives a save you already have. Pick a different ability for full value.` });
     saveProfs.add(a);
   }
-  const saves = ABILITIES.map((a) => ({ ability: a, proficient: saveProfs.has(a), bonus: mods[a] + (saveProfs.has(a) ? pb : 0) }));
+  const saves = ABILITIES.map((a) => ({ ability: a, proficient: saveProfs.has(a), bonus: mods[a] + (saveProfs.has(a) ? pb : 0) + itemSave }));
   // Bard Jack of All Trades: half PB on checks without proficiency (initiative too).
   const jack = CL.id === "bard" && level >= 2 ? Math.floor(pb / 2) : 0;
   const skills = SKILLS.map((s) => {
     const prof = skillSources.has(s.id);
     const expert = prof && expertise.has(s.id);
-    return { id: s.id, name: s.name, ability: s.ability as Ability, proficient: prof, expert, sources: skillSources.get(s.id) ?? [], bonus: mods[s.ability] + (prof ? pb : jack) + (expert ? pb : 0) };
+    return { id: s.id, name: s.name, ability: s.ability as Ability, proficient: prof, expert, sources: skillSources.get(s.id) ?? [], bonus: mods[s.ability] + (prof ? pb : jack) + (expert ? pb : 0) + itemCheck };
   });
   const skillBonus = (id: SkillId) => skills.find((s) => s.id === id)!.bonus;
 
@@ -344,7 +376,13 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   }
 
   // ---------- armor class ----------
-  const owned = c.inventory.filter((i) => i.qty > 0).map((i) => armorByName(i.name)).filter((a): a is Armor => !!a);
+  // Worn armour and shields (magic ones read from the name: "Chain Mail +1", "Shield, +2").
+  const owned = readItems
+    .map((x) => {
+      const a = x.r.base ? armorByName(x.r.base) : undefined;
+      return a ? { ...a, name: x.i.name, magic: isOn(x) ? (x.r.effect!.armor ?? 0) : 0 } : undefined;
+    })
+    .filter((a): a is Armor & { magic: number } => !!a);
   const bodyArmor = owned.filter((a) => a.category !== "shield");
   for (const a of bodyArmor) if (!armorProficient(a)) warnings.push({ level: "info", tab: "equipment", section: "armor-class", text: `You aren't proficient with ${a.name}, so it isn't counted in your AC (wearing it would block spellcasting and give Disadvantage on STR/DEX rolls).` });
   const shield = owned.find((a) => a.category === "shield");
@@ -360,19 +398,31 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   if (subclassActive && subclass!.unarmoredAc) acOptions.push({ ac: subclass!.unarmoredAc(scores), note: subclass!.acNote!, armored: false, shieldOk: true });
   if (hasFeat("dragonHide")) acOptions.push({ ac: 13 + mods.DEX, note: "Dragon Hide (13 + DEX)", armored: false, shieldOk: true });
   if (hasInvocation("armorOfShadows")) acOptions.push({ ac: 13 + mods.DEX, note: "Mage Armor (Armor of Shadows, 13 + DEX)", armored: false, shieldOk: true });
+  for (const { name, e } of activeItems)
+    if (e.acBase) {
+      const dex = e.acDexMax == null ? mods.DEX : Math.min(mods.DEX, e.acDexMax);
+      acOptions.push({ ac: e.acBase + dex, note: `${name} (${e.acBase}${e.acDexMax === 0 ? "" : " + DEX"})`, armored: false, shieldOk: true });
+    }
   for (const a of bodyArmor.filter(armorProficient)) {
     const dex = a.maxDex === undefined ? mods.DEX : Math.min(mods.DEX, a.category === "medium" ? medMax : a.maxDex);
-    acOptions.push({ ac: a.ac + dex + (defense ? 1 : 0), note: `${a.name} (${a.ac}${a.maxDex === 0 ? "" : " + DEX"}${defense ? " + 1 Defense" : ""})`, armored: true, shieldOk: true });
+    acOptions.push({ ac: a.ac + a.magic + dex + (defense ? 1 : 0), note: `${a.name} (${a.ac}${a.magic ? ` + ${a.magic} magic` : ""}${a.maxDex === 0 ? "" : " + DEX"}${defense ? " + 1 Defense" : ""})`, armored: true, shieldOk: true });
   }
-  const best = acOptions.map((o) => ({ ...o, total: o.ac + (shieldUsable && o.shieldOk ? 2 : 0) })).sort((x, y) => y.total - x.total)[0];
-  const ac = best.total;
-  const acNote = best.note + (shieldUsable && best.shieldOk ? " + Shield" : "");
+  const shieldAc = 2 + (shield?.magic ?? 0);
+  const best = acOptions.map((o) => ({ ...o, total: o.ac + (shieldUsable && o.shieldOk ? shieldAc : 0) })).sort((x, y) => y.total - x.total)[0];
+  const usingShield = shieldUsable && best.shieldOk;
+  // Rings, cloaks, ioun stones; Bracers of Defense only with no armour and no shield.
+  const acItems = activeItems.flatMap(({ name, e }) => [
+    ...(e.ac ? [{ label: name, value: e.ac }] : []),
+    ...(e.acUnarmored && !best.armored && !usingShield ? [{ label: name, value: e.acUnarmored }] : []),
+  ]);
+  const ac = best.total + acItems.reduce((s, p) => s + p.value, 0);
+  const acNote = best.note + (usingShield ? ` + ${shield!.name === "Shield" ? "Shield" : shield!.name}` : "") + acItems.map((p) => ` + ${p.value} ${p.label}`).join("");
   const wornArmor = best.armored ? bodyArmor.find((a) => best.note.startsWith(a.name)) : undefined;
   if (wornArmor?.strength && scores.STR < wornArmor.strength) warnings.push({ level: "info", tab: "equipment", section: "inventory", text: `${wornArmor.name} needs STR ${wornArmor.strength}: your speed drops by 10 ft while wearing it.` });
   if (CL.id === "druid" && owned.some((a) => /mail|plate|chain|splint|breastplate/i.test(a.name))) warnings.push({ level: "info", tab: "equipment", section: "inventory", text: "Druids refuse to wear metal armor; pick hide, leather or padded armor and a wooden shield." });
 
   const initBonus = subclassActive && subclass!.initiativeBonus ? mods[subclass!.initiativeBonus] : 0;
-  const initiative = mods.DEX + (hasFeat("alert") ? (is2014 ? 5 : pb) : 0) + initBonus + jack;
+  const initiative = mods.DEX + (hasFeat("alert") ? (is2014 ? 5 : pb) : 0) + initBonus + jack + itemCheck;
   const armorWorn: "none" | "light" | "medium" | "heavy" = wornArmor ? (wornArmor.category as "light" | "medium" | "heavy") : "none";
   const classSpeed = CL.speedBonus ? CL.speedBonus(level, armorWorn, shieldUsable && best.shieldOk) : 0;
   const speed = (lineage?.speed ?? species.speed) + (is2014 && hasFeat("mobile") ? 10 : 0) + (hasFeat("squatNimbleness") ? 5 : 0) + classSpeed - (wornArmor?.strength && scores.STR < wornArmor.strength ? 10 : 0);
@@ -384,8 +434,8 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   // Class spellcasting, or a third-caster subclass's (Eldritch Knight, Arcane Trickster).
   const SP = CL.spell ?? (subclassActive ? subclass!.spell : undefined);
   const castAbility: Ability = SP?.ability ?? "CHA";
-  const spellDc = 8 + pb + mods[castAbility];
-  const spellAttack = pb + mods[castAbility];
+  const spellDc = 8 + pb + mods[castAbility] + activeItems.reduce((s, x) => s + (x.e.spellDc ?? 0), 0);
+  const spellAttack = pb + mods[castAbility] + activeItems.reduce((s, x) => s + (x.e.spellAttack ?? 0), 0);
   const slots = SP && level >= SP.startLevel ? SP.slots[level] : [];
   const maxSpellLevel = slots.length;
   const cantripLimit = SP ? (SP.cantrips[level] ?? 0) : 0;
@@ -540,22 +590,35 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     CL.id === "monk" && (w.name === "Shortsword" || kensei.includes(w.name) || (w.simple && !w.ranged && !/Heavy|Two-Handed/.test(w.properties)));
   const archery = style === "archery" || feats.some((f) => f.id === "fightingInitiate" && f.choices.style === "archery");
   const maDie = CL.martialArts ? CL.martialArts(level) : undefined;
-  for (const it of c.inventory) {
-    const w = weaponByName(it.name);
-    if (!w || seen.has(w.name)) continue;
-    seen.add(w.name);
+  const bowBonus = (w: Weapon) => activeItems.filter((x) => x.e.rangedDamage?.weapons.includes(w.name)).map((x) => ({ label: x.name, value: x.e.rangedDamage!.bonus }));
+  for (const x of readItems) {
+    const w = x.r.base ? weaponByName(x.r.base) : undefined;
+    if (!w || seen.has(x.i.name)) continue;
+    seen.add(x.i.name);
+    const magic = isOn(x) ? x.r.effect!.weapon ?? 0 : 0;
     const prof = weaponProficient(w);
     let ab: Ability = w.finesse || monkWeapon(w) ? (mods.DEX >= mods.STR ? "DEX" : "STR") : w.ranged ? "DEX" : "STR";
     if (subclassActive && subclass!.weaponCha && prof && !/Two-Handed/.test(w.properties) && mods.CHA > mods[ab]) ab = "CHA";
     const m = mods[ab];
-    const toHit = m + (prof ? pb : 0) + (archery && w.ranged ? 2 : 0);
+    const parts = [
+      { label: ABILITY_NAMES[ab], value: m },
+      ...(prof ? [{ label: "Proficiency", value: pb }] : []),
+      ...(archery && w.ranged ? [{ label: "Archery", value: 2 }] : []),
+      ...(magic ? [{ label: x.i.name, value: magic }] : []),
+    ];
+    const dmgParts = [{ label: ABILITY_NAMES[ab], value: m }, ...(magic ? [{ label: x.i.name, value: magic }] : []), ...bowBonus(w)];
+    const toHit = parts.reduce((s, p) => s + p.value, 0);
+    const dmgBonus = dmgParts.reduce((s, p) => s + p.value, 0);
     let dice = w.damage;
     if (monkWeapon(w) && maDie && Number(maDie.slice(2)) > Number(dice.split("d")[1] ?? 0) && !dice.startsWith("2")) dice = maDie;
     attacks.push({
-      name: w.name,
+      name: x.i.name,
       bonus: signed(toHit),
-      damage: `${dice}${m ? signed(m) : ""} ${w.type}`,
+      damage: `${dice}${dmgBonus ? signed(dmgBonus) : ""} ${w.type}`,
       notes: `${w.simple ? "Simple" : "Martial"}, ${w.properties}${prof ? "" : " · not proficient (no PB)"}${ab === "CHA" ? " · Hex Warrior (CHA)" : ""}`,
+      parts,
+      dmgParts,
+      extra: isOn(x) ? x.r.effect!.extra : undefined,
     });
   }
   if (maDie) {
@@ -762,6 +825,13 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     metamagicLevel,
     spellRows,
     attacks,
+    /** Equipped magic items that work right now (REQUIREMENTS 4.5a). */
+    activeItems,
+    attunedCount,
+    itemParts,
+    /** Scores set by an item (Gauntlets of Ogre Power). */
+    scoreFrom,
+    acParts: acItems,
     featureGroups,
     carried: carriedTotal,
     capacity,

@@ -147,6 +147,7 @@ export function NewCharacterWizard({
         resume={resume}
         onProgress={progress}
         hero={{ onCancel: leave, footer: <SkinPicker theme={theme} onChange={onTheme} /> }}
+        menu={<SkinPicker theme={theme} onChange={onTheme} />}
       />
     );
 
@@ -154,7 +155,16 @@ export function NewCharacterWizard({
     return (
       <div className="app">
         {header}
-        <CreationStepper system={system} books={normalizeBooks(system, books)} onBack={() => (preset ? leave() : setBuilding(false))} onCreate={save} resume={resume} onProgress={progress} />
+        <CreationStepper
+          system={system}
+          books={normalizeBooks(system, books)}
+          onBack={() => (preset ? leave() : setBuilding(false))}
+          onCreate={save}
+          resume={resume}
+          onProgress={progress}
+          onCancel={leave}
+          menu={<SkinPicker theme={theme} onChange={onTheme} />}
+        />
       </div>
     );
 

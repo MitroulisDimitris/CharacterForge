@@ -1,12 +1,15 @@
 // Monster browse rows and the monster page (Lookup, host only). The list shows a small icon per
 // monster; the page shows the DM's own picture when they added one (else the icon), the numbers,
 // "At the table", the full SRD stat block with Roll buttons, and the Monster Manual page.
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { LootCard } from "./Loot";
 import { abilityMod, getMonster, keyTraits, speedText, splitList, toggleFavorite, isFavorite, type Monster, type MonsterBrief } from "../lookup";
 import { xpForCr, loadEncounters, saveEncounter, type Encounter } from "../encounters";
 import { sessionError } from "../sessions";
-import { atTheTable, attacks, initiative, loadIcons, mmPage, passivePerception, pictureUrl, removePicture, rollAttack, savePicture, signed, typeColor, type AttackRoll } from "../monsters";
+import { atTheTable, initiative, loadIcons, mmPage, passivePerception, pictureUrl, removePicture, savePicture, signed, typeColor } from "../monsters";
+import { RollChip, RollScope } from "./Dice";
+import { parseDice, type RollSpec } from "../dice/roll";
+import { halfOnSave, segmentsOf, type Segment } from "../dice/rollText";
 import { MoreMenu } from "./Hero";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -52,28 +55,43 @@ export function MonsterRow({ m, current, onOpen }: { m: MonsterBrief; current: b
   );
 }
 
-function RollButton({ bonus, dice, damageBonus }: { bonus: number; dice?: string; damageBonus: number }) {
-  const [r, setR] = useState<AttackRoll | null>(null);
-  const dmg = dice ? `${dice}${damageBonus ? ` ${signed(damageBonus).replace("−", "- ").replace("+", "+ ")}` : ""}` : "";
-  return (
-    <span className="mon-roll">
-      <button type="button" className="btn small" onClick={() => setR(rollAttack(bonus, dice, damageBonus))} title="Roll the attack and its damage">
-        Roll: d20 {signed(bonus)}
-        {dmg ? ` · ${dmg}` : ""}
-      </button>
-      {r && (
-        <span className={`mon-roll-result ${r.crit ? "crit" : r.miss ? "miss" : ""}`} role="status">
-          {r.crit ? "Natural 20! " : r.miss ? "Natural 1: a miss. " : ""}
-          <strong>{r.toHit}</strong> to hit{dice && !r.miss ? (
-            <>
-              {" "}
-              · <strong>{r.damage}</strong> damage{r.crit ? " (dice doubled)" : ""}
-            </>
-          ) : null}
-        </span>
-      )}
-    </span>
-  );
+const D20 = [{ n: 1, sides: 20 }];
+const ABILITY_LABEL: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
+const modOf = (score: number) => Math.floor((score - 10) / 2);
+const check = (who: string, label: string, kind: "check" | "save", bonus: number): RollSpec => ({ label: `${who} · ${label}`, kind, groups: D20, parts: [{ label: "Bonus", value: bonus }], tone: "monster" });
+
+/** Stat block text with its rolls as gold chips: to hit, damage dice, recharge (REQUIREMENTS 4.6). */
+export function MonsterText({ title, text }: { title: string; text: string }) {
+  const half = halfOnSave(text);
+  const chip = (s: Segment, i: number) => {
+    if (s.kind === "text") return <Fragment key={i}>{s.text}</Fragment>;
+    if (s.kind === "hit")
+      return (
+        <RollChip key={i} label={`Roll ${title} attack, ${s.text}`} spec={{ label: `${title} · attack`, kind: "attack", groups: D20, parts: [{ label: "Attack bonus", value: s.bonus }], tone: "monster" }}>
+          {s.text}
+        </RollChip>
+      );
+    if (s.kind === "recharge")
+      return (
+        <RollChip key={i} label={`Roll to recharge ${title}: ${s.need} or higher on a d6`} spec={{ label: `${title} · recharge`, kind: "recharge", groups: [{ n: 1, sides: 6 }], need: s.need, tone: "monster" }}>
+          {s.text}
+        </RollChip>
+      );
+    const p = parseDice(s.dice);
+    if (!p) return <Fragment key={i}>{s.text}</Fragment>;
+    const fire = s.unit === "fire";
+    return (
+      <RollChip
+        key={i}
+        fire={fire}
+        label={`Roll ${s.dice}${s.unit ? ` ${s.unit} damage` : ""}`}
+        spec={{ label: `${title} · ${s.unit ? `${s.unit} damage` : s.dice}`, kind: "damage", groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit: s.unit, half: half && !!s.unit, tone: "monster" }}
+      >
+        {s.text}
+      </RollChip>
+    );
+  };
+  return <>{segmentsOf(text).map(chip)}</>;
 }
 
 /** "+ Add to an encounter": pick one of this session's encounters, or start a new one. */
@@ -186,18 +204,16 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
   const resist = splitList(m.damage_resistances);
   const immune = [...splitList(m.damage_immunities), ...splitList(m.condition_immunities).map((c) => c.toLowerCase())];
   const traits = keyTraits(m);
-  const rolls = attacks(m);
   const color = typeColor(m.type);
   const pp = passivePerception(m);
   const saves = (["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const)
     .map((a) => [a, m[`${a}_save` as const]] as const)
-    .filter(([, v]) => v != null)
-    .map(([a, v]) => `${a.slice(0, 3).toUpperCase()} ${signed(v as number)}`);
+    .filter((x): x is readonly [(typeof x)[0], number] => x[1] != null);
   const numbers = [
     { label: "Armor Class", value: String(m.armor_class), sub: m.armor_desc ?? "" },
-    { label: "Hit Points", value: String(m.hit_points), sub: m.hit_dice },
+    { label: "Hit Points", value: String(m.hit_points), sub: m.hit_dice, roll: "hp" },
     { label: "Speed", value: speedText(m).split(",")[0] || "—", sub: speedText(m).split(",").slice(1).join(",").trim() },
-    { label: "Initiative", value: signed(initiative(m)), sub: `d20 ${signed(initiative(m))}` },
+    { label: "Initiative", value: signed(initiative(m)), sub: `d20 ${signed(initiative(m))}`, roll: "init" },
     ...(pp != null ? [{ label: "Passive Perception", value: String(pp), sub: "notices sneaking" }] : []),
   ];
   const blocks: [string, { name: string; desc: string }[] | null | undefined][] = [
@@ -208,6 +224,7 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
   ];
 
   return (
+    <RollScope>
     <article className="mon-page" aria-label={m.name} style={{ ["--mon" as string]: color }}>
       <button type="button" className="link mon-back" onClick={onBack}>
         ‹ Monsters
@@ -269,15 +286,33 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
       </header>
       {busy && <p className="muted">Saving the picture…</p>}
       {!pic && <p className="mon-pic-tip muted">Tip · ⋯ → Add a picture to show your own image here. Only you see it.</p>}
+      {!sessionId && <p className="mon-pic-tip muted">Tip · Fighting it? Add it to an encounter from a session's Lookup.</p>}
 
       <div className="mon-numbers">
-        {numbers.map((n) => (
-          <div key={n.label}>
-            <span>{n.label}</span>
-            <strong>{n.value}</strong>
-            <small>{n.sub}</small>
-          </div>
-        ))}
+        {numbers.map((n) => {
+          const hp = "roll" in n && n.roll === "hp" && parseDice(n.sub);
+          return (
+            <div key={n.label}>
+              <span>{n.label}</span>
+              {"roll" in n && n.roll === "init" ? (
+                <RollChip className="mon-num-roll" icon={false} label={`Roll initiative for ${m.name}, ${n.value}`} spec={check(m.name, "initiative", "check", initiative(m))}>
+                  <strong>{n.value}</strong>
+                </RollChip>
+              ) : (
+                <strong>{n.value}</strong>
+              )}
+              {hp ? (
+                <small>
+                  <RollChip label={`Roll hit points for ${m.name}, ${n.sub}`} spec={{ label: `${m.name} · hit points`, kind: "heal", groups: hp.groups, bonus: hp.bonus, unit: "hit points", tone: "monster" }}>
+                    {n.sub}
+                  </RollChip>
+                </small>
+              ) : (
+                <small>{n.sub}</small>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mon-cols">
@@ -309,7 +344,9 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
               {(["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const).map((a) => (
                 <div key={a}>
                   <span>{a.slice(0, 3).toUpperCase()}</span>
-                  <strong>{abilityMod(m[a]).replace("-", "−")}</strong>
+                  <RollChip className="mon-num-roll" icon={false} label={`Roll a ${ABILITY_LABEL[a]} check for ${m.name}, ${signed(modOf(m[a]))}`} spec={check(m.name, `${ABILITY_LABEL[a]} check`, "check", modOf(m[a]))}>
+                    <strong>{abilityMod(m[a]).replace("-", "−")}</strong>
+                  </RollChip>
                   <small>{m[a]}</small>
                 </div>
               ))}
@@ -318,16 +355,27 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
               {saves.length > 0 && (
                 <>
                   <dt>Saves</dt>
-                  <dd>{saves.join(", ")}</dd>
+                  <dd className="mon-roll-list">
+                    {saves.map(([a, v]) => (
+                      <RollChip key={a} label={`Roll a ${ABILITY_LABEL[a]} saving throw for ${m.name}, ${signed(v)}`} spec={check(m.name, `${ABILITY_LABEL[a]} saving throw`, "save", v)}>
+                        {a.slice(0, 3).toUpperCase()} {signed(v)}
+                      </RollChip>
+                    ))}
+                  </dd>
                 </>
               )}
               {Object.keys(m.skills ?? {}).length > 0 && (
                 <>
                   <dt>Skills</dt>
-                  <dd>
-                    {Object.entries(m.skills)
-                      .map(([k, v]) => `${k.charAt(0).toUpperCase()}${k.slice(1)} ${signed(v)}`)
-                      .join(", ")}
+                  <dd className="mon-roll-list">
+                    {Object.entries(m.skills).map(([k, v]) => {
+                      const name = `${k.charAt(0).toUpperCase()}${k.slice(1)}`;
+                      return (
+                        <RollChip key={k} label={`Roll ${name} for ${m.name}, ${signed(v)}`} spec={check(m.name, name, "check", v)}>
+                          {name} {signed(v)}
+                        </RollChip>
+                      );
+                    })}
                   </dd>
                 </>
               )}
@@ -341,13 +389,15 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
                 <section key={title} className="mon-sec">
                   <h4>{title}</h4>
                   {items.map((a) => {
-                    const roll = title === "Actions" ? rolls.find((r) => r.name === a.name) : undefined;
+                    const short = a.name.replace(/\s*\(Recharge[^)]*\)/i, "");
                     return (
                       <div key={a.name} className="mon-action">
                         <p>
-                          <strong>{a.name}.</strong> {a.desc}
+                          <strong>
+                            <MonsterText title={short} text={a.name} />.
+                          </strong>{" "}
+                          <MonsterText title={short} text={a.desc} />
                         </p>
-                        {roll && <RollButton bonus={roll.bonus} dice={roll.dice} damageBonus={roll.damageBonus} />}
                       </div>
                     );
                   })}
@@ -360,7 +410,7 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
                 {m.legendary_desc && <p className="muted">{m.legendary_desc}</p>}
                 {m.legendary_actions.map((a) => (
                   <p key={a.name}>
-                    <strong>{a.name}.</strong> {a.desc}
+                    <strong>{a.name}.</strong> <MonsterText title={a.name} text={a.desc} />
                   </p>
                 ))}
               </section>
@@ -384,5 +434,6 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
         </aside>
       </div>
     </article>
+    </RollScope>
   );
 }

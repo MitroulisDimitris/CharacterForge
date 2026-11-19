@@ -6,7 +6,8 @@ import { openUnlocks } from "./LevelChange";
 import { exportJson, importFile, newRecordId, type StoredCharacter, type Theme } from "../storage";
 import { skinOf } from "../skins";
 import { Brand, SkinPicker } from "./Brand";
-import { Crest, MoreMenu, SideToggle } from "./Hero";
+import { Crest, MoreMenu } from "./Hero";
+import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 
 interface Row {
   rec: StoredCharacter;
@@ -29,6 +30,8 @@ export function Library({
   onDismissWelcome,
   notice = "",
   onDismissNotice,
+  go,
+  sessionCount = 0,
   inSessions = () => [],
   sessionsNav,
   sessionsStrip,
@@ -46,6 +49,9 @@ export function Library({
   onDismissWelcome?: () => void;
   notice?: string;
   onDismissNotice?: () => void;
+  /** The main menu (My characters · Sessions · Wiki). */
+  go?: (p: Place) => void;
+  sessionCount?: number;
   /** Names of the sessions a character plays in. */
   inSessions?: (id: string) => string[];
   sessionsNav?: ReactNode;
@@ -135,13 +141,15 @@ export function Library({
     const shown = rows.filter((r) => filter === "all" || r.system.id === filter);
     return (
       <div className="hero-shell">
-        <aside className={`hero-side ${sideOpen ? "open" : ""}`}>
+        <aside className={`hero-side drawer-side ${sideOpen ? "open" : ""}`}>
+          <MenuButton open={sideOpen} onClick={() => setSideOpen(true)} />
           <Brand />
           <button type="button" className="btn primary hero-new" onClick={onNew}>
             + New character
           </button>
-          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} label="Menu" />
           <div className="hero-side-extra">
+          <DrawerHead open={sideOpen} onClose={() => setSideOpen(false)} />
+          {go && <MainNav current="characters" go={(p) => (setSideOpen(false), go(p))} counts={{ sessions: sessionCount }} />}
           <nav className="hero-filter" aria-label="Rule sets">
             <span className="hero-label">Rule sets</span>
             {[{ id: "all", short: "All characters" }, ...SYSTEMS.map((s) => ({ id: s.id, short: s.short }))].map((s) => {
@@ -165,6 +173,7 @@ export function Library({
           </div>
           </div>
         </aside>
+        <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         <main className="hero-main">
           <header className="hero-page-head">
             <h1>My characters</h1>
@@ -229,6 +238,7 @@ export function Library({
           <h1 className="page-title">My characters</h1>
         </div>
         <div className="actions">
+          {go && <MainNav current="characters" go={go} counts={{ sessions: sessionCount }} />}
           <SkinPicker theme={theme} onChange={onTheme} />
           <AccountRow account={account} />
           <button type="button" className="btn ghost" onClick={() => fileRef.current?.click()}>

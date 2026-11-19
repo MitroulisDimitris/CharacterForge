@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-17 (suggested loot; browse spells; rolled ability scores; leave warning in creation).
+Last updated: 2026-11-19 (built: 3D dice, Wiki, items browse, magic item effects, phone ☰ menu; to do: remove unverified sign-ups).
 
 ---
 
@@ -53,6 +53,9 @@ Last updated: 2026-11-17 (suggested loot; browse spells; rolled ability scores; 
 - [x] Forgot password → email → choose a new password
 - [x] Change password while logged in (⋯ → Name and password)
 - [x] Edit display name
+- [ ] Don't keep accounts whose email was never verified (a mistyped email left a dead "The man" account
+      on 2026-11-17). Supabase always makes the login at sign-up, so: make the profile only once the
+      email is verified, and remove unverified sign-ups automatically after a day
 - [ ] Offline copy + sync when back online (keep both if changed on two devices)
 - [ ] Character portraits: add / change / remove, crop in a circle, shrink before upload
 - [ ] Portrait shown everywhere the crest appears; included in JSON export
@@ -138,6 +141,8 @@ Last updated: 2026-11-17 (suggested loot; browse spells; rolled ability scores; 
 - [x] Creation: "the character so far" panel on the left in every skin, open on PC (Hero: a wider sidebar), folded on phones; nothing spills out of its box (2026-11-17, tester feedback)
 - [x] Carrying limit enforced (Strength × 15, doubled by Powerful Build): Add, custom items, quantities and coins stop at it and say why (2026-11-17)
 - [x] Class hexagon chart draws in Safari (2026-11-17)
+- [x] Creation on phones (every skin): one slim bar (back · step N of 9 · HP/AC opens the character as a sheet · ⋯ steps and skin), one tap picks a class and opens its chart, "Continue with …" folds the list; Back is an arrow, Next names the next step; charts shrink to fit (2026-11-17)
+- [x] No "Just changed" pop-up on the class step (2026-11-17)
 - [ ] Screen-size check at 375 / 768 / 1280 / 1920 px in Hero, Dark, Parchment
 - [ ] Check on a real phone (iPhone Safari, Android Chrome)
 - [ ] Hover cards and previews open by tap
@@ -163,9 +168,28 @@ Last updated: 2026-11-17 (suggested loot; browse spells; rolled ability scores; 
 - [x] Survives a page refresh / another device (saved on the encounter, `encounters.combat`)
 - [x] Tests (turn order, skipping, ties, XP, resistances) · browser test at 375 / 768 / 1280 / 1920
 
+## 12. Dice, items and the Wiki (requirements 4.5, 4.5a, 4.6, 4.7; mockups: "Dice and Items" canvas)
+- [x] 3D physics dice drawn by the app (d4, d6, d8, d10, d12, d20, d100 as two d10s); they fade 2 s after landing (`src/dice/engine.ts`)
+- [x] Result window: big total, how it was worked out, damage type, Critical / Natural 1, "Half on a save", Roll again; stays ~8 s, held on hover/touch/focus (`components/Dice.tsx`)
+- [x] Monster rolls: to hit, damage, recharge, saves, checks, initiative and hit points are tappable in every stat block (`dice/rollText.ts`)
+- [x] Player rolls on the Sheet: abilities, saves, skills, initiative, attacks (to hit + damage, two-handed); bonus added and named (`dnd5e/rollSpecs.ts`)
+- [x] Class dice on the Sheet: Hit Die, Second Wind, Superiority Die, Sneak Attack, Bardic Inspiration, Divine Smite, Deflect Missiles, Colossus Slayer, Wrath of the Storm, Radiance of the Dawn, Balm of Peace, Wild Magic Surge (`rollSpecs.classRolls`)
+- [x] Next roll: Normal / Advantage / Disadvantage (two d20s, the dropped one greyed; back to Normal after)
+- [x] Free roller: d4 to d100 with counters, Throw (PC popover, phone bottom panel)
+- [x] Reduced motion: dice appear already landed (not checked in a browser yet)
+- [x] Items browse: all SRD 5.1 items (PHB equipment + DMG magic items, 474, `public/srd-items.json`), search + filters (kind, magic, rarity, attunement, sort), item page with dice chips, "Add to a character"
+- [x] Items from Xanathar's (48) and Tasha's (61, +1/+2/+3 versions each) in our own words (`src/bookItems.ts`), Book filter
+- [x] Dungeon Master's Guide items that aren't in the SRD (33 items, ~50 entries with +1/+2/+3 and the bard instruments), from the user's DMG
+- [x] Quips under rolls: natural 1s and 20s, monster recharges; rare ones on 12% of rolls (`src/dice/quips.ts`)
+- [x] Everything the app uses is saved in it: SRD monsters, spells and items (`public/srd-*.json`), fonts (`public/fonts`); only Supabase is online
+- [x] Equipped (Worn) / Attuned on inventory items (max 3 attuned); equipped items change AC, attacks, damage, saves, checks, scores, spell attack/DC; named in the AC note and the dice window; existing characters keep their numbers (`dnd5e/magicItems.ts`)
+- [ ] Hover cards on the Sheet numbers that list the items behind them
+- [x] Wiki on the main page: Spells, Monsters, Items, Classes and subclasses, Races, Backgrounds, Feats, Rules and conditions; one search; same pages as session Lookup (minus session actions); "Add to a character" for items and spells (`components/Wiki.tsx`)
+- [x] Phone: ☰ slide-in menu on the main pages (My characters, Sessions, Wiki and its sections); not inside a character
+
 ## Later
+- [ ] Maybe: point out beginner-friendly classes in the class list (Barbarian, Cleric, Fighter, Paladin, Rogue: "For beginners: Easy" in `data2014/profiles.ts`). Tried as a green tag on each card on 2026-11-17 and removed (too much clutter for 5 of 13 cards); a single "Tip ·" line above the list was the other idea. Today it shows only in the class details ("For beginners").
 - [ ] Monster pictures, typo-tolerant search, search inside abilities
-- [ ] Magic items, rules quick reference
 - [ ] Custom monsters
 - [ ] Ask before joining, hand hosting to another member, guest party members
 - [ ] Shared notes for players, live turn order on players' phones

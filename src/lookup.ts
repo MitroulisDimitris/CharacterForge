@@ -1,8 +1,6 @@
-// Lookup data (REQUIREMENTS §4.4): monsters and spells from the free Open5e API (SRD 5.1 only),
-// cached in memory; favorites and recently viewed in this browser.
-
-const API = "https://api.open5e.com/v1";
-const SRD = "document__slug=wotc-srd";
+// Lookup data (REQUIREMENTS §4.4): the SRD 5.1 monsters and spells, saved in the app
+// (public/srd-monsters.json, public/srd-spells.json; made from Open5e by scripts/fetchSrd.ts),
+// loaded once and kept in memory; favorites and recently viewed in this browser.
 
 export interface Named {
   name: string;
@@ -69,29 +67,40 @@ export interface Spell {
   dnd_class: string;
 }
 
-const cache = new Map<string, unknown>();
-async function get<T>(path: string): Promise<T> {
-  if (cache.has(path)) return cache.get(path) as T;
-  const r = await fetch(`${API}${path}`);
-  if (!r.ok) throw new Error(`The monster and spell library didn't answer (${r.status}). Try again in a moment.`);
-  const json = (await r.json()) as T;
-  cache.set(path, json);
-  return json;
+const files = new Map<string, Promise<unknown>>();
+/** One of the saved SRD files, loaded once. */
+function load<T>(name: string): Promise<T> {
+  let p = files.get(name);
+  if (!p) {
+    p = fetch(`${import.meta.env.BASE_URL}${name}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Couldn't load the ${name.includes("monster") ? "monster" : "spell"} list (${r.status}). Try again in a moment.`))))
+      .catch((e) => {
+        files.delete(name);
+        throw e;
+      });
+    files.set(name, p);
+  }
+  return p as Promise<T>;
 }
+const monstersFile = () => load<Monster[]>("srd-monsters.json");
+const spellsFile = () => load<Spell[]>("srd-spells.json");
+const matches = (name: string, q: string) => name.toLowerCase().includes(q.trim().toLowerCase());
 
 export async function searchMonsters(q: string): Promise<Monster[]> {
-  const res = await get<{ results: Monster[] }>(`/monsters/?${SRD}&limit=40&search=${encodeURIComponent(q)}`);
-  return res.results;
+  return (await monstersFile()).filter((m) => matches(m.name, q)).slice(0, 40);
 }
 export async function searchSpells(q: string): Promise<Spell[]> {
-  const res = await get<{ results: Spell[] }>(`/spells/?${SRD}&limit=30&search=${encodeURIComponent(q)}`);
-  return res.results;
+  return (await spellsFile()).filter((s) => matches(s.name, q)).slice(0, 30);
 }
 export async function getMonster(slug: string): Promise<Monster> {
-  return get<Monster>(`/monsters/${encodeURIComponent(slug)}/`);
+  const m = (await monstersFile()).find((x) => x.slug === slug);
+  if (!m) throw new Error("That monster isn't in the list.");
+  return m;
 }
 export async function getSpell(slug: string): Promise<Spell> {
-  return get<Spell>(`/spells/${encodeURIComponent(slug)}/`);
+  const s = (await spellsFile()).find((x) => x.slug === slug);
+  if (!s) throw new Error("That spell isn't in the list.");
+  return s;
 }
 
 /** "fire; bludgeoning, piercing, and slashing from nonmagical attacks" → short chips. */
@@ -131,7 +140,8 @@ export const speedText = (m: Monster) =>
 
 // ---------- favorites + recently viewed (this browser) ----------
 
-export type LookupKind = "monster" | "spell" | "condition";
+/** Monsters, spells and conditions are shared with the session Lookup; the rest are Wiki-only. */
+export type LookupKind = "monster" | "spell" | "condition" | "item" | "class" | "race" | "background" | "feat" | "rule";
 export interface LookupRef {
   kind: LookupKind;
   slug: string;
@@ -179,17 +189,8 @@ export interface MonsterBrief {
   environments: string[];
 }
 
-let allCache: Promise<MonsterBrief[]> | null = null;
-/** All ~320 SRD monsters with only what suggestions need (about 65 KB, loaded once). */
-export function allMonsters(): Promise<MonsterBrief[]> {
-  allCache ??= get<{ results: MonsterBrief[] }>(`/monsters/?${SRD}&limit=500&fields=slug,name,size,type,armor_class,hit_points,challenge_rating,cr,environments`)
-    .then((r) => r.results)
-    .catch((e) => {
-      allCache = null;
-      throw e;
-    });
-  return allCache;
-}
+/** All ~320 SRD monsters with only what lists and suggestions need. */
+export const allMonsters = (): Promise<MonsterBrief[]> => monstersFile();
 
 // ---------- the whole SRD spell list (browse spells) ----------
 
@@ -206,17 +207,8 @@ export interface SpellBrief {
   can_be_cast_as_ritual: boolean;
 }
 
-let spellCache: Promise<SpellBrief[]> | null = null;
-/** All ~320 SRD spells with what the list shows (loaded once, the first time Spells opens). */
-export function allSpells(): Promise<SpellBrief[]> {
-  spellCache ??= get<{ results: SpellBrief[] }>(`/spells/?${SRD}&limit=500&fields=slug,name,level_int,school,dnd_class,casting_time,range,duration,requires_concentration,can_be_cast_as_ritual`)
-    .then((r) => r.results)
-    .catch((e) => {
-      spellCache = null;
-      throw e;
-    });
-  return spellCache;
-}
+/** All ~320 SRD spells (browse spells). */
+export const allSpells = (): Promise<SpellBrief[]> => spellsFile();
 
 /** Places to pick from, each covering the data's own (messier) names. */
 export const PLACES: { id: string; label: string; match: string[] }[] = [

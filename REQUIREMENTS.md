@@ -261,7 +261,8 @@ sidebar's main action is the search ("Look up a monster, spell or condition"), n
   reused in every session).
 - (later) **Cleaner search:** forgiving of typos ("owlber" finds Owlbear), sort by CR or name,
   search inside abilities ("flying", "fire resistance", "spellcasting").
-- (later) Magic items, and rules quick reference (cover, grappling, actions in combat).
+- Items (mundane and magic): see 4.5. Rules and conditions, classes, races, backgrounds, feats: Lookup
+  uses the same pages as the Wiki (4.7).
 - (later) **Custom monsters / enemies** (homebrew or book monsters, same stat-block format).
 
 **Encounters (enemies for this session)**
@@ -294,8 +295,133 @@ action spot.
 **Nice-to-haves (later)**
 - NPC list, locations / quest tracker
 - Loot tracker (who got what)
-- Dice roller
+- Dice roller: now planned, see 4.6
 - Export a whole session to JSON as a backup
+
+### 4.5 Items (browse, like monsters and spells)
+
+Asked for 2026-11-18. Mockups: "Dice and Items" canvas, https://claude.ai/artifact/RbGiywvgd9SviZzzZ1xURb (row C).
+
+**Every item described in the books** the app knows, mundane and magic: weapons, armour, adventuring
+gear, tools, packs, mounts and vehicles, trade goods, and magic items (wondrous items such as cloaks,
+capes, boots; rings, rods, staffs, wands, potions, scrolls, magic weapons and armour).
+- **Where the items come from:** PHB 2014 equipment and the DMG magic items in the free SRD 5.1
+  (saved in the app), Xanathar's (common magic items) and Tasha's (magic items), written in our own words.
+  Open: DMG items that are not in the SRD need the user's own DMG copy (not in `reference/books/` yet).
+- **Search** by name (forgiving of typos, like the other searches) and inside the text ("fire", "invisible").
+- **Filters**, each a row of chips, the same look as monster browse:
+  - **Kind:** Weapon, Armour, Gear, Tool, Mount / vehicle, Wondrous item, Ring, Rod, Staff, Wand,
+    Potion, Scroll
+  - **Magic:** Any / Magic only / Not magic
+  - **Rarity** (magic items): Common, Uncommon, Rare, Very rare, Legendary, Artifact. Each rarity has
+    its own colour (and a letter, so it isn't colour alone)
+  - **Attunement:** Needs attunement / Doesn't
+  - **Book:** PHB, SRD / DMG, Xanathar's, Tasha's (only the books the character or session allows)
+  - Sort: name, rarity, cost, weight
+- **List row:** an icon per kind, the name, one short line (kind · rarity · attunement, or cost · weight).
+- **Item page** (beside the list on PC, a full page on a phone): name, kind and rarity line,
+  "Requires attunement (by a wizard)" when it applies, cost and weight for mundane items, weapon /
+  armour numbers (damage and type, properties, AC, Strength, Stealth), the description in plain words
+  (1–3 short paragraphs), charges if any, book and page.
+  Damage and other dice in the text are tappable rolls (4.6).
+- **Main action:** "+ Add to a character" (pick which one; it goes into that character's inventory with
+  its weight, and respects the carrying limit). Secondary in "⋯": copy a link, report a mistake.
+- It lives in the **Wiki** (4.7) on the main page and in a session's Lookup (the same list and pages),
+  and the Equipment tab's "Add an item" opens it too.
+
+### 4.5a Equipped items change the numbers
+
+Asked for 2026-11-19. Many items change rolls: +1 / +2 / +3 weapons (to hit and damage), Flame Tongue
+(+2d6 fire), Bracers of Archery (+2 damage with bows), Cloak / Ring of Protection (+1 AC and saves),
+Stone of Good Luck (+1 checks and saves), Gauntlets of Ogre Power / Headband of Intellect / Amulet of
+Health (the score becomes 19). The app adds these **automatically**.
+- **Equipped** switch on each inventory item (worn or held). Only equipped items count. Armour and
+  shields count for AC only when equipped (today any owned armour counts: existing characters get
+  their current armour, shield and weapons marked equipped, so no number changes).
+- **Attuned** switch on items that need attunement; at most **3** at a time (a 4th asks which one to
+  drop). Requirements are checked ("by a wizard"). Such an item counts only when equipped and attuned.
+- What counts: bonuses to attack and damage of that weapon, extra damage dice (as their own chip, in
+  the damage type's colour), AC, saving throws, ability checks, an ability score set to a value (only
+  when that's higher), speed, resistances (shown on the Sheet).
+- Effects that apply only sometimes ("while lit", "against undead", charges, once a day) are **not**
+  added on their own: they show as an extra chip or a "Tip ·" line on that attack, for the player to use.
+- Every number that an item changes names it in its hover card ("Saving throws +1 from Cloak of
+  Protection") and in the dice result window.
+- Data: each item gets a list of effects in our own words; the item page shows them ("While attuned:
+  +1 to AC and saving throws").
+
+### 4.6 Dice: 3D dice rolled on the screen
+
+Asked for 2026-11-18. Mockups: "Dice and Items" canvas (rows A and B). Rolls show on your own screen
+only for now (not shared with the session).
+
+**How a roll looks**
+- Every roll in the app is a **highlighted, tappable gold chip** with a small die icon: `4d8`, `+7 to hit`,
+  `2d10 + 6`. Things that aren't rolls (`DC 15 Dexterity save`) stay plain text.
+- Tapping it throws **real 3D dice** on the screen: the right number and kind of dice (four d8s for 4d8),
+  each die the real shape with numbers on its faces (d4, d6, d8, d10, d12, d20; d100 = two d10s, tens + units).
+- **Physics dice only** (user, 2026-11-19; the "Spin" style was dropped): the dice are thrown in from
+  the edge (the right on PC, the bottom on a phone), tumble, bounce off each other and the screen
+  edges, and settle. The face that ends up on top is the result.
+- When the dice settle, a **small result window** appears: the **total in big numbers**, and below it,
+  smaller, how it was worked out: each die, the bonus, the damage type
+  (e.g. "2d10: 7 + 4 · + 6 = **17** piercing"). The dice that make up the total stay lit.
+- **Timing:** the dice fade away **2 seconds after they land**. The window stays about **8 seconds**,
+  then fades; it stays while the mouse is over it, a finger is on it, or it has keyboard focus
+  (and gets 3 more seconds after). ✕ or Esc closes it sooner; rolling something else replaces it.
+- A natural 20 on a d20 says **"Critical!"** (gold); a natural 1 says "Miss" plainly.
+- The window has **Roll again**.
+- Attacks also say what they hit ("Hits armour class 17 or lower"); a Champion's 19 counts as a critical.
+- Bonuses from equipped magic items are added and named in the window ("+ 1 Cloak of Protection"), see 4.5a.
+- **Reduced motion:** no throwing; the dice appear already landed, then the window.
+- Dice are drawn by the app itself (no big 3D library), so they load instantly and work on phones.
+
+**Monster rolls** (monster page, combat tracker, encounter)
+- In the stat block, attack bonuses (`+10 to hit`) and damage (`2d10 + 6`, `plus 1d6 fire`) are chips.
+- Each damage part is its own chip (`2d10 + 6` piercing, `1d6` fire, in fire colours).
+  (later) One tap for the whole hit ("17 piercing + 4 fire = **21**").
+- Saving throws, skills, ability checks and hit points (`17d10 + 85`) are chips too.
+- A recharge (`Recharge 5–6`) rolls a d6 and says "Recharged" or "Not yet".
+- Big rolls are fine: Fire Breath `16d6` throws sixteen d6s.
+- (later) "Attack + damage" in one tap; damage that goes straight onto a combat tracker target.
+
+**Player rolls** (the Sheet tab)
+- Tap an **ability** (STR … CHA) for a check, a **saving throw**, a **skill**, **initiative**, or a
+  **weapon / spell attack** (to hit, then its damage chip). The result already adds the right modifier
+  ("Dexterity check: d20 14 + 3 = **17**").
+- **Advantage / disadvantage:** a small "Next roll: Normal · Advantage · Disadvantage" switch near the dice
+  button; it throws two d20s, keeps one, and greys out the other. It goes back to Normal after the roll.
+- **Free roller:** a dice button opens a panel with only real dice (d4, d6, d8, d10, d12, d20, d100), a
+  − / + counter on each, and **Throw**. Nothing else in the panel.
+- (later) Hit points on level up with the 3D dice; rolls shared with the session; a short roll history.
+
+### 4.7 Wiki (main page)
+
+Asked for 2026-11-19. One place to read the rules content, outside any session: the same lists and
+pages a host has in a session's Lookup, so there is one browse to build and keep up to date.
+- **Where:** "Wiki" in the app's main menu, next to My characters and Sessions (left menu on PC, with
+  the sections listed under it; top bar in the classic skins). Needs a login, because it holds book
+  text that isn't in the free SRD. Mockups: "Dice and Items" canvas, rows C and D.
+- **Phone menu (every page, user 2026-11-19):** a ☰ button at the left of the phone top bar opens a
+  menu that slides in from the left over a dimmed page: My characters, Sessions, Wiki (with its
+  sections), and quieter Feedback / Sign out at the bottom. It closes with ✕, a tap on the dimmed
+  page, Esc, or picking a page. **Not inside a character** (user, 2026-11-19): character pages
+  (sheet, creation, level up) keep their own top bar with the way back, and no ☰.
+- **Sections:** Spells, Monsters, Items (4.5), Classes and subclasses, Races, Backgrounds, Feats,
+  Rules and conditions (the 15 conditions and exhaustion, actions in combat, cover, grappling,
+  resting, concentration; short plain-words pages). One search box finds all of them, grouped by kind;
+  each section has its own filters (the ones Lookup already has).
+- **Books:** every book the app knows, with a Book filter.
+- **What you can do from the Wiki:**
+  - Items: "+ Add to a character" (as in 4.5).
+  - Spells: "+ Add to a character", listing only characters whose class can take that spell now;
+    a character that can't (no free spell known, wrong class, level too high) isn't listed, and a short line says why.
+  - Monsters, classes, races, backgrounds, feats, rules: read only. Choices for a character still
+    happen in creation and level up.
+- **In a session**, Lookup shows the same pages plus the session actions (add a monster to an
+  encounter; (later) give an item to a player). None of those appear in the Wiki.
+- Game terms anywhere in the app keep their hover cards; the card gets an "Open in Wiki" link.
+- Favorites and Recently viewed are shared between the Wiki and Lookup.
 
 ---
 

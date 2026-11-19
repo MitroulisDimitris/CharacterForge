@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import type { AnySystem, BaseCharacter } from "../systems/types";
 import { ResourcePips } from "./ResourcePips";
+import { DiceButton, NextRoll, useCanRoll } from "./Dice";
 
 export const SHEET_TAB = "sheet";
 
@@ -23,9 +24,19 @@ export function SheetTab({
 }) {
   const Summary = system.Summary;
   const pools = system.resources?.(c, d) ?? [];
+  const canRoll = useCanRoll();
   return (
     <>
     {top}
+    {canRoll && (
+      <div className="sheet-dice">
+        <p className="sheet-dice-tip muted">
+          <b>Tip ·</b> Tap a gold number to roll it. Your bonus is added for you.
+        </p>
+        <NextRoll />
+        <DiceButton />
+      </div>
+    )}
     <div className={`sheet-tab ${pools.length ? "with-pools" : ""}`}>
       <section className="sheet-summary" aria-label="Character summary">
         <Summary c={c} d={d} />

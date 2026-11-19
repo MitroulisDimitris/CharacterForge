@@ -10,6 +10,7 @@ import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
 import { Crest, MoreMenu, SideToggle } from "./Hero";
 import { SheetTab, SHEET_TAB } from "./SheetTab";
+import { RollScope } from "./Dice";
 import { LiveView } from "./Party";
 import type { Live } from "../live";
 import { JustChanged } from "./JustChanged";
@@ -128,7 +129,7 @@ export function Editor({
   const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
   const hpMax = system.tableCard?.(char, d)?.hpMax ?? 0;
   const liveTop = sessionCopy && live ? <LiveView live={live} max={hpMax} sessionName={sessionCopy} /> : null;
-  const body = Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} top={liveTop} />;
+  const body = <RollScope>{Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} top={liveTop} />}</RollScope>;
   const award = levelReady && levelReady > char.level ? Math.min(levelReady, maxLevel) : null;
   const awardItem = award && (
     <div className="award-todo">

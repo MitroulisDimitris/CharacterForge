@@ -30,13 +30,16 @@ import {
   type SessionInfo,
 } from "./sessions";
 import { getSystem } from "./systems/registry";
+import { Wiki } from "./components/Wiki";
+import type { Place } from "./components/MainMenu";
 
 type View =
   | { kind: "library" }
   | { kind: "new"; forSession?: { preview: Preview; code: string } }
   | { kind: "edit"; id: string }
   | { kind: "session"; id: string }
-  | { kind: "sessions" };
+  | { kind: "sessions" }
+  | { kind: "wiki" };
 export type SaveState = "saved" | "saving" | "error";
 
 /** Login gate: the login page, or the logged-in account's app. */
@@ -306,6 +309,11 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     );
   }
 
+  /** The main menu: My characters · Sessions · Wiki (REQUIREMENTS 4.7). */
+  const go = (p: Place) => setView(p === "characters" ? { kind: "library" } : p === "sessions" ? { kind: "sessions" } : { kind: "wiki" });
+  if (view.kind === "wiki")
+    return <Wiki lib={lib} theme={theme} onTheme={setTheme} go={go} userId={userId} onSave={upsert} />;
+
   if (view.kind === "session") {
     const s = sessions.find((x) => x.id === view.id);
     if (s)
@@ -319,6 +327,7 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
           theme={theme}
           onTheme={setTheme}
           onBack={() => setView({ kind: "library" })}
+          go={go}
           onChanged={reloadSessions}
           onOpenSheet={openSheet}
         />
@@ -387,6 +396,7 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
           theme={theme}
           onTheme={setTheme}
           onBack={() => setView({ kind: "library" })}
+          go={go}
           onOpen={openSession}
           onHost={() => setDialog({ kind: "host" })}
           onJoin={() => setDialog({ kind: "join", code: "" })}
@@ -399,6 +409,8 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
           welcome={welcome}
           notice={notice}
           onDismissNotice={() => setNotice("")}
+          go={go}
+          sessionCount={sessions.length}
           inSessions={inSessions}
           sessionsNav={<SessionsNav count={sessions.length} onAll={() => setView({ kind: "sessions" })} onHost={() => setDialog({ kind: "host" })} onJoin={() => setDialog({ kind: "join", code: "" })} />}
           sessionsStrip={

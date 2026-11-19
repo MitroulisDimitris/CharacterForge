@@ -29,6 +29,10 @@ export interface InventoryItem {
   /** Weight of one item, in lb. */
   weight: number;
   notes?: string;
+  /** Worn or held. Missing means yes (characters from before 2026-11-19 keep their numbers). */
+  equipped?: boolean;
+  /** Attuned to this magic item (at most 3). */
+  attuned?: boolean;
 }
 
 export interface Coins {

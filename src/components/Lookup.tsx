@@ -1,11 +1,12 @@
 // Lookup (REQUIREMENTS §4.4): one search for monsters, spells and conditions. Monster cards show
 // what a host needs first (CR, AC, HP, speed, Weak to / Resists / Immune to, 1–4 key traits);
 // the full stat block is one tap away.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { xpForCr } from "../encounters";
 import { MonsterPage, MonsterRow } from "./MonsterPage";
 import { typeColor } from "../monsters";
 import { CONDITIONS, EXHAUSTION } from "../live";
+import { RULES } from "../systems/dnd5e/rules";
 import {
   abilityMod,
   addRecent,
@@ -322,19 +323,61 @@ function SpellRow({ s, current, onOpen }: { s: SpellBrief; current: boolean; onO
   );
 }
 
-/** The spell open beside the list: everything about it. */
-function SpellPage({ slug, onBack }: { slug: string; onBack: () => void }) {
-  const [s, setS] = useState<Spell | null>(null);
+const CAST: Record<string, string> = { "1A": "1 action", "1BA": "1 bonus action", "1R": "1 reaction", "1m": "1 minute", "10m": "10 minutes" };
+/** The app's own write-up of a spell (levels 0–3, PHB / Xanathar's / Tasha's) in the Lookup's shape. */
+function appSpell(slug: string, name: string): Spell | null {
+  const a = RULES["2014"].getSpell(name);
+  if (!a) return null;
+  const classes = [...new Set([...(a.lists ?? []).map((l) => l.split("@")[0]), ...(a.sorcerer ? ["sorcerer"] : [])])].map((c) => c.charAt(0).toUpperCase() + c.slice(1)).sort();
+  return {
+    slug,
+    name: a.name,
+    desc: a.desc,
+    higher_level: "",
+    range: a.range,
+    components: a.components.replace(/,/g, ", "),
+    material: a.material ?? "",
+    duration: a.duration,
+    requires_concentration: !!a.concentration,
+    can_be_cast_as_ritual: !!a.ritual,
+    casting_time: CAST[a.time] ?? a.time,
+    level: a.level === 0 ? "Cantrip" : `${ordinal(a.level)}-level`,
+    level_int: a.level,
+    school: a.school,
+    dnd_class: classes.join(", "),
+  };
+}
+
+/** The spell open beside the list: everything about it. The app's own write-up shows at once;
+ *  the full SRD text replaces it when Open5e answers (it can be slow). */
+function SpellPage({ slug, name, onBack, action }: { slug: string; name?: string; onBack: () => void; action?: (s: Spell) => ReactNode }) {
+  const [s, setS] = useState<Spell | null>(() => (name ? appSpell(slug, name) : null));
   const [err, setErr] = useState("");
   useEffect(() => {
-    getSpell(slug).then(setS, (e) => setErr(e instanceof Error ? e.message : String(e)));
+    let live = true;
+    getSpell(slug).then(
+      (x) => live && setS(x),
+      (e) => live && setErr(e instanceof Error ? e.message : String(e)),
+    );
+    return () => {
+      live = false;
+    };
   }, [slug]);
   return (
     <div className="mon-page spell-page">
       <button type="button" className="link mon-back" onClick={onBack}>
         ‹ Spells
       </button>
-      {err ? <p className="auth-error">{err}</p> : s ? <SpellCard s={s} startOpen /> : <p className="muted">Loading…</p>}
+      {err && !s ? (
+        <p className="auth-error">{err}</p>
+      ) : s ? (
+        <>
+          <SpellCard s={s} startOpen />
+          {action?.(s)}
+        </>
+      ) : (
+        <p className="muted">Loading…</p>
+      )}
     </div>
   );
 }
@@ -397,9 +440,24 @@ function TypePicker({ types, picks, onChange }: { types: { t: string; count: num
   );
 }
 
-export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?: string }) {
+export function Lookup({
+  userId = "",
+  sessionId,
+  only,
+  spellAction,
+  initialOpen,
+}: {
+  userId?: string;
+  sessionId?: string;
+  /** The Wiki's Spells / Monsters sections: one kind, no kind buttons. */
+  only?: "monster" | "spell";
+  /** Shown under an open spell (the Wiki's "Add to a character"). */
+  spellAction?: (s: Spell) => ReactNode;
+  /** Open this monster or spell first (from the Wiki's search, recent or starred). */
+  initialOpen?: { kind: "monster" | "spell"; slug: string };
+}) {
   const [q, setQ] = useState("");
-  const [kind, setKind] = useState<Kind>("all");
+  const [kind, setKind] = useState<Kind>(only ?? "all");
   const [band, setBand] = useState("");
   const [picks, setPicks] = useState<string[]>([]);
   const [place, setPlace] = useState("");
@@ -411,7 +469,7 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
   const [spellClass, setSpellClass] = useState("");
   const [error, setError] = useState("");
   /** The monster or spell open beside the list. */
-  const [open, setOpen] = useState<{ kind: "monster" | "spell"; slug: string } | null>(null);
+  const [open, setOpen] = useState<{ kind: "monster" | "spell"; slug: string } | null>(initialOpen ?? null);
   const [picked, setPicked] = useState<LookupRef | null>(null);
   const [, setTick] = useState(0);
 
@@ -495,8 +553,8 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
       <section className="lk-group">
         <h3 className="lk-group-title">{title}</h3>
         <div className="lk-refs">
-          {list.map((r) => (
-            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => (r.kind === "condition" ? setPicked(r) : openItem(r.kind, r.slug, r.name))}>
+          {list.filter((r) => r.kind === "monster" || r.kind === "spell" || r.kind === "condition").map((r) => (
+            <button key={`${r.kind}:${r.slug}`} type="button" className={`lk-ref ${r.kind}`} onClick={() => (r.kind === "condition" ? setPicked(r) : openItem(r.kind as "monster" | "spell", r.slug, r.name))}>
               {r.name}
               <small>{r.kind}</small>
             </button>
@@ -587,17 +645,17 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
             setQ(e.target.value);
             setPicked(null);
           }}
-          placeholder="Look up a monster, spell or condition, or browse below"
-          aria-label="Look up a monster, spell or condition"
+          placeholder={only === "monster" ? "Search monsters, or browse below" : only === "spell" ? "Search spells, or browse below" : "Look up a monster, spell or condition, or browse below"}
+          aria-label={only === "monster" ? "Search monsters" : only === "spell" ? "Search spells" : "Look up a monster, spell or condition"}
         />
       </label>
-      <div className="lk-filters" role="group" aria-label="What to look up">
+      {!only && <div className="lk-filters" role="group" aria-label="What to look up">
         {(["all", "monster", "spell", "condition"] as Kind[]).map((k) => (
           <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null), k === "monster" && setPicks(ENEMY_TYPES))}>
             {k === "all" ? "Everything" : k === "monster" ? "Monsters" : k === "spell" ? "Spells" : "Conditions"}
           </button>
         ))}
-      </div>
+      </div>}
 
       {picked ? (
         <div className="lk-picked">
@@ -675,13 +733,13 @@ export function Lookup({ userId = "", sessionId }: { userId?: string; sessionId?
               {open.kind === "monster" ? (
                 <MonsterPage key={open.slug} slug={open.slug} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} />
               ) : (
-                <SpellPage key={open.slug} slug={open.slug} onBack={() => setOpen(null)} />
+                <SpellPage key={open.slug} slug={open.slug} name={spellBrief?.find((x) => x.slug === open.slug)?.name} onBack={() => setOpen(null)} action={spellAction} />
               )}
             </div>
           )}
         </div>
       )}
-      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0), served by Open5e. Monster icons: game-icons.net (CC BY 3.0).</p>
+      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0), from Open5e, saved in the app. Monster icons: game-icons.net (CC BY 3.0).</p>
     </div>
   );
 }

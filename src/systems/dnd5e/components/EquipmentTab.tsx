@@ -5,6 +5,7 @@ import type { Derived } from "../derive";
 import type { TabProps } from "../../types";
 import { Card } from "../../../components/ui";
 import { StartingEquipment } from "./StartingEquipment";
+import { MAX_ATTUNED, readItem } from "../magicItems";
 
 export function EquipmentTab(props: TabProps<Character, Derived>) {
   const { c, d, set } = props;
@@ -53,7 +54,7 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
     <div className="stack">
       {c.edition === "2014" && c.level === 1 && <StartingEquipment {...props} />}
       <Card todo="armor-class" title="Armor Class" aside={<strong>{d.ac}</strong>}>
-        <p className="muted">{d.acNote}. The app wears the best armor and shield you own and are proficient with.</p>
+        <p className="muted">{d.acNote}. The app wears the best armor and shield you have marked as worn and are proficient with.</p>
       </Card>
       <Card todo="attacks" title="Attacks" aside={<span className="muted">From weapons in your inventory and damage cantrips</span>}>
         <table className="attack-table">
@@ -83,8 +84,15 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
       <Card todo="inventory"
         title="Inventory"
         aside={
-          <span className={d.carried > d.capacity ? "counter over" : "muted"}>
-            {d.carried.toFixed(1)} / {d.capacity} lb
+          <span className="inv-aside">
+            {c.inventory.some((i) => readItem(i.name).effect?.attune) && (
+              <span className={d.attunedCount > MAX_ATTUNED ? "counter over" : "muted"} title="A character can be attuned to 3 magic items at most">
+                Attuned {d.attunedCount} of {MAX_ATTUNED}
+              </span>
+            )}
+            <span className={d.carried > d.capacity ? "counter over" : "muted"}>
+              {d.carried.toFixed(1)} / {d.capacity} lb
+            </span>
           </span>
         }
       >
@@ -92,6 +100,8 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
           <thead>
             <tr>
               <th>Item</th>
+              <th title="Worn or held: only these count for AC, attacks and magic">Worn</th>
+              <th title="Magic items that need attunement work only when attuned (3 at most)">Attuned</th>
               <th>Qty</th>
               <th>Weight (each)</th>
               <th>Total</th>
@@ -99,10 +109,35 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
             </tr>
           </thead>
           <tbody>
-            {c.inventory.map((i) => (
+            {c.inventory.map((i) => {
+              const r = readItem(i.name);
+              const needsAttune = !!r.effect?.attune;
+              const full = !i.attuned && d.attunedCount >= MAX_ATTUNED;
+              return (
               <tr key={i.id}>
                 <td>
                   <input value={i.name} onChange={(e) => update(i.id, { name: e.target.value })} aria-label="Item name" />
+                  {r.effect && (
+                    <small className={`inv-magic ${needsAttune && !i.attuned ? "off" : ""}`}>
+                      {r.effect.text}
+                      {needsAttune && !i.attuned ? " · attune to use it" : ""}
+                    </small>
+                  )}
+                </td>
+                <td className="inv-check">
+                  <input type="checkbox" checked={i.equipped !== false} onChange={(e) => update(i.id, { equipped: e.target.checked })} aria-label={`${i.name} worn or held`} />
+                </td>
+                <td className="inv-check">
+                  {needsAttune && (
+                    <input
+                      type="checkbox"
+                      checked={!!i.attuned}
+                      disabled={full}
+                      title={full ? `Already attuned to ${MAX_ATTUNED} items: un-attune one first` : undefined}
+                      onChange={(e) => update(i.id, { attuned: e.target.checked })}
+                      aria-label={`Attuned to ${i.name}`}
+                    />
+                  )}
                 </td>
                 <td>
                   <input type="number" min={0} value={i.qty} onChange={(e) => setLoad(i, "qty", Math.max(0, Math.floor(Number(e.target.value) || 0)))} aria-label="Quantity" />
@@ -117,7 +152,8 @@ export function EquipmentTab(props: TabProps<Character, Derived>) {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {weightNote && (

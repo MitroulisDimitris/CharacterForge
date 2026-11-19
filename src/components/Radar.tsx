@@ -1,7 +1,7 @@
 // Hexagon (or any polygon) radar chart. One shape, plus an optional "compare" shape drawn
 // under it (e.g. your scores now vs. with a race). Shapes morph smoothly (CSS `d` transition).
 // Safari has no CSS `d`, so each shape also carries the plain `d` attribute (drawn, just not animated).
-import type { CSSProperties, ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export interface RadarProps {
   axes: string[];
@@ -19,7 +19,24 @@ export interface RadarProps {
   ariaLabel: string;
 }
 
-export function Radar({ axes, values, compare, min = 0, max, color, compareColor = "var(--accent)", width = 400, height = 320, label, ariaLabel }: RadarProps) {
+export function Radar({ axes, values, compare, min = 0, max, color, compareColor = "var(--accent)", width: fullW = 400, height: fullH = 320, label, ariaLabel }: RadarProps) {
+  // Narrower than its full size on a phone: draw it smaller instead of spilling out of the card.
+  const box = useRef<HTMLDivElement>(null);
+  const [room, setRoom] = useState(fullW);
+  useLayoutEffect(() => {
+    const parent = box.current?.parentElement;
+    if (!parent || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const cs = getComputedStyle(parent);
+      setRoom(Math.max(200, parent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, []);
+  const width = Math.min(fullW, room);
+  const height = Math.round((fullH * width) / fullW);
   const n = axes.length;
   const cx = width / 2;
   const cy = height / 2;
@@ -34,7 +51,7 @@ export function Radar({ axes, values, compare, min = 0, max, color, compareColor
     ({ d: `path('${path((i) => r(vals[i]))}')`, fill: `color-mix(in srgb, ${c} 18%, transparent)`, stroke: c, filter: glow ? `drop-shadow(0 0 8px color-mix(in srgb, ${c} 55%, transparent))` : undefined }) as CSSProperties;
 
   return (
-    <div className="radar" style={{ width, height }} role="img" aria-label={ariaLabel}>
+    <div ref={box} className="radar" style={{ width, height }} role="img" aria-label={ariaLabel}>
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
         {[1, 0.75, 0.5, 0.25].map((f) => (
           <path key={f} d={ring(f)} className="radar-ring" />

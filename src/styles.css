@@ -2737,11 +2737,12 @@ button.hero-system:hover {
 }
 @media (max-width: 1180px) {
   .with-preview {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .preview-panel {
     position: static;
     order: -1;
+    min-width: 0;
   }
 }
 .preview-card {
@@ -6523,4 +6524,1452 @@ button.sess-tr:focus-visible {
   .creation-side > .hero-foot {
     margin-top: 0;
   }
+}
+
+/* ---------- Creation on phones (<=860 px, every skin; user 2026-11-17, "Phone Class Step" mockup):
+   one slim bar (back · step · HP/AC sheet · menu) instead of the header, step pills and side panel;
+   the class list picks with one tap and folds to "Your class · Change". ---------- */
+.cr-bar,
+.cls-folded,
+.cls-inline,
+.cr-next-name,
+.cr-sheet-back {
+  display: none;
+}
+@media (max-width: 860px) {
+  :root.creating {
+    --fb-lift: 92px;
+  }
+  :root.creating .app > .topbar,
+  .creation > .steps,
+  .creation-layout > .side,
+  .hero-side.creation-side,
+  .class-picker .preview-panel {
+    display: none;
+  }
+  .creation {
+    gap: 14px;
+  }
+  .cr-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    margin: 0 -1rem;
+    padding: 8px 10px 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  }
+  .creation-shell > .cr-bar {
+    margin: 0;
+  }
+  .cr-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cr-icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .cr-icon.boxed {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .cr-bar-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .cr-bar-title strong {
+    font-family: var(--font-head);
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cr-bar-title span {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cr-hero-btn {
+    flex: none;
+    min-height: 44px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .cr-hero-btn svg {
+    color: var(--gold);
+  }
+  .cr-progress {
+    display: flex;
+    gap: 4px;
+    padding: 0 4px;
+  }
+  .cr-progress span {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--border);
+  }
+  .cr-progress span.done {
+    background: color-mix(in srgb, var(--gold) 55%, var(--border));
+  }
+  .cr-progress span.on {
+    background: var(--gold);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 60%, transparent);
+  }
+  .cr-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 4px 4px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .cr-menu .steps {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 0;
+    background: none;
+    border: 0;
+    position: static;
+    overflow: visible;
+  }
+  .cr-menu .step {
+    justify-content: flex-start;
+    min-height: 44px;
+    border-radius: 10px;
+    border-color: transparent;
+    background: transparent;
+  }
+  .cr-menu .step.on {
+    background: var(--gold-soft);
+    border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+    font-weight: 700;
+  }
+  .cr-menu-extra {
+    padding: 8px 4px 2px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* the character as a bottom sheet */
+  .cr-sheet-back {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .cr-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 85vh;
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px 20px 0 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  }
+  .cr-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 12px 10px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cr-sheet-head > div {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cr-sheet-head h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .cr-sheet-head .muted {
+    font-size: 13px;
+  }
+  .cr-sheet-body {
+    overflow-y: auto;
+    padding: 12px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+  .cr-sheet-body .summary {
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  /* bottom buttons: one bar, Skip as a quiet link, the next step named */
+  .cr-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px -1rem 0;
+    padding: 10px 1rem calc(10px + env(safe-area-inset-bottom)) !important;
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    border-top: 1px solid var(--border);
+  }
+  .creation-main .cr-foot {
+    margin: 8px -16px 0;
+  }
+  .cr-foot .spacer {
+    flex: 1;
+  }
+  .cr-foot .btn {
+    min-height: 48px;
+  }
+  .cr-foot .cr-skip {
+    border-color: transparent;
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 0 6px;
+  }
+  .cr-foot > .muted {
+    flex-basis: 100%;
+    order: -1;
+    font-size: 13px;
+  }
+  .cr-next-name {
+    display: inline;
+  }
+  .cr-foot .cr-back {
+    min-width: 48px;
+    padding: 0 12px;
+  }
+  .cr-back-label {
+    display: none;
+  }
+  .cr-foot .btn.primary {
+    margin-left: auto;
+  }
+  .class-picker {
+    scroll-margin-top: 96px;
+  }
+
+  /* class step */
+  .compact-classes {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .compact-classes.folded {
+    display: none;
+  }
+  .compact-classes .option {
+    min-width: 0;
+  }
+  .compact-classes .option.on {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent) inset;
+  }
+  .cls-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: -4px;
+    box-shadow: none;
+  }
+  .cls-inline .radar {
+    align-self: center;
+  }
+  .cls-done {
+    min-height: 48px;
+  }
+  .cls-folded {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--gold);
+    background: linear-gradient(180deg, var(--gold-soft), transparent 70%), var(--surface-2);
+  }
+  .cls-folded > div {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .cls-folded strong {
+    font-family: var(--font-head);
+    font-size: 19px;
+  }
+  .cls-folded-sub {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--gold);
+  }
+  .cls-folded .btn {
+    min-height: 44px;
+  }
+  .cls-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--class-color, var(--gold));
+  }
+}
+
+/* ---------- Dice: 3D table, result window, roll chips, Next roll, free roller (REQUIREMENTS 4.6) ---------- */
+.dice-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2000;
+}
+.dice-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@keyframes dicePop {
+  0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.02); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes diceOut {
+  to { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+@keyframes diceCount {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { transform: scale(1.08); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes diceGlow {
+  0%, 100% { text-shadow: 0 0 18px rgba(240, 207, 134, 0.35); }
+  50% { text-shadow: 0 0 30px rgba(240, 207, 134, 0.7); }
+}
+.dice-card {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  width: 318px;
+  box-sizing: border-box;
+  pointer-events: auto;
+  padding: 14px 18px 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid var(--gold);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  animation: dicePop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.dice-card.leaving {
+  animation: diceOut 0.32s ease-in forwards;
+}
+.dice-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dice-card-label {
+  flex: 1;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  padding-top: 6px;
+}
+.dice-card-x {
+  margin: -6px -10px 0 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+.dice-card-x:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.dice-card-total {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: -6px;
+}
+.dice-card-total strong {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 60px;
+  line-height: 1;
+  color: var(--text);
+  animation: diceCount 0.45s 0.05s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.dice-card.gold .dice-card-total strong {
+  color: #f6e4bc;
+  animation: diceCount 0.45s 0.05s cubic-bezier(0.2, 0.9, 0.3, 1.3) both, diceGlow 1.6s 0.5s ease-in-out infinite;
+}
+:root[data-theme="parchment"] .dice-card.gold .dice-card-total strong {
+  color: var(--gold);
+}
+.dice-card-total span {
+  font-size: 15px;
+  color: var(--gold);
+  font-weight: 600;
+}
+.dice-card-note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.dice-card.gold .dice-card-note {
+  color: var(--gold);
+}
+.dice-card-lines {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dice-card-lines div {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.dice-card-lines dt {
+  min-width: 52px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.dice-card-lines dd {
+  margin: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.dice-card-sub {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.dice-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.dice-again {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  color: var(--gold);
+  border-color: var(--gold);
+}
+@media (max-width: 720px) {
+  .dice-card {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    width: auto;
+  }
+  .dice-card-total strong {
+    font-size: 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice-card,
+  .dice-card.leaving,
+  .dice-card-total strong,
+  .dice-card.gold .dice-card-total strong {
+    animation: none;
+  }
+}
+
+/* Gold roll chips: anything you can roll */
+.roll-chip {
+  font: inherit;
+  font-weight: 600;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 7px;
+  padding: 1px 8px 1px 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.5;
+  vertical-align: baseline;
+}
+.roll-chip:hover {
+  background: color-mix(in srgb, var(--gold) 26%, transparent);
+}
+.roll-chip:focus-visible,
+.roll-box:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.roll-chip.fire {
+  color: #ffb27a;
+  border-color: rgba(232, 120, 60, 0.6);
+  background: rgba(232, 120, 60, 0.12);
+}
+:root[data-theme="parchment"] .roll-chip.fire {
+  color: #a8430f;
+}
+.roll-chip strong {
+  font-weight: 700;
+}
+.mini-list .roll-chip {
+  padding: 0 7px;
+  min-width: 40px;
+  justify-content: center;
+}
+/* Ability boxes and stat tiles that roll */
+.roll-box {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.roll-box:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+.roll-box .ability-mod,
+.stat.roll-box strong {
+  color: var(--gold);
+}
+.stat.roll-box {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.stat.roll-box:hover {
+  border-color: var(--gold);
+}
+.attack-rolls {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.attack-rolls li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+.attack-rolls li:first-child {
+  border-top: 0;
+}
+.attack-rolls-name {
+  font-weight: 600;
+  flex: 1 1 120px;
+}
+.attack-rolls-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (pointer: coarse) {
+  .roll-chip {
+    min-height: 36px;
+    padding: 2px 10px 2px 8px;
+  }
+}
+
+/* The dice bar at the top of the Sheet tab */
+.sheet-dice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+.sheet-dice-tip {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 13px;
+}
+.sheet-dice-tip b {
+  color: var(--gold);
+}
+.next-roll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.next-roll-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.seg-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 12px;
+  min-height: 36px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+}
+.seg-btn:hover {
+  color: var(--text);
+}
+.seg-btn.normal.on {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.seg-btn.adv.on {
+  background: #2f5a33;
+  color: #e6f6e6;
+}
+.seg-btn.dis.on {
+  background: #6b2330;
+  color: #fde8ea;
+}
+.dice-btn-wrap {
+  position: relative;
+}
+.dice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+  background: transparent;
+}
+.dice-btn.on {
+  background: var(--gold-soft);
+}
+.dice-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: 360px;
+  box-sizing: border-box;
+  padding: 12px 14px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.55);
+}
+.dice-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.dice-pop-head strong {
+  font-family: var(--font-head);
+  font-size: 16px;
+}
+.free-dice {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.free-dice li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 6px 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.free-dice li.on {
+  border-color: var(--gold);
+}
+.free-die {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 16px;
+}
+.free-count {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.free-count button {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+}
+.free-count button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.free-count output {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+.free-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.free-actions .btn {
+  min-height: 44px;
+}
+@media (pointer: coarse) {
+  .free-count button {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (max-width: 720px) {
+  .sheet-dice .next-roll {
+    flex: 1 1 100%;
+  }
+  .sheet-dice .seg {
+    flex: 1;
+  }
+  .sheet-dice .seg-btn {
+    flex: 1;
+    min-height: 40px;
+  }
+  /* The free roller opens as a panel from the bottom */
+  .dice-pop {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index: 1500;
+  }
+}
+
+/* Monster page rolls */
+.mon-roll-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.roll-chip.mon-num-roll {
+  padding: 0 8px;
+  font-size: inherit;
+}
+.mon-numbers small .roll-chip {
+  font-size: 12px;
+}
+
+/* ---------- Main menu (My characters · Sessions · Wiki) + phone ☰ drawer (REQUIREMENTS 4.7) ---------- */
+.main-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.main-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.main-nav-link:hover {
+  color: var(--text);
+  background: var(--gold-soft);
+}
+.main-nav-link.on {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.main-nav-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.wiki-nav-secs {
+  margin: 4px 0 4px 22px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.wiki-nav-sec {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.wiki-nav-sec:hover {
+  color: var(--text);
+}
+.wiki-nav-sec.on {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--gold-soft);
+}
+.wiki-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  display: inline-block;
+}
+/* Classic skins: the links sit in the top bar */
+.topbar .main-nav {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.topbar .main-nav-link {
+  width: auto;
+  min-height: 40px;
+}
+.topbar .main-nav-link.on {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.menu-btn,
+.drawer-head,
+.drawer-scrim,
+.drawer-title,
+.drawer-only {
+  display: none;
+}
+@media (max-width: 860px) {
+  .drawer-side {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .drawer-side.open {
+    position: sticky;
+  }
+  .drawer-side > .brand {
+    grid-column: auto;
+  }
+  .menu-btn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: -8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .menu-btn:hover {
+    background: var(--surface-2);
+  }
+  .drawer-side .hero-side-extra,
+  .drawer-side.open .hero-side-extra {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(300px, 84vw);
+    box-sizing: border-box;
+    padding: 0 14px 18px;
+    overflow-y: auto;
+    z-index: 1200;
+    background: linear-gradient(180deg, #221a14, #15110e);
+    border-right: 1px solid var(--border);
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.55);
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.26s;
+  }
+  .drawer-side.open .hero-side-extra {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 10px 0;
+    background: #221a14;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-x {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .drawer-x:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .drawer-side .main-nav-link {
+    font-size: 15px;
+    min-height: 50px;
+  }
+  .drawer-side .wiki-nav-sec {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .drawer-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1199;
+    background: rgba(5, 3, 2, 0.62);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .drawer-scrim.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .drawer-only {
+    display: block;
+  }
+  .drawer-title {
+    display: block;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* The Wiki bar: ☰ · section name */
+  .wiki-side > .brand {
+    display: none;
+  }
+  /* The Sessions page bar: ☰ · Sessions */
+  .sess-side.drawer-side {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  /* A session's bar: ☰ · its name (the menu has the way back) */
+  .session-side.drawer-side {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .session-side.drawer-side > .side-top {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-side .hero-side-extra,
+  .drawer-scrim {
+    transition: none !important;
+  }
+}
+
+/* ---------- Wiki (REQUIREMENTS 4.7) ---------- */
+.wiki-head {
+  margin-bottom: 12px;
+}
+.wiki-head h1 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 28px;
+}
+.wiki-head p {
+  margin: 6px 0 0;
+}
+.wiki-search {
+  max-width: 720px;
+}
+.wiki-label {
+  display: block;
+  margin: 26px 0 10px;
+}
+.wiki-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1040px;
+}
+.wiki-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.wiki-card:hover,
+.wiki-card:focus-visible {
+  border-left-color: var(--border-strong);
+  border-right-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.wiki-card strong {
+  font-family: var(--font-head);
+  font-size: 17px;
+}
+.wiki-card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.wiki-results {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 900px;
+}
+.wiki-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wiki-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.wiki-group .link {
+  align-self: flex-start;
+}
+.wiki-page-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 16px;
+}
+.wiki-page-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wiki-page-title h2 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 28px;
+  line-height: 1.15;
+}
+.wiki-page-title span {
+  font-size: 14px;
+  font-weight: 500;
+}
+.wiki-lead,
+.wiki-text p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.wiki-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+.wiki-text p {
+  margin: 0 0 8px;
+}
+.wiki-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.wiki-tiles div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+.wiki-tiles span {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.wiki-tiles strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.wiki-page h3 {
+  margin: 18px 0 8px;
+  font-family: var(--font-head);
+  font-size: 16px;
+}
+.wiki-page h4 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.wiki-feats,
+.wiki-points {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.6;
+}
+.wiki-levels {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.wiki-levels summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.wiki-book {
+  margin-top: 16px;
+  font-size: 13px;
+}
+.wiki-classic {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.wiki-classic-secs .wiki-nav-secs {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.wiki-classic-secs .wiki-nav-sec {
+  width: auto;
+}
+@media (max-width: 1100px) {
+  .wiki-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .wiki-cards {
+    gap: 10px;
+  }
+  .wiki-card {
+    padding: 12px;
+  }
+  .wiki-card-desc {
+    display: none;
+  }
+  .wiki-head h1 {
+    font-size: 24px;
+  }
+}
+
+/* Items browse (REQUIREMENTS 4.5) */
+.item-kinds {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.item-kinds .lk-kind {
+  white-space: nowrap;
+}
+.item-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+}
+.rarity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rarity-letter {
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 0 4px;
+  line-height: 16px;
+  flex: none;
+}
+.mon-row .rarity-letter {
+  margin-left: auto;
+}
+.item-more {
+  border-style: dashed;
+}
+.item-more-row .hero-label {
+  margin: 0 2px 0 8px;
+}
+.item-attune {
+  display: inline-flex;
+  margin: 0 0 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+/* + Add to a character */
+.wiki-add {
+  margin-top: 18px;
+}
+.add-char {
+  position: relative;
+  display: inline-block;
+}
+.add-char-btn {
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+.add-char-pop {
+  margin-top: 10px;
+  width: min(440px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid var(--gold);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+.add-char-q {
+  margin: 0 2px 10px;
+  font-size: 14px;
+}
+.add-char-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.add-char-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.add-char-pick:hover,
+.add-char-pick:focus-visible {
+  border-color: var(--gold);
+}
+.add-char-initial {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-head);
+  font-weight: 700;
+  color: var(--gold);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+}
+.add-char-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.add-char-text small {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.add-char-verb {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.add-char-blocked {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.add-char-done {
+  margin: 10px 0 0;
+  color: var(--ok);
+  font-size: 14px;
+}
+@media (max-width: 860px) {
+  .wiki-main .wiki-head h1 {
+    display: none;
+  }
+}
+
+/* Inventory: worn / attuned magic items (REQUIREMENTS 4.5a) */
+.inv-check {
+  text-align: center;
+}
+.inv-check input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.inv-check input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.inv-magic {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--gold);
+}
+.inv-magic.off {
+  color: var(--muted);
+}
+.inv-aside {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+}
+.class-rolls .attack-rolls-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.class-rolls .attack-rolls-name small {
+  font-weight: 400;
+  font-size: 12px;
+}
+.dice-card-quip {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
 }

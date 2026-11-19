@@ -7,7 +7,7 @@ import type { Character } from "../character";
 import type { Derived } from "../derive";
 import { inBooks, onClassList } from "../rules";
 import type { TabProps } from "../../types";
-import type { CSSProperties } from "react";
+import { Fragment, useRef, useState, type CSSProperties } from "react";
 import { CLASS_PROFILES, STRENGTH_AXES } from "../data2014/profiles";
 import { PreviewHead, WithPreview, useHover } from "./Preview";
 import { SubclassPicker } from "./SubclassPicker";
@@ -43,91 +43,142 @@ export const classResetPatch = (cls: ClassDef, level: number): Partial<Character
   level: Math.min(level, cls.maxLevel),
 });
 
-/** Class picker (2014): one card per class, with its role in plain words. */
+/** A class's strengths chart and key facts (the preview panel on PC, inline under the picked class on phones). */
+function ClassProfileCard({ k, previewing, small, onDone }: { k: ClassDef; previewing: boolean; small?: boolean; onDone?: () => void }) {
+  const prof = CLASS_PROFILES[k.id];
+  if (!prof) return null;
+  const best = STRENGTH_AXES.map((n, i) => [n, prof.strengths[i]] as const)
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 2);
+  const second = [...prof.strengths].sort((x, y) => y - x)[1];
+  return (
+    <div className={`preview-card ${small ? "cls-inline" : ""}`} style={{ "--class-color": prof.color } as CSSProperties}>
+      {!small && <PreviewHead title={k.name} previewing={previewing} />}
+      <Radar
+        axes={[...STRENGTH_AXES]}
+        values={prof.strengths}
+        max={10}
+        color={prof.color}
+        width={small ? 270 : 380}
+        height={small ? 220 : 310}
+        ariaLabel={`${k.name} strengths: ${STRENGTH_AXES.map((n, i) => `${n} ${prof.strengths[i]}`).join(", ")}`}
+        label={(i) => (
+          <>
+            <div className={`radar-num big ${prof.strengths[i] >= second && prof.strengths[i] > 0 ? "strong" : ""}`}>{prof.strengths[i]}</div>
+            <div className="radar-axis">{STRENGTH_AXES[i]}</div>
+          </>
+        )}
+      />
+      <div className="chip-row">
+        <span className="muted small-text">Best at</span>
+        {best.map(([n]) => (
+          <span key={n} className="best-chip">
+            {n}
+          </span>
+        ))}
+      </div>
+      <p className="small-text">{prof.plays}</p>
+      <div className="mini-stats">
+        <div>
+          <span>Hit die</span>
+          <strong>d{k.hitDie}</strong>
+        </div>
+        <div>
+          <span>Main ability</span>
+          <strong>{k.recommended[0]}</strong>
+        </div>
+        <div>
+          <span>For beginners</span>
+          <strong className={`easy-${prof.beginner.toLowerCase()}`}>{prof.beginner}</strong>
+        </div>
+      </div>
+      {small ? (
+        <button type="button" className="btn primary cls-done" onClick={onDone}>
+          Continue with {k.name}
+        </button>
+      ) : (
+        <span className="muted tiny-text">A rough guide to each class's strengths, not a rule.</span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Class picker (2014): one card per class, with its role in plain words.
+ * PC: a preview panel beside the cards. Phones (user, 2026-11-17): one tap picks a class and opens
+ * its chart under it; "Continue with …" (or coming back with a class chosen) folds the list to one line.
+ */
 export function ClassPicker({ c, d, set, books }: TabProps<Character, Derived>) {
   const classes = d.rules.classes.filter((k) => inBooks(books, k.book));
   const { hover, bind } = useHover<string>();
   const shownId = hover ?? c.cls;
   const shown = classes.find((k) => k.id === shownId) ?? classes[0];
-  const prof = CLASS_PROFILES[shown.id];
-  const best = prof ? STRENGTH_AXES.map((n, i) => [n, prof.strengths[i]] as const).sort((x, y) => y[1] - x[1]).slice(0, 2) : [];
-  const second = prof ? [...prof.strengths].sort((x, y) => y - x)[1] : 0;
+  const picked = classes.find((k) => k.id === c.cls);
+  const [browsing, setBrowsing] = useState(!picked);
+  const [details, setDetails] = useState(true);
+  const top = useRef<HTMLDivElement>(null);
+  const folded = !!picked && !browsing;
+  const done = () => {
+    setBrowsing(false);
+    requestAnimationFrame(() => top.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  };
   return (
-    <WithPreview
-      panel={
-        prof && (
-          <div className="preview-card" style={{ "--class-color": prof.color } as CSSProperties}>
-            <PreviewHead title={shown.name} previewing={!!hover && hover !== c.cls} />
-            <Radar
-              axes={[...STRENGTH_AXES]}
-              values={prof.strengths}
-              max={10}
-              color={prof.color}
-              width={380}
-              height={310}
-              ariaLabel={`${shown.name} strengths: ${STRENGTH_AXES.map((n, i) => `${n} ${prof.strengths[i]}`).join(", ")}`}
-              label={(i) => (
-                <>
-                  <div className={`radar-num big ${prof.strengths[i] >= second && prof.strengths[i] > 0 ? "strong" : ""}`}>{prof.strengths[i]}</div>
-                  <div className="radar-axis">{STRENGTH_AXES[i]}</div>
-                </>
-              )}
-            />
-            <div className="chip-row">
-              <span className="muted small-text">Best at</span>
-              {best.map(([n]) => (
-                <span key={n} className="best-chip">
-                  {n}
-                </span>
-              ))}
-            </div>
-            <p className="small-text">{prof.plays}</p>
-            <div className="mini-stats">
-              <div>
-                <span>Hit die</span>
-                <strong>d{shown.hitDie}</strong>
-              </div>
-              <div>
-                <span>Main ability</span>
-                <strong>{shown.recommended[0]}</strong>
-              </div>
-              <div>
-                <span>For beginners</span>
-                <strong className={`easy-${prof.beginner.toLowerCase()}`}>{prof.beginner}</strong>
-              </div>
-            </div>
-            <span className="muted tiny-text">A rough guide to each class's strengths, not a rule.</span>
+    <div ref={top} className="class-picker">
+      {picked && folded && (
+        <div className="cls-folded" style={{ "--class-color": CLASS_PROFILES[picked.id]?.color } as CSSProperties}>
+          <span className="cls-dot" aria-hidden="true" />
+          <div>
+            <span className="hero-label">Your class</span>
+            <strong>
+              {picked.name}{" "}
+              <span className="cls-folded-sub">
+                d{picked.hitDie} · {picked.recommended[0]}
+              </span>
+            </strong>
           </div>
-        )
-      }
-    >
-      <div className="option-grid compact-classes">
-        {classes.map((k) => {
-          const kp = CLASS_PROFILES[k.id];
-          return (
-            <button
-              type="button"
-              key={k.id}
-              className={`option ${c.cls === k.id ? "on" : ""}`}
-              aria-pressed={c.cls === k.id}
-              style={kp ? ({ "--class-color": kp.color } as CSSProperties) : undefined}
-              onClick={() => c.cls !== k.id && set(classResetPatch(k, c.level))}
-              {...bind(k.id)}
-            >
-              <strong>
-                {k.name} <span className="pill">d{k.hitDie}</span>
-                {k.book !== "PHB14" && <span className="pill">{k.book}</span>}
-              </strong>
-              <span>{k.summary}</span>
-              <small className="muted">
-                Main ability: {k.primary}
-                {k.spell ? ` · Spells from level ${k.spell.startLevel}` : " · No spells"}
-              </small>
-            </button>
-          );
-        })}
-      </div>
-    </WithPreview>
+          <button type="button" className="btn ghost" onClick={() => (setBrowsing(true), setDetails(false))}>
+            Change
+          </button>
+        </div>
+      )}
+      <WithPreview panel={<ClassProfileCard k={shown} previewing={!!hover && hover !== c.cls} />}>
+        <div className={`option-grid compact-classes ${folded ? "folded" : ""}`}>
+          {classes.map((k) => {
+            const kp = CLASS_PROFILES[k.id];
+            const on = c.cls === k.id;
+            return (
+              <Fragment key={k.id}>
+                <button
+                  type="button"
+                  className={`option ${on ? "on" : ""}`}
+                  aria-pressed={on}
+                  style={kp ? ({ "--class-color": kp.color } as CSSProperties) : undefined}
+                  onClick={() => {
+                    if (on) setDetails((x) => !x);
+                    else {
+                      set(classResetPatch(k, c.level));
+                      setDetails(true);
+                    }
+                  }}
+                  {...bind(k.id)}
+                >
+                  <strong>
+                    {k.name} <span className="pill">d{k.hitDie}</span>
+                    {k.book !== "PHB14" && <span className="pill">{k.book}</span>}
+                  </strong>
+                  <span>{k.summary}</span>
+                  <small className="muted">
+                    Main ability: {k.primary}
+                    {k.spell ? ` · Spells from level ${k.spell.startLevel}` : " · No spells"}
+                  </small>
+                </button>
+                {on && details && <ClassProfileCard k={k} previewing={false} small onDone={done} />}
+              </Fragment>
+            );
+          })}
+        </div>
+      </WithPreview>
+    </div>
   );
 }
 

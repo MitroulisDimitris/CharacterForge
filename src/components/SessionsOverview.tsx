@@ -6,6 +6,7 @@ import type { StoredCharacter, Theme } from "../storage";
 import { getSystem } from "../systems/registry";
 import { skinOf } from "../skins";
 import { Brand, SkinPicker } from "./Brand";
+import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 
 export interface SessionRow {
   s: SessionInfo;
@@ -120,6 +121,7 @@ export function SessionsPage({
   theme,
   onTheme,
   onBack,
+  go,
   onOpen,
   onHost,
   onJoin,
@@ -128,6 +130,7 @@ export function SessionsPage({
   theme: Theme;
   onTheme: (t: Theme) => void;
   onBack: () => void;
+  go?: (p: Place) => void;
   onOpen: (id: string) => void;
   onHost: () => void;
   onJoin: () => void;
@@ -135,6 +138,7 @@ export function SessionsPage({
   const [who, setWho] = useState<Who>("all");
   const [status, setStatus] = useState<Status>("active");
   const [sort, setSort] = useState<Sort>("last");
+  const [menu, setMenu] = useState(false);
   const counts = {
     all: rows.filter((r) => status === "all" || r.active === (status === "active")).length,
     host: rows.filter((r) => r.hosting && (status === "all" || r.active === (status === "active"))).length,
@@ -235,10 +239,14 @@ export function SessionsPage({
   if (skinOf(theme).layout === "hero")
     return (
       <div className="hero-shell">
-        <aside className="hero-side sess-side">
-          <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
-            ‹ <span className="back-label">My characters</span>
-          </button>
+        <aside className={`hero-side sess-side drawer-side ${menu ? "open" : ""}`}>
+          {go ? (
+            <MenuButton open={menu} onClick={() => setMenu(true)} />
+          ) : (
+            <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
+              ‹ <span className="back-label">My characters</span>
+            </button>
+          )}
           <div className="session-id">
             <h1>Sessions</h1>
             <span className="hero-sub">
@@ -246,6 +254,8 @@ export function SessionsPage({
             </span>
           </div>
           <div className="hero-side-extra">
+            <DrawerHead open={menu} onClose={() => setMenu(false)} />
+            {go && <MainNav current="sessions" go={(p) => (setMenu(false), go(p))} />}
             <div className="sessions-actions">
               <button type="button" className="btn small" onClick={onHost}>
                 Host a session
@@ -261,6 +271,7 @@ export function SessionsPage({
             </div>
           </div>
         </aside>
+        <DrawerScrim open={menu} onClose={() => setMenu(false)} />
         <main className="hero-main">{body}</main>
       </div>
     );
@@ -273,9 +284,13 @@ export function SessionsPage({
           <h1 className="page-title">Sessions</h1>
         </div>
         <div className="actions">
-          <button type="button" className="btn ghost" onClick={onBack}>
-            ← My characters
-          </button>
+          {go ? (
+            <MainNav current="sessions" go={go} />
+          ) : (
+            <button type="button" className="btn ghost" onClick={onBack}>
+              ← My characters
+            </button>
+          )}
           <SkinPicker theme={theme} onChange={onTheme} />
           <button type="button" className="btn" onClick={onHost}>
             Host a session

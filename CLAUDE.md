@@ -47,6 +47,8 @@ every skin; the Hero skin is the reference look.
    Every decision gets help for new players: one plain sentence on what the choice is, a
    "Beginner-friendly" pick, and hover explanations (SubclassPicker, skill hints, ability lines).
 4. Choices: suggest 2–3 good picks (tag "Popular" / "Beginner-friendly"), the rest behind "Show all".
+   Exception (user, 2026-11-17): no "Beginner-friendly" tags on the class cards (5 of 13 classes is
+   clutter); difficulty shows in the class details only. Possible later addition: see CHECKLIST "Later".
    Show progress as counters ("1 of 2 chosen", "0/2").
 5. Secondary actions (export, duplicate, PDF, delete) live in a "⋯" menu, not as visible buttons.
 6. Squint test: in 3 seconds you can tell the main information and the main action. If not, cut.
@@ -65,7 +67,9 @@ every skin; the Hero skin is the reference look.
    (`components/SheetTab.tsx`; user request 2026-11-16: it's what a player uses most).
    The library and creation use the same sidebar idea (brand + New character / the hero taking shape + steps).
 9. The main area has tabs across the top (active = crimson underline; a gold dot marks a tab with a to-do).
-10. No horizontal page scroll. At phone width the sidebar becomes a compact top bar.
+10. No horizontal page scroll. At phone width the sidebar becomes a compact top bar, with a ☰ button
+    at its left that slides in the main menu (My characters, Sessions, Wiki; user 2026-11-19).
+    Not on character pages (sheet, creation, level up): those keep their own bar with the way back.
 
 **Look**
 11. Dark warm base (#110e0c–#1c1815) with texture, never flat: a faint diagonal pattern
@@ -123,11 +127,26 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 
 ## Dev notes
 
+- Dice (2026-11-19): `src/dice/` (roll maths `roll.ts`, the canvas 3D table `engine.ts`, stat-block
+  text → rolls `rollText.ts`); `components/Dice.tsx` (provider in `main.tsx`, `RollChip` only rolls
+  inside a `RollScope`: character tabs, monster pages, the Wiki). Sheet roll specs: `dnd5e/rollSpecs.ts`.
+- Wiki (`components/Wiki.tsx`, `src/wiki.ts`) reuses `Lookup` (`only="spell" | "monster"`). Items:
+  `src/items.ts` reads `public/srd-items.json` (rebuild: `npx vite-node scripts/fetchItems.ts`) plus
+  Xanathar's / Tasha's items written in our own words (`src/bookItems.ts`).
+- Nothing loads from outside but Supabase (user, 2026-11-19: "download everything that we use"):
+  SRD monsters and spells `public/srd-monsters.json` / `srd-spells.json` (`npx vite-node
+  scripts/fetchSrd.ts`), fonts `public/fonts` + `src/fonts.css` (`python scripts/fetchFonts.py`).
+  New Open5e queries can take minutes, so never fetch from it at runtime. Magic item effects from item
+  names: `dnd5e/magicItems.ts` (inventory `equipped` missing = worn, `attuned`).
+
 - D&D 5e classes share one shape (`data/classes.ts` → `ClassDef`); the engine (`derive.ts`,
   `progression.ts`) works from it, so a new class is data plus its level-1 choices.
 - Each rule set is a plugin under `src/systems/<id>/` implementing `GameSystem` (`src/systems/types.ts`), registered in `src/systems/registry.ts`.
 - Level-up/down flows use each system's `progression` (snapshot, featuresAt, unlocksAt, demote).
 - `npm test` runs golden tests for every system; keep them passing and add cases when rules change.
+- **Game content comes from the user's books or the user** (user, 2026-11-19): use `reference/books/`
+  (PHB, XGE, TCE, Monster Manual, Dungeon Master's Guide + `DMG.raw.txt`); if something isn't
+  there, ask the user for it. Never fill gaps from memory or other sources.
 - Rules data provenance:
   - Pathfinder 2e: checked against Archives of Nethys.
   - D&D 3.5: written from memory of the SRD (unverified; SRD sites blocked automated reads).

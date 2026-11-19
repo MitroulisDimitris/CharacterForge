@@ -1,26 +1,38 @@
 import { ABILITIES, ABILITY_NAMES, signed } from "../data/core";
 import type { Character } from "../character";
 import type { Derived } from "../derive";
+import { RollChip, useCanRoll, useDice } from "../../../components/Dice";
+import { abilityCheck, attackRolls, classRolls, initiativeRoll, savingThrow, skillCheck } from "../rollSpecs";
 
 export function Summary({ c, d }: { c: Character; d: Derived }) {
+  const canRoll = useCanRoll();
+  const dice = useDice();
   return (
-    <div className="summary">
+    <div className={`summary ${canRoll ? "rollable" : ""}`}>
       <div className="stat-row">
         <Stat label="Armor Class" value={d.ac} title={d.acNote} big />
         <Stat label="Hit Points" value={d.hpMax} title={d.hpExtras.join(", ") || undefined} big />
-        <Stat label="Initiative" value={signed(d.initiative)} />
+        <Stat label="Initiative" value={signed(d.initiative)} roll={canRoll ? () => dice?.roll(initiativeRoll(d)) : undefined} />
         <Stat label="Speed" value={`${d.speed} ft`} />
         <Stat label="Prof. Bonus" value={signed(d.pb)} />
       </div>
 
       <div className="abilities-grid">
-        {ABILITIES.map((a) => (
-          <div className="ability" key={a} title={ABILITY_NAMES[a]}>
-            <span className="ability-name">{a}</span>
-            <span className="ability-mod">{signed(d.mods[a])}</span>
-            <span className="ability-score">{d.scores[a]}</span>
-          </div>
-        ))}
+        {ABILITIES.map((a) =>
+          canRoll ? (
+            <button type="button" className="ability roll-box" key={a} title={`Roll a ${ABILITY_NAMES[a]} check`} aria-label={`Roll a ${ABILITY_NAMES[a]} check, ${signed(d.mods[a])}`} onClick={() => dice?.roll(abilityCheck(d, a))}>
+              <span className="ability-name">{a}</span>
+              <span className="ability-mod">{signed(d.mods[a])}</span>
+              <span className="ability-score">{d.scores[a]}</span>
+            </button>
+          ) : (
+            <div className="ability" key={a} title={ABILITY_NAMES[a]}>
+              <span className="ability-name">{a}</span>
+              <span className="ability-mod">{signed(d.mods[a])}</span>
+              <span className="ability-score">{d.scores[a]}</span>
+            </div>
+          ),
+        )}
       </div>
 
       <div className="spell-strip">
@@ -55,7 +67,9 @@ export function Summary({ c, d }: { c: Character; d: Derived }) {
           <li key={s.ability} className={s.proficient ? "prof" : ""}>
             <span className="dot" />
             <span>{ABILITY_NAMES[s.ability]}</span>
-            <strong>{signed(s.bonus)}</strong>
+            <RollChip spec={() => savingThrow(d, s)} label={`Roll a ${ABILITY_NAMES[s.ability]} saving throw, ${signed(s.bonus)}`} icon={false}>
+              <strong>{signed(s.bonus)}</strong>
+            </RollChip>
           </li>
         ))}
       </ul>
@@ -69,10 +83,75 @@ export function Summary({ c, d }: { c: Character; d: Derived }) {
               {s.name} <small className="muted">{s.ability}</small>
               {s.expert && <small className="pill" title="Expertise: double proficiency">E</small>}
             </span>
-            <strong>{signed(s.bonus)}</strong>
+            <RollChip spec={() => skillCheck(d, s)} label={`Roll ${s.name}, ${signed(s.bonus)}`} icon={false}>
+              <strong>{signed(s.bonus)}</strong>
+            </RollChip>
           </li>
         ))}
       </ul>
+
+      {canRoll && d.attacks.length > 0 && (
+        <>
+          <h4>Attacks</h4>
+          <ul className="attack-rolls">
+            {d.attacks.map((a) => {
+              const r = attackRolls(d, a);
+              return (
+                <li key={a.name}>
+                  <span className="attack-rolls-name">{a.name}</span>
+                  <span className="attack-rolls-chips">
+                    {r.hit ? (
+                      <RollChip spec={r.hit} label={`Roll ${a.name} attack, ${a.bonus} to hit`}>
+                        {r.hitText} to hit
+                      </RollChip>
+                    ) : (
+                      <span className="muted">{a.bonus}</span>
+                    )}
+                    {r.damage ? (
+                      <RollChip spec={r.damage} fire={r.fire} label={`Roll ${a.name} damage, ${r.damageText}`}>
+                        {r.damageText}
+                      </RollChip>
+                    ) : (
+                      <span className="muted">{a.damage}</span>
+                    )}
+                    {r.alt && (
+                      <RollChip spec={r.alt} label={`Roll ${a.name} damage with two hands, ${r.altText}`}>
+                        {r.altText}
+                      </RollChip>
+                    )}
+                    {r.extras?.map((x) => (
+                      <RollChip key={x.text} spec={x.spec} fire={x.fire} label={`Roll ${a.name} extra damage, ${x.text}`}>
+                        {x.text}
+                      </RollChip>
+                    ))}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+
+      {canRoll && (
+        <>
+          <h4>Class dice</h4>
+          <ul className="attack-rolls class-rolls">
+            {classRolls(d).map((r) => (
+              <li key={r.name}>
+                <span className="attack-rolls-name">
+                  {r.name}
+                  <small className="muted">{r.note}</small>
+                </span>
+                <span className="attack-rolls-chips">
+                  <RollChip spec={r.spec} label={`Roll ${r.name}, ${r.text}`}>
+                    {r.text}
+                  </RollChip>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h4>Senses & Defenses</h4>
       <dl className="kv">
@@ -109,7 +188,14 @@ export function Summary({ c, d }: { c: Character; d: Derived }) {
   );
 }
 
-function Stat({ label, value, title, big }: { label: string; value: string | number; title?: string; big?: boolean }) {
+function Stat({ label, value, title, big, roll }: { label: string; value: string | number; title?: string; big?: boolean; roll?: () => void }) {
+  if (roll)
+    return (
+      <button type="button" className="stat roll-box" title={`Roll ${label.toLowerCase()}`} aria-label={`Roll ${label.toLowerCase()}, ${value}`} onClick={roll}>
+        <strong>{value}</strong>
+        <span>{label}</span>
+      </button>
+    );
   return (
     <div className={`stat ${big ? "big" : ""}`} title={title}>
       <strong>{value}</strong>

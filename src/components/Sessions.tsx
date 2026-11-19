@@ -30,7 +30,8 @@ import {
 } from "../sessions";
 import { BookChecklist, normalizeBooks } from "./BookChecklist";
 import { Brand, SkinPicker } from "./Brand";
-import { Crest, MoreMenu, SideToggle } from "./Hero";
+import { Crest, MoreMenu } from "./Hero";
+import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 import { Lookup } from "./Lookup";
 import { EncountersTab } from "./Encounters";
 import { MemberView, NotesTab, OnlyYou, PartyTab } from "./Party";
@@ -504,6 +505,7 @@ export function SessionPage({
   theme,
   onTheme,
   onBack,
+  go,
   onChanged,
   onOpenSheet,
 }: {
@@ -514,6 +516,8 @@ export function SessionPage({
   theme: Theme;
   onTheme: (t: Theme) => void;
   onBack: () => void;
+  /** The main menu (phone ☰). */
+  go?: (p: Place) => void;
   /** Sessions or memberships changed: reload them. */
   onChanged: () => Promise<void> | void;
   onOpenSheet: (characterId: string, memberId: string) => void;
@@ -785,7 +789,8 @@ export function SessionPage({
   if (skinOf(theme).layout === "hero")
     return (
       <div className="hero-shell">
-        <aside className={`hero-side session-side ${sideOpen ? "open" : ""} ${folded ? "folded" : ""}`}>
+        <aside className={`hero-side session-side drawer-side ${sideOpen ? "open" : ""} ${folded ? "folded" : ""}`}>
+          <MenuButton open={sideOpen} onClick={() => setSideOpen(true)} />
           <div className="side-top">
             <button type="button" className="side-fold" onClick={fold} aria-expanded={!folded} aria-label={folded ? "Show the side panel" : "Hide the side panel"} title={folded ? "Show the side panel" : "Hide the side panel"}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
@@ -801,8 +806,13 @@ export function SessionPage({
             {session.name.trim().charAt(0).toUpperCase() || "S"}
           </span>
           {identity}
-          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} label={isHost ? "Code & menu" : "Menu"} />
           <div className="hero-side-extra">
+          <DrawerHead open={sideOpen} onClose={() => setSideOpen(false)} />
+          {go && (
+            <div className="drawer-only">
+              <MainNav current="sessions" go={(p) => (setSideOpen(false), go(p))} />
+            </div>
+          )}
           {isHost && code && !ended && <InviteBox code={code} name={session.name} />}
           <div className="hero-foot">
             {mainAction}
@@ -813,6 +823,7 @@ export function SessionPage({
           </div>
           </div>
         </aside>
+        <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         <main className="hero-main">
           <Err text={error} />
           {isHost ? hostBody : rosterView}
