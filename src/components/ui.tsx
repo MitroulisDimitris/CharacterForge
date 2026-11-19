@@ -1,8 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { useSmoothHeight } from "./smooth";
 
 export function Card({ title, aside, children, className = "", todo }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string; /** Section id the To do list jumps to. */ todo?: string }) {
+  const ref = useRef<HTMLElement>(null);
+  useSmoothHeight(ref);
   return (
-    <section className={`card ${className}`} data-todo={todo}>
+    <section ref={ref} className={`card ${className}`} data-todo={todo}>
       {title && (
         <header className="card-head">
           <h3>{title}</h3>

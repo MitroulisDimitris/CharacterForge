@@ -191,7 +191,7 @@ function WikiHome({ onOpen }: { onOpen: (t: Target) => void }) {
   return (
     <div className="wiki-home">
       <SectionHead title="Wiki">
-        <p className="muted">Spells, monsters, items and rules from your books, in plain words.</p>
+        <p className="muted">Spells, monsters, items and rules.</p>
       </SectionHead>
       <label className="lk-search wiki-search">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">

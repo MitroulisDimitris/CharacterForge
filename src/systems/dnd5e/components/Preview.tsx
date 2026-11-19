@@ -1,6 +1,7 @@
 // Live previews while choosing (UI rules: calm first, preview before you commit).
 // A choice list on the left, a panel on the right that shows what the hovered option changes.
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { useSmoothHeight } from "../../../components/smooth";
 import { ABILITIES, ABILITY_NAMES } from "../data/core";
 import type { Derived } from "../derive";
 import type { ChangeLine } from "../../types";
@@ -21,10 +22,13 @@ export function useHover<T extends string>() {
 
 /** Options on the left, a sticky preview panel on the right (stacks on narrow screens). */
 export function WithPreview({ children, panel }: { children: ReactNode; panel: ReactNode }) {
+  // The panel changes on every hover: it only ever grows (smoothly), so what's below stays put.
+  const ref = useRef<HTMLElement>(null);
+  useSmoothHeight(ref, { growOnly: true });
   return (
     <div className="with-preview">
       <div className="with-preview-main">{children}</div>
-      <aside className="preview-panel">{panel}</aside>
+      <aside ref={ref} className="preview-panel">{panel}</aside>
     </div>
   );
 }

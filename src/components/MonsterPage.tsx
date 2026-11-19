@@ -56,9 +56,9 @@ export function MonsterRow({ m, current, onOpen }: { m: MonsterBrief; current: b
 }
 
 const D20 = [{ n: 1, sides: 20 }];
-const ABILITY_LABEL: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
-const modOf = (score: number) => Math.floor((score - 10) / 2);
-const check = (who: string, label: string, kind: "check" | "save", bonus: number): RollSpec => ({ label: `${who} · ${label}`, kind, groups: D20, parts: [{ label: "Bonus", value: bonus }], tone: "monster" });
+export const ABILITY_LABEL: Record<string, string> = { strength: "Strength", dexterity: "Dexterity", constitution: "Constitution", intelligence: "Intelligence", wisdom: "Wisdom", charisma: "Charisma" };
+export const modOf = (score: number) => Math.floor((score - 10) / 2);
+export const check = (who: string, label: string, kind: "check" | "save", bonus: number): RollSpec => ({ label: `${who} · ${label}`, kind, groups: D20, parts: [{ label: "Bonus", value: bonus }], tone: "monster" });
 
 /** Stat block text with its rolls as gold chips: to hit, damage dice, recharge (REQUIREMENTS 4.6). */
 export function MonsterText({ title, text }: { title: string; text: string }) {
@@ -426,7 +426,6 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
               </svg>
               <div>
                 <strong>Monster Manual, page {page}</strong>
-                <span className="muted">Its entry in your book.</span>
               </div>
             </section>
           )}

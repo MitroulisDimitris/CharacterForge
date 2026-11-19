@@ -6,7 +6,7 @@ import { MAX_LEVEL_PF2 } from "./data";
 import { AncestryTab, AttributesTab, BackgroundTabPF2, ClassTabPF2, DetailsTabPF2, EquipmentTabPF2, FeatsTabPF2, SkillsTabPF2, SpellsTabPF2, SummaryPF2 } from "./tabs";
 
 const CREDITS =
-  "Pathfinder 2e Remaster rules (Player Core, Player Core 2) by Paizo Inc., used under the ORC License. Checked against Archives of Nethys; summaries in our own words.";
+  "Pathfinder 2e Remaster rules (Player Core, Player Core 2) by Paizo Inc., used under the ORC License.";
 
 export const pf2e: GameSystem<CharacterPF2, DerivedPF2> = {
   id: "pf2e",
@@ -39,5 +39,5 @@ export const pf2e: GameSystem<CharacterPF2, DerivedPF2> = {
   progression: progressionPF2,
   buildPdf: async (c, d) => (await import("./pdf")).buildPdfPF2(c, d, CREDITS),
   credits: CREDITS,
-  dataNote: "Ancestry, class and skill feats are typed in by name for now; the app applies Toughness, Fleet and other simple general feats automatically.",
+  dataNote: "Ancestry, class and skill feats are typed in by name; Toughness, Fleet and other simple general feats apply automatically.",
 };

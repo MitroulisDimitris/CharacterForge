@@ -6,7 +6,7 @@ import { MAX_LEVEL_35 } from "./data";
 import { AbilitiesTab35, ClassTab35, DetailsTab35, EquipmentTab35, FeatsTab35, RaceTab, SkillsTab35, SpellsTab35, Summary35 } from "./tabs";
 
 const CREDITS =
-  "Rules from the D&D 3.5 System Reference Document (Open Game License v1.0a, Wizards of the Coast). Summaries in our own words; check the Player's Handbook v3.5.";
+  "Rules from the D&D 3.5 System Reference Document (Open Game License v1.0a, Wizards of the Coast).";
 
 export const dnd35: GameSystem<Character35, Derived35> = {
   id: "dnd35",

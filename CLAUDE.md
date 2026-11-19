@@ -59,6 +59,14 @@ every skin; the Hero skin is the reference look.
    from `data2014/profiles.ts`; hexagon `components/Radar.tsx`). After any pick a short "Just changed"
    note lists what it did (`components/JustChanged.tsx`, `GameSystem.describeChange`). Options that
    suit the class get a "Good for <Class>" tag.
+7a. **The page never talks about itself** (user, 2026-11-19: "it's like my page is talking to me").
+   Never write text about where content came from or who wrote it: no "Its entry in your book",
+   "from your books", "in our own words", "in plain words", "summarized", "from Open5e", "saved in
+   the app", "this app's list", "the app picks…", "check your book". Just show the content.
+   Only exception: the bare licence credit lines (e.g. "Includes material from the System Reference
+   Document 5.1 (CC-BY-4.0)."), with nothing added to them. Code comments may say anything.
+   Book references are wanted (the user likes them as real proof): "Monster Manual, page 317",
+   with no sentence explaining them.
 
 **Layout**
 8. Character screens have a left **hero sidebar**: portrait crest with a level ring, name,
@@ -91,6 +99,13 @@ every skin; the Hero skin is the reference look.
 **Accessibility**
 17. Text contrast ≥ 4.5:1; touch targets ≥ 44 px; real buttons and links; colours that must be told
     apart also differ in lightness or shape.
+
+**Motion**
+18. **Nothing jumps** (user, 2026-11-19, the race picker): when a pick or hover changes how tall a box
+    is, it glides to its new height (~250 ms) and the content below follows smoothly. A panel that
+    changes on every hover (previews) only grows, so what's below doesn't bounce up and down.
+    Use `useSmoothHeight` (`components/smooth.ts`; `Card`, `WithPreview` and the To do box already
+    do). Respect reduced motion (no glide, just the new size).
 
 ## Plan in progress (approved by the user 2026-11-10)
 

@@ -218,7 +218,7 @@ export function ItemsBrowse({ lib, onSave, start }: { lib: StoredCharacter[]; on
           </div>
         )}
       </div>
-      <p className="credits muted">Most Player's Handbook and Dungeon Master's Guide items: System Reference Document 5.1 (CC-BY-4.0). The other Dungeon Master's Guide items and the Xanathar's and Tasha's items: summaries in our own words.</p>
+      <p className="credits muted">Includes material from the System Reference Document 5.1 (CC-BY-4.0).</p>
     </div>
   );
 }

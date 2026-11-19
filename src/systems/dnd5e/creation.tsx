@@ -143,7 +143,7 @@ export const CREATION_STEPS_2014: CreationStep<Character, Derived>[] = [
     title: "Skills & languages",
     tabs: ["skills"],
     intro: () =>
-      "Check your skills and pick your languages. If two sources give you the same skill, the rules let you pick a different one instead; the app flags any duplicates.",
+      "Check your skills and pick your languages. If two sources give you the same skill, the rules let you pick a different one instead; duplicates are flagged.",
     Component: SkillsTab,
   },
   {

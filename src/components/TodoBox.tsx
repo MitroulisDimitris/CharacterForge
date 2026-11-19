@@ -1,6 +1,7 @@
 // The character's one "To do" list (left sidebar in Hero; a box above the tabs in the classic
 // skins). Every item opens its tab and makes the right section glow. Grey notes are folded below.
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { useSmoothHeight } from "./smooth";
 import type { Todo } from "../todo";
 
 export function TodoBox({
@@ -23,8 +24,10 @@ export function TodoBox({
   variant?: "side" | "banner";
 }) {
   const has = todos.length > 0 || !!top;
+  const ref = useRef<HTMLElement>(null);
+  useSmoothHeight(ref);
   return (
-    <section className={`${variant === "side" ? "hero-todo" : "todo-box"} ${has ? "has" : ""}`} aria-label="To do">
+    <section ref={ref} className={`${variant === "side" ? "hero-todo" : "todo-box"} ${has ? "has" : ""}`} aria-label="To do">
       <span className="hero-label">
         To do{todos.length ? <span className="todo-count">{todos.length}</span> : null}
       </span>

@@ -97,7 +97,7 @@ export const SUBCLASSES_2014: Subclass[] = [
       { id: "neutrality", name: "Neutrality", spell: "Protection from Evil and Good" },
     ],
     features: [
-      { level: 1, name: "Divine Magic", source: "Divine Soul 1", text: "You can pick sorcerer spells from the cleric spell list too, and you learn your affinity's spell (it doesn't count against spells known). Type cleric picks into the spell notes if they aren't in this app." },
+      { level: 1, name: "Divine Magic", source: "Divine Soul 1", text: "You can pick sorcerer spells from the cleric spell list too, and you learn your affinity's spell (it doesn't count against spells known). If a cleric spell isn't in the list, type it into the spell notes." },
       { level: 1, name: "Favored by the Gods", source: "Divine Soul 1", uses: "1 / Short Rest", text: "When you fail a saving throw or miss with an attack, add 2d4 to the roll, possibly changing the outcome." },
     ],
     spells: [],

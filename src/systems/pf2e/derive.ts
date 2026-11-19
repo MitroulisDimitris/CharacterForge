@@ -178,7 +178,7 @@ export function derivePF2(c: CharacterPF2) {
   }
   for (const n of [...c.cantrips, ...c.spells]) {
     const s = spellPF2(n);
-    if (!s) warnings.push({ level: "warn", tab: "spells", text: `${n} isn't in this app's spell list.` });
+    if (!s) warnings.push({ level: "warn", tab: "spells", text: `${n} isn't in the spell list.` });
     else {
       if (tradition && !s.traditions.includes(tradition)) warnings.push({ level: "error", tab: "spells", text: `${n} isn't a ${tradition} spell (your bloodline's tradition).` });
       if (s.rank > maxRank) warnings.push({ level: "error", tab: "spells", text: `${n} is rank ${s.rank}; at Sorcerer ${L} you cast up to rank ${maxRank}.` });

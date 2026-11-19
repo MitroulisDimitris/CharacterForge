@@ -199,7 +199,7 @@ function SpellRowItem({ r, level, core }: { r: { s?: Spell; name: string; source
             {r.granted && r.note && <p className="muted">{r.note}</p>}
           </>
         ) : (
-          <p className="muted">Not in this app's spell list — check your book for details. DC {r.dc}, attack {signed(r.atk)}.</p>
+          <p className="muted">DC {r.dc}, attack {signed(r.atk)}.</p>
         )}
       </div>
     </details>

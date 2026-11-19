@@ -30,9 +30,9 @@ const tabs = (speciesWord: string) => [
 ];
 
 const CREDITS_2024 =
-  "Includes material from the System Reference Document 5.2 by Wizards of the Coast LLC (CC-BY-4.0). Other rules are summarized in our own words; see the Player's Handbook.";
+  "Includes material from the System Reference Document 5.2 by Wizards of the Coast LLC (CC-BY-4.0).";
 const CREDITS_2014 =
-  "Includes material from the System Reference Document 5.1 by Wizards of the Coast LLC (CC-BY-4.0). Other rules are summarized in our own words; see the Player's Handbook, Xanathar's and Tasha's.";
+  "Includes material from the System Reference Document 5.1 by Wizards of the Coast LLC (CC-BY-4.0).";
 
 const tableCard5e = (_c: Character, d: Derived): TableCard => ({
   ac: d.ac,

@@ -306,7 +306,7 @@ function SuggestPanel({ party, onResult, onClose }: { party: number[]; onResult:
           Close
         </button>
       </div>
-      <p className="muted">Pick how hard it should be. The app picks monsters that fit your party; you can change them before saving.</p>
+      <p className="muted">Pick how hard it should be. Monsters are picked to fit your party; you can change them before saving.</p>
       <div className="lk-filters" role="radiogroup" aria-label="Difficulty">
         {(["Easy", "Medium", "Hard", "Deadly"] as Target[]).map((t) => (
           <button key={t} type="button" role="radio" aria-checked={target === t} className={`lk-kind diff-${t.toLowerCase()} ${target === t ? "on" : ""}`} onClick={() => setTarget(t)}>

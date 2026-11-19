@@ -3,7 +3,10 @@
 // the full stat block is one tap away.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { xpForCr } from "../encounters";
-import { MonsterPage, MonsterRow } from "./MonsterPage";
+import { ABILITY_LABEL, MonsterPage, MonsterRow, MonsterText, check, modOf } from "./MonsterPage";
+import { RollChip, RollScope } from "./Dice";
+import { parseDice } from "../dice/roll";
+import { signed } from "../monsters";
 import { typeColor } from "../monsters";
 import { CONDITIONS, EXHAUSTION } from "../live";
 import { RULES } from "../systems/dnd5e/rules";
@@ -74,7 +77,7 @@ function Blocks({ title, items }: { title: string; items: { name: string; desc: 
       <h4>{title}</h4>
       {items.map((a) => (
         <p key={a.name}>
-          <strong>{a.name}.</strong> {a.desc}
+          <strong>{a.name}.</strong> <MonsterText title={a.name} text={a.desc} />
         </p>
       ))}
     </section>
@@ -88,9 +91,10 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
   const traits = keyTraits(m);
   const saves = (["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const)
     .map((a) => [a, m[`${a}_save` as const]] as const)
-    .filter(([, v]) => v != null)
-    .map(([a, v]) => `${a.slice(0, 3).toUpperCase()} +${v}`);
+    .filter((x): x is readonly [(typeof x)[0], number] => x[1] != null);
+  const hp = m.hit_dice ? parseDice(m.hit_dice) : null;
   return (
+    <RollScope>
     <article className="lk-card monster">
       <header className="lk-head">
         <div>
@@ -109,7 +113,13 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
         </span>
         <span title={m.hit_dice}>
           <small>HP</small>
-          <strong>{m.hit_points}</strong>
+          {hp ? (
+            <RollChip className="mon-num-roll" icon={false} label={`Roll hit points for ${m.name}, ${m.hit_dice}`} spec={{ label: `${m.name} · hit points`, kind: "heal", groups: hp.groups, bonus: hp.bonus, unit: "hit points", tone: "monster" }}>
+              <strong>{m.hit_points}</strong>
+            </RollChip>
+          ) : (
+            <strong>{m.hit_points}</strong>
+          )}
         </span>
         <span>
           <small>Speed</small>
@@ -130,7 +140,9 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
               <span key={a}>
                 <small>{a.slice(0, 3).toUpperCase()}</small>
                 <strong>{m[a]}</strong>
-                <em>{abilityMod(m[a])}</em>
+                <RollChip className="mon-num-roll" icon={false} label={`Roll a ${ABILITY_LABEL[a]} check for ${m.name}, ${signed(modOf(m[a]))}`} spec={check(m.name, `${ABILITY_LABEL[a]} check`, "check", modOf(m[a]))}>
+                  <em>{abilityMod(m[a])}</em>
+                </RollChip>
               </span>
             ))}
           </div>
@@ -138,16 +150,27 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
             {saves.length > 0 && (
               <>
                 <dt>Saves</dt>
-                <dd>{saves.join(", ")}</dd>
+                <dd className="mon-roll-list">
+                  {saves.map(([a, v]) => (
+                    <RollChip key={a} label={`Roll a ${ABILITY_LABEL[a]} saving throw for ${m.name}, ${signed(v)}`} spec={check(m.name, `${ABILITY_LABEL[a]} saving throw`, "save", v)}>
+                      {a.slice(0, 3).toUpperCase()} {signed(v)}
+                    </RollChip>
+                  ))}
+                </dd>
               </>
             )}
             {Object.keys(m.skills ?? {}).length > 0 && (
               <>
                 <dt>Skills</dt>
-                <dd>
-                  {Object.entries(m.skills)
-                    .map(([k, v]) => `${k} +${v}`)
-                    .join(", ")}
+                <dd className="mon-roll-list">
+                  {Object.entries(m.skills).map(([k, v]) => {
+                    const name = `${k.charAt(0).toUpperCase()}${k.slice(1)}`;
+                    return (
+                      <RollChip key={k} label={`Roll ${name} for ${m.name}, ${signed(v)}`} spec={check(m.name, name, "check", v)}>
+                        {name} {signed(v)}
+                      </RollChip>
+                    );
+                  })}
                 </dd>
               </>
             )}
@@ -172,7 +195,7 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
               {m.legendary_desc && <p className="muted">{m.legendary_desc}</p>}
               {m.legendary_actions.map((a) => (
                 <p key={a.name}>
-                  <strong>{a.name}.</strong> {a.desc}
+                  <strong>{a.name}.</strong> <MonsterText title={a.name} text={a.desc} />
                 </p>
               ))}
             </section>
@@ -180,6 +203,7 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
         </div>
       )}
     </article>
+    </RollScope>
   );
 }
 
@@ -739,7 +763,7 @@ export function Lookup({
           )}
         </div>
       )}
-      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0), from Open5e, saved in the app. Monster icons: game-icons.net (CC BY 3.0).</p>
+      <p className="credits muted">Monsters and spells: System Reference Document 5.1 (CC-BY-4.0). Monster icons: game-icons.net (CC BY 3.0).</p>
     </div>
   );
 }

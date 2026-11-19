@@ -15,7 +15,7 @@ export const SECTIONS: { id: WikiSection; label: string; color: string; desc: st
   { id: "races", label: "Races", color: "#e0485e", desc: "Ability scores, size, speed and traits.", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" },
   { id: "backgrounds", label: "Backgrounds", color: "#e0485e", desc: "Skills, tools and the feature each one gives.", icon: "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h11" },
   { id: "feats", label: "Feats", color: "#6fbf73", desc: "Every feat and what you need to take it.", icon: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" },
-  { id: "rules", label: "Rules", color: "#b9a3e8", desc: "Conditions, combat, resting, in plain words.", icon: "M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z" },
+  { id: "rules", label: "Rules", color: "#b9a3e8", desc: "Conditions, combat, resting.", icon: "M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z" },
 ];
 export const sectionOf = (id: WikiSection) => SECTIONS.find((s) => s.id === id)!;
 

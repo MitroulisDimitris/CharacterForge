@@ -213,7 +213,7 @@ export function derive35(c: Character35) {
     if (have !== known[lvl]) warnings.push({ level: have > known[lvl] ? "error" : "warn", tab: "spells", text: `${word} known: ${have} of ${known[lvl]}.` });
   }
   for (const r of spellRows) {
-    if (!r.spell) warnings.push({ level: "warn", tab: "spells", text: `${r.name} isn't in this app's 3.5 spell list.` });
+    if (!r.spell) warnings.push({ level: "warn", tab: "spells", text: `${r.name} isn't in the 3.5 spell list.` });
     else if (r.level > maxSpellLevel) warnings.push({ level: "error", tab: "spells", text: `${r.name} is a level-${r.level} spell; at Sorcerer ${L} you can know up to level ${maxSpellLevel}.` });
     if (r.spell?.costly && !c.inventory.some((i) => i.name.toLowerCase().includes(r.spell!.costly!.replace(/^a /, "").split(" ")[0])))
       warnings.push({ level: "info", tab: "equipment", text: `${r.name} needs ${r.spell.costly}.` });

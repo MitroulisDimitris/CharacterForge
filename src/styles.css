@@ -128,6 +128,11 @@ input[type="checkbox"] {
   width: auto;
   accent-color: var(--accent);
 }
+/* Safari squeezes boxes next to long text in a row (they turn into small ovals): keep their size. */
+input[type="checkbox"],
+input[type="radio"] {
+  flex-shrink: 0;
+}
 input:disabled,
 select:disabled {
   opacity: 0.6;
@@ -7977,4 +7982,17 @@ button.sess-tr:focus-visible {
   font-size: 13px;
   font-style: italic;
   color: var(--muted);
+}
+
+/* Encounter / Lookup monster card: the ability modifiers roll (a small gold chip under the score). */
+.lk-abilities .roll-chip {
+  align-self: center;
+  justify-content: center;
+  margin-top: 2px;
+  padding: 0 8px;
+  min-height: 22px;
+  font-size: 12px;
+}
+.lk-abilities .roll-chip em {
+  color: inherit;
 }

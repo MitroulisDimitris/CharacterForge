@@ -369,7 +369,7 @@ export function FeatsTabPF2({ c, d, set }: P) {
   return (
     <div className="stack">
       <Card title="Feats" aside={<a className="link" href={`${AON}Feats.aspx`} target="_blank" rel="noreferrer">Browse feats on Archives of Nethys ↗</a>}>
-        <p className="muted">Ancestry, class and skill feats are typed in by name; this app doesn't include their full rules yet. General feats with simple effects are applied automatically.</p>
+        <p className="muted">Ancestry, class and skill feats are typed in by name. General feats with simple effects apply automatically.</p>
         <div className="grid-2">
           {text("Ancestry feat", "ancestryFeat1", 1, `A 1st-level ${d.ancestry.name}${d.versatile ? ` or ${d.heritage?.name.split(" (")[0]}` : ""} feat`)}
           <Field label="Background skill feat (level 1)">
