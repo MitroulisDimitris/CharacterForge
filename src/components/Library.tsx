@@ -172,8 +172,8 @@ export function Library({
             <AccountRow account={account} />
           </div>
           </div>
+          <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         </aside>
-        <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         <main className="hero-main">
           <header className="hero-page-head">
             <h1>My characters</h1>

@@ -822,8 +822,8 @@ export function SessionPage({
             </div>
           </div>
           </div>
+          <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         </aside>
-        <DrawerScrim open={sideOpen} onClose={() => setSideOpen(false)} />
         <main className="hero-main">
           <Err text={error} />
           {isHost ? hostBody : rosterView}

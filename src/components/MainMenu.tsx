@@ -62,10 +62,17 @@ export function MenuButton({ open, onClick }: { open: boolean; onClick: () => vo
 /** Top of the slide-in menu (phone only): the brand and ✕. Esc closes it too. */
 export function DrawerHead({ open, onClose }: { open: boolean; onClose: () => void }) {
   useEffect(() => {
-    if (!open) return;
+    if (!open || !window.matchMedia("(max-width: 860px)").matches) return;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
+    // The page behind stays put while the menu is open (only the menu scrolls).
+    const html = document.documentElement;
+    const was = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", esc);
+      html.style.overflow = was;
+    };
   }, [open, onClose]);
   return (
     <div className="drawer-head">

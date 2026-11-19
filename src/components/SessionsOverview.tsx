@@ -270,8 +270,8 @@ export function SessionsPage({
               </div>
             </div>
           </div>
+          <DrawerScrim open={menu} onClose={() => setMenu(false)} />
         </aside>
-        <DrawerScrim open={menu} onClose={() => setMenu(false)} />
         <main className="hero-main">{body}</main>
       </div>
     );

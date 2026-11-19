@@ -102,9 +102,13 @@ export function Editor({
   const [flash, setFlash] = useState<{ section?: string; words: string[]; n: number } | null>(null);
   useEffect(() => {
     if (!flash) return;
-    const t = window.setTimeout(() => flashSection(bodyRef.current, flash.section, flash.words), 60);
+    // One glow per click: forget the request once it has run, so later tab switches don't repeat it.
+    const t = window.setTimeout(() => {
+      flashSection(bodyRef.current, flash.section, flash.words);
+      setFlash(null);
+    }, 60);
     return () => window.clearTimeout(t);
-  }, [flash, tab]);
+  }, [flash]);
   const go = (t: Todo) => {
     if (t.tab) setTab(t.tab);
     setSideOpen(false);

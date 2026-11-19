@@ -106,8 +106,8 @@ export function Wiki({
               <SkinPicker theme={theme} onChange={onTheme} />
             </div>
           </div>
+          <DrawerScrim open={menu} onClose={() => setMenu(false)} />
         </aside>
-        <DrawerScrim open={menu} onClose={() => setMenu(false)} />
         <main className="hero-main wiki-main">{body}</main>
       </div>
     );

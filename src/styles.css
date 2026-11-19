@@ -7425,8 +7425,11 @@ button.sess-tr:focus-visible {
   .drawer-side {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
+  /* The bar is sticky with its own layer, so the menu and the dimmed page live inside it (menu on
+     top); while open the bar lifts above the page. */
   .drawer-side.open {
     position: sticky;
+    z-index: 1199;
   }
   .drawer-side > .brand {
     grid-column: auto;
@@ -7459,7 +7462,8 @@ button.sess-tr:focus-visible {
     box-sizing: border-box;
     padding: 0 14px 18px;
     overflow-y: auto;
-    z-index: 1200;
+    overscroll-behavior: contain;
+    z-index: 2;
     background: linear-gradient(180deg, #221a14, #15110e);
     border-right: 1px solid var(--border);
     box-shadow: 24px 0 60px rgba(0, 0, 0, 0.55);
@@ -7511,8 +7515,9 @@ button.sess-tr:focus-visible {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 1199;
+    z-index: 1;
     background: rgba(5, 3, 2, 0.62);
+    touch-action: none;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s;
