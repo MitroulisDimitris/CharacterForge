@@ -277,15 +277,50 @@ export async function awardLevel(sessionId: string, memberId?: string): Promise<
   if (error) throw error;
 }
 
-export async function loadNotes(sessionId: string): Promise<string> {
-  const { data, error } = await supabase.rpc("session_notes", { sid: sessionId });
-  if (error) throw error;
-  return (data as string | null) ?? "";
+// Host notes in tabs (REQUIREMENTS §4.8; supabase/migrations/20261120_session_notes.sql). The old
+// single note (`sessions.notes`) is no longer written: it stays as a backup, and the first load
+// turns it into the first tab.
+export interface NoteTab {
+  id: string;
+  session_id: string;
+  title: string;
+  color: string;
+  body: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export async function saveNotes(sessionId: string, notes: string): Promise<void> {
-  const { error } = await supabase.from("sessions").update({ notes }).eq("id", sessionId);
+/** The session's tabs in order; makes "Notes 1" from the old notes when there are none yet. */
+export async function loadNoteTabs(sessionId: string): Promise<NoteTab[]> {
+  const { data, error } = await supabase.rpc("ensure_session_notes", { sid: sessionId });
   if (error) throw error;
+  return (data as NoteTab[]) ?? [];
+}
+
+export async function addNoteTab(tab: Pick<NoteTab, "id" | "session_id" | "title" | "color" | "body" | "position">): Promise<NoteTab> {
+  const { data, error } = await supabase.from("session_notes").insert(tab).select().single();
+  if (error) throw error;
+  return data as NoteTab;
+}
+
+export async function updateNoteTab(id: string, patch: Partial<Pick<NoteTab, "title" | "color" | "body" | "position">>): Promise<string> {
+  const updated_at = new Date().toISOString();
+  const { error } = await supabase.from("session_notes").update({ ...patch, updated_at }).eq("id", id);
+  if (error) throw error;
+  return updated_at;
+}
+
+export async function deleteNoteTab(id: string): Promise<void> {
+  const { error } = await supabase.from("session_notes").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Save a new order: only the tabs whose position changed. */
+export async function reorderNoteTabs(tabs: { id: string; position: number }[]): Promise<void> {
+  const results = await Promise.all(tabs.map((t) => supabase.from("session_notes").update({ position: t.position }).eq("id", t.id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }
 
 /** The player: what the host changed (live state, level awards) on my session copies. */

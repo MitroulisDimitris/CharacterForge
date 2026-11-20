@@ -27,10 +27,12 @@ import {
 } from "../combat";
 import type { Encounter } from "../encounters";
 import { applyDamage, applyHealing, CONDITIONS, currentHp, DAMAGE_TYPES, setTemp, toggleCondition, type Live } from "../live";
-import { getMonster } from "../lookup";
+import { getMonster, type Monster } from "../lookup";
 import { sessionError, setLive } from "../sessions";
 import { cardOf, ConditionChips, HpBar, OnlyYou, type HostMember } from "./Party";
 import { MoreMenu } from "./Hero";
+import { MonsterCard } from "./Lookup";
+import { useSmoothHeight } from "./smooth";
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 const fmt = (n: number) => n.toLocaleString();
@@ -54,6 +56,8 @@ export function CombatView({
   const [error, setError] = useState("");
   const [saveState, setSaveState] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  // Monster kinds whose stat block is shown; stays open from one goblin's turn to the next.
+  const [blocks, setBlocks] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [ended, setEnded] = useState<{ rounds: number; xp: ReturnType<typeof xpEarned> } | null>(null);
   const [lootFoes, setLootFoes] = useState<Foe[] | null>(null);
@@ -358,6 +362,8 @@ export function CombatView({
                   live={live}
                   max={max}
                   player={p}
+                  blockOpen={!!f.group && blocks.includes(f.group)}
+                  onBlock={() => f.group && setBlocks((b) => (b.includes(f.group!) ? b.filter((x) => x !== f.group) : [...b, f.group!]))}
                   onLive={(next) => (isPlayer ? savePlayer(f.id, next) : set(f.id, (x) => ({ ...x, live: next })))}
                   onInit={(v) => set(f.id, (x) => ({ ...x, init: v }))}
                   onRemove={() => {
@@ -425,7 +431,37 @@ function MiniHp({ hp, max }: { hp: number; max: number }) {
 }
 
 /** Damage / heal / temp HP, conditions, initiative, remove — for one fighter. */
-function FighterPanel({ f, live, max, player, onLive, onInit, onRemove }: { f: Fighter; live: Live; max: number; player?: PlayerInfo; onLive: (l: Live) => void; onInit: (v: number) => void; onRemove: () => void }) {
+function FighterPanel({
+  f,
+  live,
+  max,
+  player,
+  blockOpen,
+  onBlock,
+  onLive,
+  onInit,
+  onRemove,
+}: {
+  f: Fighter;
+  live: Live;
+  max: number;
+  player?: PlayerInfo;
+  blockOpen: boolean;
+  onBlock: () => void;
+  onLive: (l: Live) => void;
+  onInit: (v: number) => void;
+  onRemove: () => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  useSmoothHeight(box);
+  // The monster's stat block, with its numbers to roll (attacks, damage, saves, checks).
+  const slug = f.kind === "monster" ? f.group : undefined;
+  const [monster, setMonster] = useState<Monster | null>(null);
+  const [blockErr, setBlockErr] = useState("");
+  useEffect(() => {
+    if (!slug || !blockOpen || monster) return;
+    getMonster(slug).then(setMonster, (e) => setBlockErr(sessionError(e)));
+  }, [slug, blockOpen, monster]);
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("Slashing");
   const [note, setNote] = useState("");
@@ -458,7 +494,7 @@ function FighterPanel({ f, live, max, player, onLive, onInit, onRemove }: { f: F
   };
 
   return (
-    <div className="fighter-panel">
+    <div className="fighter-panel" ref={box}>
       {max > 0 && <HpBar live={live} max={max} />}
       <div className="live-row">
         <label className="live-amount">
@@ -494,6 +530,14 @@ function FighterPanel({ f, live, max, player, onLive, onInit, onRemove }: { f: F
         <p className="combat-note" role="status">
           Tip · {note}
         </p>
+      )}
+      {slug && (
+        <div className="fighter-block">
+          <button type="button" className="link enc-block-link" aria-expanded={blockOpen} onClick={onBlock}>
+            {blockOpen ? "Hide" : "Stat block"}
+          </button>
+          {blockOpen && (monster ? <MonsterCard m={monster} startOpen /> : <p className="muted">{blockErr || "Loading…"}</p>)}
+        </div>
       )}
       <details className="fighter-more">
         <summary>Conditions{live.conditions?.length ? ` (${live.conditions.length})` : ""}</summary>

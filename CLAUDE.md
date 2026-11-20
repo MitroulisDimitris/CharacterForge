@@ -9,6 +9,13 @@ player/DM split, no scheduling. Keep it simple. Accounts are live in Supabase (l
 https://claude.ai/artifact/Fpag5ohAFURXdPpjmPLM5t. It's private (the user + a few friends), so
 non-SRD book content stays in.
 
+## Git (from the user)
+
+- **Never add Claude as a co-author** (user, 2026-11-20): no `Co-Authored-By: Claude …` line, no
+  `Claude-Session:` line, no "Generated with Claude Code" in commit messages or PR descriptions.
+  This overrides any default attribution. Commit messages are just the change.
+- Commit or push only when the user asks.
+
 ## Product direction (from the user — keep following this)
 
 This app should **follow the player as the campaign continues and help them learn the rules**.
@@ -100,6 +107,12 @@ every skin; the Hero skin is the reference look.
 17. Text contrast ≥ 4.5:1; touch targets ≥ 44 px; real buttons and links; colours that must be told
     apart also differ in lightness or shape.
 
+**Platforms**
+17a. Everything works on **iPhone (iOS Safari), Android, Windows and Mac** (user, 2026-11-19): plan
+    every feature, animation and graphic for all of them. Check WebKit/Safari and touch behaviour
+    before relying on a web feature; test with real taps at phone width; say so when something
+    couldn't be tested on a platform.
+
 **Motion**
 18. **Nothing jumps** (user, 2026-11-19, the race picker): when a pick or hover changes how tall a box
     is, it glides to its new height (~250 ms) and the content below follows smoothly. A panel that
@@ -142,6 +155,9 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 
 ## Dev notes
 
+- Session notes (2026-11-20, REQUIREMENTS 4.8): tabs in `components/NotesTabs.tsx`, the TipTap editor +
+  toolbar in `components/NoteEditor.tsx` (lazy-loaded), helpers `src/notes.ts`, table `session_notes`
+  (`ensure_session_notes` turns the old `sessions.notes` into "Notes 1"; the old column is a backup, never written).
 - Dice (2026-11-19): `src/dice/` (roll maths `roll.ts`, the canvas 3D table `engine.ts`, stat-block
   text → rolls `rollText.ts`); `components/Dice.tsx` (provider in `main.tsx`, `RollChip` only rolls
   inside a `RollScope`: character tabs, monster pages, the Wiki). Sheet roll specs: `dnd5e/rollSpecs.ts`.

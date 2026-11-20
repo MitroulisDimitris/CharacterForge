@@ -1,10 +1,10 @@
 // Host tools (REQUIREMENTS §4.4, D3): the party's table cards, a member's read-only sheet with the
 // in-play state the host controls (HP, damage + type, conditions, exhaustion), level awards, and
 // private notes. Also the player's read-only view of that in-play state.
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getSystem } from "../systems/registry";
 import type { TableCard } from "../systems/types";
-import { awardLevel, loadNotes, saveNotes, sessionError, setLive, type Membership, type RosterRow } from "../sessions";
+import { awardLevel, sessionError, setLive, type Membership, type RosterRow } from "../sessions";
 import {
   applyDamage,
   applyHealing,
@@ -341,41 +341,6 @@ export function MemberView({ member, system, player, onBack, onChanged }: { memb
 
 // ---------------------------------------------------------------------------------------------
 // Private notes
-
-export function NotesTab({ sessionId }: { sessionId: string }) {
-  const [notes, setNotes] = useState<string | null>(null);
-  const [state, setState] = useState("");
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    loadNotes(sessionId).then(setNotes, (e) => setState(sessionError(e)));
-  }, [sessionId]);
-  const change = (v: string) => {
-    setNotes(v);
-    setState("Saving…");
-    clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      try {
-        await saveNotes(sessionId, v);
-        setState("Saved");
-      } catch (e) {
-        setState(sessionError(e));
-      }
-    }, 800);
-  };
-  if (notes === null) return <p className="muted">{state || "Loading notes…"}</p>;
-  return (
-    <section className="notes-tab" aria-label="Notes">
-      <div className="party-head">
-        <h2 className="section-title">Notes</h2>
-        <span className="muted" aria-live="polite">
-          {state}
-        </span>
-      </div>
-      <OnlyYou>Only you see these notes: plot threads, NPC names, what happened last time.</OnlyYou>
-      <textarea value={notes} onChange={(e) => change(e.target.value)} rows={18} aria-label="Session notes" placeholder="Last time: the party reached the ruined chapel…" />
-    </section>
-  );
-}
 
 // ---------------------------------------------------------------------------------------------
 // Player: what the host set (read-only)

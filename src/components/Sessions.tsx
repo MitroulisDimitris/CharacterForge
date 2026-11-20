@@ -34,7 +34,8 @@ import { Crest, MoreMenu } from "./Hero";
 import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 import { Lookup } from "./Lookup";
 import { EncountersTab } from "./Encounters";
-import { MemberView, NotesTab, OnlyYou, PartyTab } from "./Party";
+import { MemberView, OnlyYou, PartyTab } from "./Party";
+import { NotesTab } from "./NotesTabs";
 import { setState as setFeedbackState } from "../trail";
 
 const FOLD_KEY = "character-forge:session-side-folded";

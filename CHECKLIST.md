@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-19 (built: 3D dice, Wiki, items browse, magic item effects, phone ☰ menu; to do: remove unverified sign-ups).
+Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; to do: remove unverified sign-ups).
 
 ---
 
@@ -107,6 +107,7 @@ Last updated: 2026-11-19 (built: 3D dice, Wiki, items browse, magic item effects
 - [x] Player sees those changes on their session version ("In <session> · set by your DM"), refreshed every 20 s
 - [x] Award a level (one player or everyone) → gold "Level up ready" to-do; clears once the player levels up
 - [x] Private host notes (autosave)
+- [x] Notes in tabs (4.8): rename, colour, drag to reorder, duplicate, export, delete asks first, search, toolbar (size, bold, italic, underline, highlight, colours, bullet + tick lists); old notes became "Notes 1" (tested locally, PC + phone, all skins)
 - [x] Tested: host test account + your account in the background (you weren't logged out); players can't change HP
 
 ## 8. Lookup (host)
@@ -163,6 +164,7 @@ Last updated: 2026-11-19 (built: 3D dice, Wiki, items browse, magic item effects
 - [ ] Condition durations ("until the end of its next turn")
 - [x] Add someone mid-fight (NPC, reinforcements, a player who joined late); change initiative mid-fight
 - [x] End fight: rounds, defeated monsters, XP total and per player
+- [x] Stat block inside the fight: tap a monster → "Stat block" → roll its attacks, damage, saves, checks and HP; stays open for the next monster of the same kind
 - [x] Suggested loot (our own simple scheme): coins by challenge rating on the monster page and the Fight over screen; animals, oozes, plants, constructs, elementals and mindless creatures carry none; once in a while (2–15% per fight) an SRD magic item, rarer with tougher monsters; Roll again; total + share per player
 - [ ] Hand out the loot after a fight: pick who gets which coins / item, straight into their character's inventory
 - [x] Survives a page refresh / another device (saved on the encounter, `encounters.combat`)

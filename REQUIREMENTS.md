@@ -289,8 +289,9 @@ action spot.
 - (later) Players see the turn order live on their phones
 
 **Notes**
-- One private notes page for the session (plot threads, NPC names, what happened last time)
-- (later) A shared note players can read (recap, handouts)
+- Private notes for the session (plot threads, NPC names, what happened last time), in
+  **several tabs** the host can name and colour: see **4.8**.
+- (later) A shared note players can read (recap, handouts): see 4.8, "Later".
 
 **Nice-to-haves (later)**
 - NPC list, locations / quest tracker
@@ -423,6 +424,112 @@ pages a host has in a session's Lookup, so there is one browse to build and keep
 - Game terms anywhere in the app keep their hover cards; the card gets an "Open in Wiki" link.
 - Favorites and Recently viewed are shared between the Wiki and Lookup.
 
+### 4.8 Session notes in tabs (host)
+
+Asked for 2026-11-20. Today the host's **Notes** tab is one text box. It becomes a set of notes
+pages, each in its own tab, that the host names, colours and orders. Still private: only the
+host sees them (section 5). Mockup: https://claude.ai/artifact/66jejAjRdg6i2Ly4ES8FBi
+
+**Existing notes move to the first tab: nothing is deleted**
+- Every session's current notes become its **first tab**, named "Notes 1", with the same text,
+  character for character (each line a paragraph; `<`, `>` and `&` kept as typed).
+- How (built 2026-11-20, `supabase/migrations/20261120_session_notes.sql`): the first time a
+  session's Notes tab opens, `ensure_session_notes` makes "Notes 1" from the old notes, in the
+  database, under a lock so it can't happen twice. Sessions nobody opens keep their old notes until
+  they're opened. The old `sessions.notes` column **stays as it is**, as a backup; the app only
+  stops writing to it. It's removed later, and only after the user OKs it.
+- Check after going live: for every session with tabs, "Notes 1" holds the old notes (compare
+  query), and the numbers go to the user.
+- A session without notes gets one empty "Notes 1" tab the first time its Notes tab opens.
+- No size limit cuts old notes: if one is longer than the tab limit below, that tab gets a higher
+  limit. Its text is never shortened.
+
+**The tab row**
+- The tabs sit in a row above the note. Each shows its colour (a dot) and its name; the open tab
+  has the crimson underline like the app's other tabs. A tab's own colour never stands in for "this
+  is open".
+- **+** at the end of the row adds a tab straight away (see "New tab").
+- The row scrolls sideways inside itself when the tabs don't fit (the page never does, UI rule 10),
+  the open tab is scrolled into view, and then an **All tabs ▾** button lists every tab (with
+  "Edited …") to jump to.
+- Up to 30 tabs per session, each up to 50,000 characters. Near the limit, a quiet counter shows.
+- The app remembers the last open tab per session on that device.
+
+**Rename**
+- Double-click the name (PC), tap the open tab's name again (phone), or ⋯ → **Rename**: the name
+  becomes a text box. Enter or tapping away saves; Esc cancels.
+- 1–40 characters. An empty name goes back to the old one.
+
+**Colour**
+- ⋯ → **Colour**: 8 swatches from the app's palette: Parchment, Crimson, Gold, Green, Blue, Violet,
+  Teal, Stone. Each has its name on hover and for screen readers. The picked one also gets a
+  check mark, so it isn't marked by colour alone (UI rule 17).
+- Colours are the host's own labels. They don't glow and carry no app meaning (gold still means
+  "act" elsewhere).
+- A new tab gets the **least-used colour** in that session; on a tie, a random one of those.
+  Colours can repeat once all 8 are in use.
+
+**The tab menu (⋯ on the open tab)**
+- Rename · Colour · Duplicate · Export as text · Delete.
+- **Reorder by dragging** (user, 2026-11-20: no Move left/right buttons): click and drag a tab to
+  where you want it (PC); on touch, press and hold, then drag. A gold line shows where it will
+  land; the tabs glide to their new places (UI rule 18). A quick swipe still just scrolls the row.
+  Quiet keyboard fallback, nothing on screen: with a tab focused,
+  Alt + ← / → moves it.
+
+**New tab** (user, 2026-11-20: no list of starters)
+- **+** just makes the tab, named **"Notes N+1"**: N is the highest number among tabs called
+  "Notes N" (so with "Notes 1" there, the next is "Notes 2"; renamed tabs don't count).
+- The new tab opens with its name selected in a text box, focused, so typing renames it. Enter
+  saves the name and moves into the note.
+
+**Delete: asks first** (user, 2026-11-20: no restore, no Deleted tabs)
+- Delete always asks: "Delete 'NPCs'? 1,240 characters. This can't be undone." with Cancel /
+  Delete. An empty tab is deleted without asking (there's nothing to lose).
+- A deleted tab is gone for good.
+- The last tab can't be deleted, so there's always one.
+
+**Toolbar** (user, 2026-11-20, like Gmail's, without the font picker)
+- Undo · Redo | Text size (Small, Normal, Large, Huge: only these four) | **Bold** · *Italic* ·
+  Underline | Highlight (one click, gold) · Colour (text colour and background colour, 8 each
+  plus Default/None) | Bullet list · Tick list.
+- Colours are saved as skin tokens (`var(--nt-gold)`, `var(--nb-gold)`), so they stay readable in
+  every skin (lighter on Hero/Dark, darker on Parchment).
+- Menus close after a pick. The toolbar wraps onto two rows on a phone and stays at the top of the
+  note while scrolling. The editor (TipTap) loads only when Notes first opens.
+
+**Writing and saving**
+- As today: a tab saves itself 0.8 s after typing stops. "Saving…" or "Saved" shows by the
+  note's title. Switching tabs saves the tab you leave straight away.
+- Each tab shows when it was last changed ("Edited 2 hours ago").
+- If a save fails (no internet), the text stays on the device and saving retries. One line
+  says: "Not saved yet: no connection. It saves when you're back online." Typing is never lost.
+- Switching tabs doesn't make the page jump: the note area keeps its height (UI rule 18).
+
+**Search**
+- **Search notes** above the tabs finds text in every tab. Tabs with matches show how many, and
+  picking a tab opens it on the first match, highlighted.
+- **Export all notes** (⋯ next to the Notes title) saves every tab as one text file: a backup the
+  host keeps.
+
+**Every platform (UI rule 17a)**
+- Tabs follow the standard tabs pattern: arrow keys move between tabs, and the menus are real
+  buttons. Touch targets are 44 px or more.
+- iPhone: the note's text is at least 16 px, so Safari doesn't zoom in when you type, and the
+  note stays above the on-screen keyboard. Press-and-hold drag is tested with real taps on
+  iPhone and Android (it mustn't fight page scrolling or the text selection menu).
+
+**Later**
+- **Shared tabs:** the host marks a tab "Players can read", and it shows read-only on the players'
+  session page (a recap, handouts). This replaces 4.4's "(later) shared note". **[DECIDE]** now or
+  later?
+- Other kinds of tab (ideas given 2026-11-20): Trackers (countdown circles, counters), Picture
+  with pins, Board of cards, Sketch, Timeline, Random list, Table.
+- Monster, spell and item names in notes get their hover cards and "Open in Wiki".
+
+Decided 2026-11-20: drag to reorder, least-used colour (random on a tie), delete just asks, +
+makes "Notes N+1" with no starters, the toolbar above. Still open: shared tabs (above).
+
 ---
 
 ## 5. Who can see what
@@ -539,7 +646,9 @@ users            (handled by Supabase Auth) + profiles: id, display_name, is_adm
 characters       id, owner_id, system, books, data (JSON), pending, spent,
                  table_card (JSON), portrait_path?, created_at, updated_at
 sessions         id, host_id, name, system, books, invite_code, joining_locked,
-                 status (active / ended), notes, created_at
+                 status (active / ended), notes (old single note: kept as a backup, 4.8), created_at
+session_notes    id, session_id (deleted with the session), title, color, body, position,
+                 created_at, updated_at; host only (RLS)
 session_members  session_id, user_id, character_id, joined_at,
                  data (JSON: the session copy, D2), pending, spent,
                  live (JSON: current/temp HP, damage log, conditions, exhaustion; host-editable, D3)
