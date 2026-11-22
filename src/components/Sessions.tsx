@@ -34,7 +34,8 @@ import { Crest, MoreMenu } from "./Hero";
 import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 import { Lookup } from "./Lookup";
 import { EncountersTab } from "./Encounters";
-import { MemberView, OnlyYou, PartyTab } from "./Party";
+import { cardOf, LiveView, MemberView, OnlyYou, PartyTab } from "./Party";
+import type { Live } from "../live";
 import { NotesTab } from "./NotesTabs";
 import { setState as setFeedbackState } from "../trail";
 
@@ -151,6 +152,7 @@ export function HostDialog({ onClose, onCreated, onOpen }: { onClose: () => void
   const [name, setName] = useState("");
   const [system, setSystem] = useState<AnySystem>(first);
   const [books, setBooks] = useState<string[]>(first.books.map((b) => b.id));
+  const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [made, setMade] = useState<{ id: string; code: string } | null>(null);
@@ -160,7 +162,7 @@ export function HostDialog({ onClose, onCreated, onOpen }: { onClose: () => void
     setBusy(true);
     setError("");
     try {
-      const s = await createSession(name.trim(), system.id, normalizeBooks(system, books));
+      const s = await createSession(name.trim(), system.id, normalizeBooks(system, books), Math.min(level, system.maxLevel));
       const code = await sessionCode(s.id);
       setMade({ id: s.id, code });
       onCreated();
@@ -223,6 +225,11 @@ export function HostDialog({ onClose, onCreated, onOpen }: { onClose: () => void
             }}
           />
         </div>
+        <label className="auth-field">
+          <span>Characters' level</span>
+          <LevelSelect max={system.maxLevel} value={Math.min(level, system.maxLevel)} onChange={setLevel} />
+          <small className="auth-hint">The level the party plays at. A player joining with another level gets a suggestion to change it.</small>
+        </label>
         <div className="auth-field">
           <span>Allowed books</span>
           <BookChecklist system={system} books={books} onChange={setBooks} />
@@ -231,6 +238,18 @@ export function HostDialog({ onClose, onCreated, onOpen }: { onClose: () => void
         <Err text={error} />
       </form>
     </Dialog>
+  );
+}
+
+function LevelSelect({ max, value, onChange }: { max: number; value: number; onChange: (n: number) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(Number(e.target.value))}>
+      {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((n) => (
+        <option key={n} value={n}>
+          Level {n}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -244,6 +263,8 @@ export function JoinDialog({
   onClose,
   onJoined,
   onCreateFor,
+  inSessions,
+  onCopy,
 }: {
   lib: StoredCharacter[];
   initialCode?: string;
@@ -252,14 +273,25 @@ export function JoinDialog({
   onClose: () => void;
   onJoined: (sessionId: string) => void;
   onCreateFor?: (p: Preview, code: string) => void;
+  /** The sessions a character already plays in (their names). */
+  inSessions?: (characterId: string) => string[];
+  /** Make a separate copy of a character in the library (saved), for "Join with a copy". */
+  onCopy?: (rec: StoredCharacter, name: string) => Promise<StoredCharacter>;
 }) {
   const [code, setCode] = useState(normalizeCode(initialCode));
   const [preview, setPreview] = useState<Preview | null>(
     swap ? { ...swap.session, host_name: "", is_host: false, my_character: swap.current } : null,
   );
   const [pick, setPick] = useState("");
+  // "same": both sessions follow this character; "copy": a separate copy for this session.
+  const [how, setHow] = useState<"same" | "copy">("same");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const choose = (id: string) => {
+    setPick(id);
+    // A copy is the safer pick for a character that already plays elsewhere.
+    setHow(inSessions?.(id).length ? "copy" : "same");
+  };
 
   const lookUp = async (c = code) => {
     setBusy(true);
@@ -280,11 +312,13 @@ export function JoinDialog({
   }, []);
 
   const join = async () => {
-    const rec = lib.find((r) => r.id === pick);
-    if (!rec || !preview) return;
+    const picked = lib.find((r) => r.id === pick);
+    if (!picked || !preview) return;
     setBusy(true);
     setError("");
     try {
+      const name = (picked.data as { name?: string }).name || "Unnamed";
+      const rec = how === "copy" && onCopy ? await onCopy(picked, `${name} (${preview.name})`) : picked;
       if (swap) await swapCharacter(preview.id, rec);
       else await joinSession(code, rec);
       onJoined(preview.id);
@@ -387,9 +421,9 @@ export function JoinDialog({
                     aria-checked={pick === rec.id}
                     disabled={!!block || rec.id === swap?.current}
                     className={`join-row ${pick === rec.id ? "on" : ""}`}
-                    onClick={() => setPick(rec.id)}
+                    onClick={() => choose(rec.id)}
                   >
-                    <Crest identity={s.identity ?? ""} level={s.level ?? 1} maxLevel={sys?.maxLevel ?? 20} size={52} badge={false} />
+                    <Crest identity={s.identity ?? ""} level={s.level ?? 1} maxLevel={sys?.maxLevel ?? 20} size={52} badge={false} portrait={s.portrait} />
                     <span className="join-row-text">
                       <strong>{s.name}</strong>
                       <span className="muted">
@@ -405,6 +439,41 @@ export function JoinDialog({
             })}
           </ul>
           {lib.length === 0 && <p className="muted">You don't have any characters yet.</p>}
+          {pick && onCopy && (() => {
+            const rec = lib.find((r) => r.id === pick);
+            if (!rec) return null;
+            const s = summarize(rec.system, rec.books, rec.data);
+            const lvl = s.level ?? 1;
+            const elsewhere = (inSessions?.(rec.id) ?? []).filter((n) => n !== preview.name);
+            const target = preview.level;
+            const copyName = `${s.name} (${preview.name})`;
+            return (
+              <div className="join-how">
+                <span className="join-ask">How do you want to play {s.name} here?</span>
+                <div className="join-how-opts" role="radiogroup" aria-label="Same character or a copy">
+                  <button type="button" role="radio" aria-checked={how === "same"} className={`join-how-opt ${how === "same" ? "on" : ""}`} onClick={() => setHow("same")}>
+                    <strong>Use the same character</strong>
+                    <span className="muted">
+                      {elsewhere.length
+                        ? `It also plays in ${elsewhere.join(", ")}. Changes (a new level, spells, items) show in every session it's in.`
+                        : "Changes you make to it (a new level, spells, items) show in this session too."}
+                    </span>
+                  </button>
+                  <button type="button" role="radio" aria-checked={how === "copy"} className={`join-how-opt ${how === "copy" ? "on" : ""}`} onClick={() => setHow("copy")}>
+                    <strong>Join with a copy</strong>
+                    <span className="muted">A separate character, “{copyName}”, in your list. It levels and changes on its own; the original stays as it is.</span>
+                  </button>
+                </div>
+                {target && target !== lvl && (
+                  <p className="join-level" role="note">
+                    {target > lvl
+                      ? `This session plays at level ${target}; ${s.name} is level ${lvl}. After joining you'll get a “Level up to ${target}” to-do, with the choices to make.`
+                      : `This session plays at level ${target}; ${s.name} is level ${lvl}. After joining you'll get a suggestion to lower it to ${target}.${how === "same" && elsewhere.length ? " Lowering it changes it in its other sessions too: a copy may be better." : ""}`}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           {!swap && onCreateFor && (
             <button type="button" className="link" onClick={() => onCreateFor(preview, code)}>
               Create a new character for this session
@@ -422,11 +491,14 @@ export function JoinDialog({
 
 function RenameDialog({ session, onClose, onSaved }: { session: SessionInfo; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(session.name);
+  const [level, setLevel] = useState(session.level ?? 1);
   const [error, setError] = useState("");
+  const max = getSystem(session.system)?.maxLevel ?? 20;
+  const changed = (name.trim() && name.trim() !== session.name) || level !== (session.level ?? 1);
   const save = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await updateSession(session.id, { name: name.trim() });
+      await updateSession(session.id, { name: name.trim() || session.name, level });
       onSaved();
       onClose();
     } catch (err) {
@@ -435,14 +507,14 @@ function RenameDialog({ session, onClose, onSaved }: { session: SessionInfo; onC
   };
   return (
     <Dialog
-      title="Rename the session"
+      title="Name and level"
       onClose={onClose}
       foot={
         <>
           <button type="button" className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" form="rename-form" className="btn primary" disabled={!name.trim() || name.trim() === session.name}>
+          <button type="submit" form="rename-form" className="btn primary" disabled={!name.trim() || !changed}>
             Save
           </button>
         </>
@@ -452,6 +524,11 @@ function RenameDialog({ session, onClose, onSaved }: { session: SessionInfo; onC
         <label className="auth-field">
           <span>Name</span>
           <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus />
+        </label>
+        <label className="auth-field">
+          <span>Characters' level</span>
+          <LevelSelect max={max} value={Math.min(level, max)} onChange={setLevel} />
+          <small className="auth-hint">For players who join from now on. To level up the players already in, use Party → Award a level to everyone.</small>
         </label>
         <Err text={error} />
       </form>
@@ -509,6 +586,9 @@ export function SessionPage({
   go,
   onChanged,
   onOpenSheet,
+  myLive,
+  inSessions,
+  onCopy,
 }: {
   session: SessionInfo;
   userId: string;
@@ -522,6 +602,10 @@ export function SessionPage({
   /** Sessions or memberships changed: reload them. */
   onChanged: () => Promise<void> | void;
   onOpenSheet: (characterId: string, memberId: string) => void;
+  /** What the DM set for my character here (HP, conditions), freshest first. */
+  myLive?: Live;
+  inSessions?: (characterId: string) => string[];
+  onCopy?: (rec: StoredCharacter, name: string) => Promise<StoredCharacter>;
 }) {
   const isHost = session.host_id === userId;
   const system = getSystem(session.system);
@@ -618,7 +702,7 @@ export function SessionPage({
             </button>
           )}
           <button type="button" onClick={() => setDialog("rename")}>
-            Rename
+            Name and level
           </button>
           <button type="button" onClick={() => setDialog("books")}>
             Allowed books
@@ -678,7 +762,7 @@ export function SessionPage({
           const mine = r.user_id === userId;
           return (
             <article key={r.member_id} className={`roster-card ${mine ? "mine" : ""}`}>
-              <Crest identity={r.summary.identity ?? ""} level={r.summary.level ?? 1} maxLevel={system?.maxLevel ?? 20} size={64} badge={false} />
+              <Crest identity={r.summary.identity ?? ""} level={r.summary.level ?? 1} maxLevel={system?.maxLevel ?? 20} size={64} badge={false} portrait={r.summary.portrait} />
               <div className="roster-text">
                 <strong>{r.summary.name ?? "Unnamed"}</strong>
                 <span className="muted">
@@ -705,6 +789,20 @@ export function SessionPage({
     </section>
   );
 
+  // The player sees what the DM keeps for their character in this session (read-only, D3).
+  const myState =
+    !isHost && membership ? (
+      (() => {
+        const live = myLive ?? membership.live ?? {};
+        const max = cardOf(membership, session.system).card?.hpMax ?? 0;
+        const set = live.hp != null || !!live.temp || !!live.conditions?.length || !!live.exhaustion;
+        return set ? (
+          <LiveView live={live} max={max} sessionName={session.name} />
+        ) : (
+          <p className="muted live-none">In this session your DM keeps your HP and conditions. Nothing changed yet: full HP, no conditions.</p>
+        );
+      })()
+    ) : null;
   const mainAction = isHost ? null : membership ? (
     <button type="button" className="btn primary hero-levelup" onClick={() => onOpenSheet(membership.character_id, membership.id)}>
       Open {myChar ? charName(myChar) : "my character"}
@@ -719,6 +817,8 @@ export function SessionPage({
         <JoinDialog
           lib={lib}
           swap={{ session, current: membership.character_id }}
+          inSessions={inSessions}
+          onCopy={onCopy}
           onClose={() => setDialog(null)}
           onJoined={() => {
             setDialog(null);
@@ -781,6 +881,7 @@ export function SessionPage({
       <h1>{session.name}</h1>
       <span className="hero-sub">{isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`}</span>
       <span className="hero-system" title={`Books: ${books}`}>
+        {session.level ? `Level ${session.level} · ` : ""}
         {system?.short} · {session.books.length} book{session.books.length === 1 ? "" : "s"}
       </span>
       {status}
@@ -827,7 +928,12 @@ export function SessionPage({
         </aside>
         <main className="hero-main">
           <Err text={error} />
-          {isHost ? hostBody : rosterView}
+          {isHost ? hostBody : (
+            <>
+              {myState}
+              {rosterView}
+            </>
+          )}
         </main>
         {dialogs}
       </div>
@@ -840,7 +946,8 @@ export function SessionPage({
         <div className="identity">
           <h1 className="page-title">{session.name}</h1>
           <span className="identity-sub">
-            {isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`} · {system?.short} · {books}
+            {isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`}
+            {session.level ? ` · Level ${session.level}` : ""} · {system?.short} · {books}
           </span>
         </div>
         <div className="actions">
@@ -860,7 +967,12 @@ export function SessionPage({
             <InviteBox code={code} name={session.name} />
           </div>
         )}
-        {isHost ? hostBody : rosterView}
+        {isHost ? hostBody : (
+            <>
+              {myState}
+              {rosterView}
+            </>
+          )}
       </div>
       {dialogs}
     </div>

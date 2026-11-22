@@ -9,10 +9,10 @@ import { buildTodos, flashSection, type Todo } from "../todo";
 import { LevelChangeDialog, openUnlocks } from "./LevelChange";
 import { BooksDialog, hasOptionalBooks } from "./BookChecklist";
 import { Crest, MoreMenu, SideToggle } from "./Hero";
+import { CameraIcon, PortraitDialog } from "./Portrait";
 import { SheetTab, SHEET_TAB } from "./SheetTab";
+import { PlayHp } from "./InPlay";
 import { RollScope } from "./Dice";
-import { LiveView } from "./Party";
-import type { Live } from "../live";
 import { JustChanged } from "./JustChanged";
 import { skinOf } from "../skins";
 import type { SaveState } from "../App";
@@ -30,13 +30,8 @@ export function Editor({
   onTheme,
   onUpdate,
   onBack,
-  versions = [],
-  version = "",
-  onVersion,
-  sessionCopy,
-  onOpenSession,
-  live,
   levelReady,
+  onKeepLevel,
 }: {
   rec: StoredCharacter;
   theme: Theme;
@@ -44,17 +39,10 @@ export function Editor({
   onTheme: (t: Theme) => void;
   onUpdate: (patch: Partial<StoredCharacter>) => void;
   onBack: () => void;
-  /** "My character" + one entry per session the character plays in (D2). Empty: not in a session. */
-  versions?: { id: string; label: string }[];
-  version?: string;
-  onVersion?: (id: string) => void;
-  /** Set when editing a session's copy: the session's name. */
-  sessionCopy?: string;
-  onOpenSession?: () => void;
-  /** In-play state the DM keeps for this session copy (read-only here, D3). */
-  live?: Live;
-  /** The DM awarded this level ("Level up ready"). */
-  levelReady?: number | null;
+  /** A level one of the character's sessions asks for: a DM's award, or the session's level when joining. */
+  levelReady?: { level: number; session: string } | null;
+  /** "Keep level N" on a suggestion to lower the level. */
+  onKeepLevel?: () => void;
 }) {
   const system = getSystem(rec.system)!;
   const [char, setChar] = useState<BaseCharacter>(() => system.normalize(rec.data));
@@ -63,6 +51,7 @@ export function Editor({
   const [pending, setPending] = useState<string[]>(rec.pending ?? []);
   const [booksOpen, setBooksOpen] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
+  const [portraitOpen, setPortraitOpen] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "change"; target: number } | { kind: "resume"; ids: string[] } | null>(null);
   const d = useMemo(() => system.derive(char, rec.books), [system, char, rec.books]);
 
@@ -85,14 +74,13 @@ export function Editor({
       system: rec.system,
       books: rec.books,
       level: char.level,
-      version: sessionCopy ? `session copy: ${sessionCopy}` : "my character",
       tab,
       pending,
       warnings: (d.warnings as Warning[]).map((w) => `[${w.level}] ${w.text}`),
       data: char,
     });
     return () => setFeedbackState("character", undefined);
-  }, [rec.id, rec.system, rec.books, char, pending, tab, d, sessionCopy]);
+  }, [rec.id, rec.system, rec.books, char, pending, tab, d]);
 
   const waiting = useMemo(() => openUnlocks(system, char, rec.books, pending), [system, char, rec.books, pending]);
   const { todos, notes } = useMemo(() => buildTodos(d.warnings as Warning[], waiting), [d, waiting]);
@@ -131,19 +119,39 @@ export function Editor({
   const tabErrors = (id: string) => (d.warnings as Warning[]).filter((w) => w.tab === id && w.level !== "info").length;
   const Active = system.tabs.find((t) => t.id === tab)?.Component;
   const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
-  const hpMax = system.tableCard?.(char, d)?.hpMax ?? 0;
-  const liveTop = sessionCopy && live ? <LiveView live={live} max={hpMax} sessionName={sessionCopy} /> : null;
-  const body = <RollScope>{Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} top={liveTop} />}</RollScope>;
-  const award = levelReady && levelReady > char.level ? Math.min(levelReady, maxLevel) : null;
-  const awardItem = award && (
-    <div className="award-todo">
-      <strong>Level up ready</strong>
-      <span>Your DM gave you level {award}. See what you gain and make your choices.</span>
-      <button type="button" className="btn primary small" onClick={() => setDialog({ kind: "change", target: award })}>
-        Level up to {award}
-      </button>
-    </div>
-  );
+  const card = system.tableCard?.(char, d) ?? null;
+  const hero = skinOf(theme).layout === "hero";
+  const body = <RollScope>{Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} withHp={!hero} />}</RollScope>;
+  const target = levelReady && levelReady.level !== char.level ? Math.min(levelReady.level, maxLevel) : null;
+  const awardItem =
+    target && target > char.level ? (
+      <div className="award-todo">
+        <strong>Level up ready</strong>
+        <span>
+          {levelReady!.session} plays at level {target}. See what you gain and make your choices.
+        </span>
+        <button type="button" className="btn primary small" onClick={() => setDialog({ kind: "change", target })}>
+          Level up to {target}
+        </button>
+      </div>
+    ) : target && target < char.level ? (
+      <div className="award-todo">
+        <strong>Lower to level {target}?</strong>
+        <span>
+          {levelReady!.session} plays at level {target}; {char.name || "this character"} is level {char.level}. A suggestion: you decide.
+        </span>
+        <span className="award-btns">
+          <button type="button" className="btn small" onClick={() => setDialog({ kind: "change", target })}>
+            Lower to {target}
+          </button>
+          {onKeepLevel && (
+            <button type="button" className="btn ghost small" onClick={onKeepLevel}>
+              Keep level {char.level}
+            </button>
+          )}
+        </span>
+      </div>
+    ) : null;
   const levelOptions = Array.from({ length: maxLevel }, (_, i) => i + 1);
   const dismiss = (id: string) => {
     const p = pending.filter((x) => x !== id);
@@ -151,28 +159,7 @@ export function Editor({
     onUpdate({ pending: p });
   };
 
-  const canChangeBooks = hasOptionalBooks(system) && !sessionCopy;
-  const versionPick = versions.length > 1 && (
-    <label className="version-pick" title="Each session keeps its own version of this character">
-      <span>Version</span>
-      <select value={version} onChange={(e) => onVersion?.(e.target.value)}>
-        {versions.map((v) => (
-          <option key={v.id} value={v.id}>
-            {v.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-  const sessionNote = sessionCopy && (
-    <p className="session-copy-note">
-      Playing in{" "}
-      <button type="button" className="link" onClick={onOpenSession}>
-        {sessionCopy}
-      </button>
-      . Changes here stay in this session.
-    </p>
-  );
+  const canChangeBooks = hasOptionalBooks(system);
 
   const tabsNav = (
     <nav className="tabs" role="tablist">
@@ -187,8 +174,28 @@ export function Editor({
       ))}
     </nav>
   );
+  const portraitLabel = char.portrait ? "Change the portrait" : "Add a portrait";
+  const crestButton = (size?: number) => (
+    <button type="button" className="crest-btn" aria-label={portraitLabel} title={portraitLabel} onClick={() => setPortraitOpen(true)}>
+      <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} portrait={char.portrait} size={size} badge={size === undefined} />
+      <span className="crest-cam" aria-hidden="true">
+        <CameraIcon size={16} />
+      </span>
+    </button>
+  );
   const dialogs = (
     <>
+      {portraitOpen && (
+        <PortraitDialog
+          current={char.portrait}
+          name={char.name}
+          onSave={(portrait) => {
+            set({ portrait: portrait ?? undefined });
+            setPortraitOpen(false);
+          }}
+          onClose={() => setPortraitOpen(false)}
+        />
+      )}
       {booksOpen && (
         <BooksDialog
           system={system}
@@ -217,7 +224,7 @@ export function Editor({
   );
 
   // ---------- "Hero" skin: the character in a sidebar on the left (UI rules in CLAUDE.md) ----------
-  if (skinOf(theme).layout === "hero") {
+  if (hero) {
     const books = rec.books.map((b) => bookName(system, b)).join(", ");
     return (
       <div className="hero-shell">
@@ -225,7 +232,7 @@ export function Editor({
           <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
             ‹ <span className="back-label">My characters</span>
           </button>
-          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} />
+          {crestButton()}
           <div className="hero-id">
             <input className="hero-name" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" placeholder="Name your hero" />
             <span className="hero-sub">{d.identity}</span>
@@ -239,10 +246,11 @@ export function Editor({
               </span>
             )}
           </div>
-          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} dot={todos.length > 0 || !!award} />
+          <RollScope>
+            <PlayHp c={char} card={card} set={set} compact onDown={() => (setTab(SHEET_TAB), setSideOpen(false))} />
+          </RollScope>
+          <SideToggle open={sideOpen} onToggle={() => setSideOpen((o) => !o)} dot={todos.length > 0 || !!target} />
           <div className="hero-side-extra">
-          {versionPick}
-          {sessionNote}
           <TodoBox
             todos={todos}
             notes={notes}
@@ -271,6 +279,9 @@ export function Editor({
               <MoreMenu>
                 <button type="button" onClick={onPdf} disabled={pdfBusy}>
                   {pdfBusy ? "Making PDF…" : "Download PDF"}
+                </button>
+                <button type="button" onClick={() => setPortraitOpen(true)}>
+                  {portraitLabel}
                 </button>
                 <button type="button" onClick={() => exportJson({ ...rec, data: char, pending })}>
                   Export as file
@@ -308,11 +319,11 @@ export function Editor({
     <div className="app">
       <header className="topbar">
         <Brand onClick={onBack} />
+        {crestButton(56)}
         <div className="identity">
           <input className="name-input" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
           <span className="identity-sub">{d.identity}</span>
         </div>
-        {versionPick}
         {canChangeBooks ? (
           <button
             type="button"
@@ -350,7 +361,6 @@ export function Editor({
           </button>
         </div>
       </header>
-      {sessionNote}
       <p className="save-status" aria-live="polite">
         {SAVE_TEXT[save]}
       </p>

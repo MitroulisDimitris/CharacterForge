@@ -38,6 +38,8 @@ export interface RollSpec {
   /** Recharge: the lowest d6 that recharges it. */
   need?: number;
   tone: "monster" | "player";
+  /** Told the result when the dice land (hit dice heal you, a death save marks itself). Not repeated by "Roll again". */
+  onDone?: (r: RollResult, faces: number[]) => void;
 }
 
 /** One die the table throws. `group` points back into `spec.groups`. */

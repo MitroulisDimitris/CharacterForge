@@ -28,6 +28,7 @@ export const RACES_2014: Species[] = [
     resistances: ["Poison"],
     asi: { fixed: { CON: 2 } },
     languages: ["Common", "Dwarvish"],
+    toolChoice: ["Smith's tools", "Brewer's supplies", "Mason's tools"],
     savingThrowNote: "Advantage on saves against poison",
     lineageLabel: "Subrace",
     lineages: [

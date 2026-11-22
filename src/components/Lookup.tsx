@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { xpForCr } from "../encounters";
 import { ABILITY_LABEL, MonsterPage, MonsterRow, MonsterText, check, modOf } from "./MonsterPage";
 import { RollChip, RollScope } from "./Dice";
+import { SpellSections, spellTraitNames } from "./MonsterSpells";
+import type { SpellMap } from "../monsterSpells";
 import { parseDice } from "../dice/roll";
 import { signed } from "../monsters";
 import { typeColor } from "../monsters";
@@ -84,8 +86,10 @@ function Blocks({ title, items }: { title: string; items: { name: string; desc: 
   );
 }
 
-export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: boolean }) {
+export function MonsterCard({ m, startOpen = false, spells, hideSpells = false, title }: { m: Monster; startOpen?: boolean; spells?: SpellMap; hideSpells?: boolean; title?: string }) {
   const [open, setOpen] = useState(startOpen);
+  const spellTraits = spellTraitNames(m);
+  const notSpells = (list: Monster["actions"]) => list?.filter((t) => !spellTraits.has(t.name));
   const ref: LookupRef = { kind: "monster", slug: m.slug, name: m.name };
   const conds = splitList(m.condition_immunities);
   const traits = keyTraits(m);
@@ -98,7 +102,7 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
     <article className="lk-card monster">
       <header className="lk-head">
         <div>
-          <h3>{m.name}</h3>
+          <h3>{title ?? m.name}</h3>
           <span className="lk-sub">
             {m.size} {m.type.toLowerCase()}
             {m.subtype ? ` (${m.subtype})` : ""} · <strong>CR {m.challenge_rating}</strong>
@@ -185,8 +189,9 @@ export function MonsterCard({ m, startOpen = false }: { m: Monster; startOpen?: 
               </>
             )}
           </dl>
-          <Blocks title="Traits" items={m.special_abilities} />
-          <Blocks title="Actions" items={m.actions} />
+          <Blocks title="Traits" items={notSpells(m.special_abilities)} />
+          {!hideSpells && <SpellSections m={m} spells={spells} who={title ?? m.name} />}
+          <Blocks title="Actions" items={notSpells(m.actions)} />
           <Blocks title="Bonus actions" items={m.bonus_actions} />
           <Blocks title="Reactions" items={m.reactions} />
           {m.legendary_actions?.length ? (

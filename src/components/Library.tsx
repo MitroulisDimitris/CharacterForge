@@ -191,7 +191,7 @@ export function Library({
               {shown.map(({ rec, system, c, identity, problems }) => (
                 <article className={`hero-card ${problems ? "has-todo" : ""}`} key={rec.id}>
                   <button type="button" className="hero-card-open" onClick={() => onOpen(rec.id)}>
-                    <Crest identity={identity} level={c.level} maxLevel={system.maxLevel} size={92} badge={false} />
+                    <Crest identity={identity} level={c.level} maxLevel={system.maxLevel} size={92} badge={false} portrait={c.portrait} />
                     <span className="hero-card-text">
                       <strong>{c.name || "Unnamed"}</strong>
                       <span className="hero-sub">

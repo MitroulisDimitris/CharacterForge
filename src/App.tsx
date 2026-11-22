@@ -7,7 +7,7 @@ import { AccountDialog } from "./components/AccountDialog";
 import { HostDialog, JoinDialog, SessionPage, SessionsNav } from "./components/Sessions";
 import { SessionsPage, SessionsStrip, sessionRows } from "./components/SessionsOverview";
 import { skinOf } from "./skins";
-import { loadLastOpen, loadTheme, saveLastOpen, saveTheme, type StoredCharacter, type Theme } from "./storage";
+import { loadLastOpen, loadTheme, newRecordId, saveLastOpen, saveTheme, type StoredCharacter, type Theme } from "./storage";
 import { arrivedFrom, claimIfFresh, cloudConfigured, deleteCharacters, kickedOut, markFreshLogin, stillActiveLogin, loadCharacters, loadProfile, saveCharacters, supabase, type Profile, type Session } from "./cloud";
 import {
   clearLevelAward,
@@ -17,11 +17,10 @@ import {
   loadMemberships,
   loadOverview,
   loadSessions,
-  loadVersion,
   pendingJoin,
   saveMemberships,
-  saveVersion,
   sessionError,
+  sessionData,
   summarize,
   takeJoinFromUrl,
   type Membership,
@@ -124,7 +123,6 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
   const [welcome, setWelcome] = useState(() => arrivedFrom() === "signup");
   const [dialog, setDialog] = useState<{ kind: "settings" } | { kind: "host" } | { kind: "join"; code: string } | null>(null);
   const [notice, setNotice] = useState("");
-  const [versions, setVersions] = useState<Record<string, string>>({});
   // What the DM changed on my session copies (HP, conditions, level awards), polled.
   const [hostSide, setHostSide] = useState<Record<string, { live: Membership["live"]; level_award: number | null }>>({});
 
@@ -273,9 +271,19 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     setDialog(null);
     setView({ kind: "session", id });
   };
-  const openSheet = (characterId: string, memberId: string) => {
-    saveVersion(characterId, memberId);
-    setVersions((v) => ({ ...v, [characterId]: memberId }));
+  // The sessions a character plays in, by name.
+  const sessionsOf = (charId: string) => memberships.filter((m) => m.character_id === charId).map((m) => sessionName(m.session_id));
+  // "Join with a copy" (user, 2026-11-22): a separate character in the library, saved before joining.
+  const copyCharacter = async (rec: StoredCharacter, name: string): Promise<StoredCharacter> => {
+    const now = Date.now();
+    const copy: StoredCharacter = { ...rec, id: newRecordId(), created: now, updated: now, data: { ...(sessionData(rec.data) as object), name } };
+    await saveCharacters([copy]);
+    markChars([copy]);
+    upsert(copy);
+    return copy;
+  };
+  // A session shows the character itself (its copies follow it; user, 2026-11-22).
+  const openSheet = (characterId: string, _memberId: string) => {
     setView({ kind: "edit", id: characterId });
   };
 
@@ -330,56 +338,50 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
           go={go}
           onChanged={reloadSessions}
           onOpenSheet={openSheet}
+          inSessions={sessionsOf}
+          onCopy={copyCharacter}
+          myLive={(() => {
+            const mm = memberships.find((x) => x.session_id === s.id);
+            return mm ? hostSide[mm.id]?.live : undefined;
+          })()}
         />
       );
   }
 
   const open = view.kind === "edit" ? lib.find((r) => r.id === view.id) : undefined;
   if (open) {
+    // Session copies follow the character (user, 2026-11-22: the version picker is gone for now).
     const mine = memberships.filter((m) => m.character_id === open.id);
-    const picked = versions[open.id] ?? loadVersion(open.id);
-    const m = mine.find((x) => x.id === picked);
-    const versionList = mine.length
-      ? [
-          { id: "", label: "My character" },
-          ...mine.map((x) => {
-            const lvl = (x.data as { level?: number }).level;
-            return { id: x.id, label: `${sessionName(x.session_id)}${lvl ? ` · level ${lvl}` : ""}` };
-          }),
-        ]
-      : [];
-    const pickVersion = (id: string) => {
-      saveVersion(open.id, id);
-      setVersions((v) => ({ ...v, [open.id]: id }));
+    const awards = mine.map((m) => ({ m, award: hostSide[m.id] ? hostSide[m.id].level_award : m.level_award })).filter((x) => x.award);
+    const nowLevel = (open.data as { level?: number }).level ?? 1;
+    const pending = awards.find((x) => x.award !== nowLevel);
+    const levelReady = pending ? { level: pending.award!, session: sessionName(pending.m.session_id) } : null;
+    const dropAward = (memberId: string) => {
+      clearLevelAward(memberId).catch(() => {});
+      const mm = mine.find((x) => x.id === memberId);
+      setHostSide((h) => ({ ...h, [memberId]: { live: h[memberId]?.live ?? mm?.live ?? {}, level_award: null } }));
     };
-    const rec: StoredCharacter = m ? { ...open, books: m.books, data: m.data, pending: m.pending.length ? m.pending : undefined, updated: Date.parse(m.updated_at) } : open;
     return (
       <Editor
-        key={`${open.id}:${m?.id ?? ""}`}
-        rec={rec}
+        key={open.id}
+        rec={open}
         theme={theme}
         save={save}
         onTheme={setTheme}
-        versions={versionList}
-        version={m?.id ?? ""}
-        onVersion={pickVersion}
-        sessionCopy={m ? sessionName(m.session_id) : undefined}
-        live={m ? (hostSide[m.id]?.live ?? m.live) : undefined}
-        levelReady={m ? (hostSide[m.id] ? hostSide[m.id].level_award : m.level_award) : undefined}
-        onOpenSession={m ? () => setView({ kind: "session", id: m.session_id }) : undefined}
+        levelReady={levelReady}
+        onKeepLevel={pending ? () => dropAward(pending.m.id) : undefined}
         onUpdate={(patch) => {
-          if (!m) return upsert({ ...open, ...patch, updated: Date.now() });
-          const data = patch.data ?? m.data;
-          const pending = patch.pending ?? m.pending;
-          // Leveled up to what the DM awarded: the to-do is done.
-          const award = hostSide[m.id]?.level_award ?? m.level_award;
+          const next = { ...open, ...patch, updated: Date.now() };
+          upsert(next);
+          if (!mine.length || (!patch.data && !patch.pending)) return;
+          const data = sessionData(next.data);
+          const pending = next.pending ?? [];
+          // Reached the suggested level (or went past it in that direction): that to-do is done.
           const lvl = (data as { level?: number }).level ?? 0;
-          if (award && lvl >= award) {
-            clearLevelAward(m.id).catch(() => {});
-            setHostSide((h) => ({ ...h, [m.id]: { live: h[m.id]?.live ?? m.live, level_award: null } }));
-          }
+          for (const { m, award } of awards)
+            if (award && (lvl === award || (award > nowLevel && lvl > award) || (award < nowLevel && lvl < award))) dropAward(m.id);
           setMemberships((list) =>
-            list!.map((x) => (x.id === m.id ? { ...x, data, pending, summary: summarize(open.system, m.books, data), updated_at: new Date().toISOString() } : x)),
+            list!.map((x) => (x.character_id === open.id ? { ...x, data, pending, summary: summarize(open.system, x.books, data), updated_at: new Date().toISOString() } : x)),
           );
         }}
         onBack={() => setView({ kind: "library" })}
@@ -451,6 +453,8 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
             if (!getSystem(preview.system)) return;
             setView({ kind: "new", forSession: { preview, code } });
           }}
+          inSessions={sessionsOf}
+          onCopy={copyCharacter}
         />
       )}
     </>

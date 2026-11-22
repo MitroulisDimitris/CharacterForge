@@ -3,6 +3,7 @@
 // number of monsters (shifted for parties under 3 or over 5). Saved encounters: table `encounters`.
 import { supabase } from "./cloud";
 import type { Combat } from "./combat";
+import type { SpellMap, Strength } from "./monsterSpells";
 
 /** Easy, Medium, Hard, Deadly XP threshold for one character of each level (index = level). */
 export const THRESHOLDS: [number, number, number, number][] = [
@@ -62,7 +63,23 @@ export interface EncounterMonster {
   count: number;
   ac?: number;
   hp?: number;
+  /** A changed spell list (a build from the monster page, REQUIREMENTS §4.9): its name… */
+  build?: string;
+  /** …the monster it's a build of ("Lich")… */
+  of?: string;
+  /** …its spells by level, and how it compares with the book. */
+  spells?: SpellMap;
+  strength?: Strength;
+  strengthNote?: string;
 }
+
+/** Same monster, same build: adding it again raises the count. */
+export const sameEntry = (a: EncounterMonster, b: EncounterMonster) => a.slug === b.slug && (a.build ?? "") === (b.build ?? "") && JSON.stringify(a.spells ?? null) === JSON.stringify(b.spells ?? null);
+/** A stable key for one line of an encounter. */
+export const entryKey = (m: EncounterMonster) => (m.build ? `${m.slug}|${m.build}|${JSON.stringify(m.spells ?? null)}` : m.slug);
+/** Add one (or raise the count of the same build). */
+export const addEntry = (list: EncounterMonster[], e: EncounterMonster): EncounterMonster[] =>
+  list.some((x) => sameEntry(x, e)) ? list.map((x) => (sameEntry(x, e) ? { ...x, count: Math.min(50, x.count + 1) } : x)) : [...list, { ...e, count: 1 }];
 
 export interface Rating {
   difficulty: Difficulty;

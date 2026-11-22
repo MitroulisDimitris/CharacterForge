@@ -32,6 +32,9 @@ import { sessionError, setLive } from "../sessions";
 import { cardOf, ConditionChips, HpBar, OnlyYou, type HostMember } from "./Party";
 import { MoreMenu } from "./Hero";
 import { MonsterCard } from "./Lookup";
+import { RollScope } from "./Dice";
+import { BlockNumbers, blockTitle, SpellsBox, spellSummary } from "./MonsterSpells";
+import { applyBuild, editableBlock, monsterSpells } from "../monsterSpells";
 import { useSmoothHeight } from "./smooth";
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -58,6 +61,8 @@ export function CombatView({
   const [open, setOpen] = useState<string | null>(null);
   // Monster kinds whose stat block is shown; stays open from one goblin's turn to the next.
   const [blocks, setBlocks] = useState<string[]>([]);
+  // Fighters whose spells box is open (REQUIREMENTS §4.9): starts closed, stays as left.
+  const [spellsOpen, setSpellsOpen] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [ended, setEnded] = useState<{ rounds: number; xp: ReturnType<typeof xpEarned> } | null>(null);
   const [lootFoes, setLootFoes] = useState<Foe[] | null>(null);
@@ -364,6 +369,9 @@ export function CombatView({
                   player={p}
                   blockOpen={!!f.group && blocks.includes(f.group)}
                   onBlock={() => f.group && setBlocks((b) => (b.includes(f.group!) ? b.filter((x) => x !== f.group) : [...b, f.group!]))}
+                  spellsOpen={spellsOpen.includes(f.id)}
+                  onSpells={() => setSpellsOpen((l) => (l.includes(f.id) ? l.filter((x) => x !== f.id) : [...l, f.id]))}
+                  onUsed={(key, n) => set(f.id, (x) => ({ ...x, used: { ...(x.used ?? {}), [key]: Math.max(0, n) } }))}
                   onLive={(next) => (isPlayer ? savePlayer(f.id, next) : set(f.id, (x) => ({ ...x, live: next })))}
                   onInit={(v) => set(f.id, (x) => ({ ...x, init: v }))}
                   onRemove={() => {
@@ -438,6 +446,9 @@ function FighterPanel({
   player,
   blockOpen,
   onBlock,
+  spellsOpen,
+  onSpells,
+  onUsed,
   onLive,
   onInit,
   onRemove,
@@ -448,6 +459,9 @@ function FighterPanel({
   player?: PlayerInfo;
   blockOpen: boolean;
   onBlock: () => void;
+  spellsOpen: boolean;
+  onSpells: () => void;
+  onUsed: (key: string, used: number) => void;
   onLive: (l: Live) => void;
   onInit: (v: number) => void;
   onRemove: () => void;
@@ -459,9 +473,22 @@ function FighterPanel({
   const [monster, setMonster] = useState<Monster | null>(null);
   const [blockErr, setBlockErr] = useState("");
   useEffect(() => {
-    if (!slug || !blockOpen || monster) return;
+    if (!slug || monster) return;
     getMonster(slug).then(setMonster, (e) => setBlockErr(sessionError(e)));
-  }, [slug, blockOpen, monster]);
+  }, [slug, monster]);
+  const spellBlocks = useMemo(() => {
+    if (!monster) return [];
+    const all = monsterSpells(monster);
+    const main = editableBlock(all);
+    return all.map((b) => (b === main ? applyBuild(b, f.spells) : b));
+  }, [monster, f.spells]);
+  // Each extra spell list keeps its uses apart ("1#3").
+  const usedOf = (i: number) => {
+    const pre = i ? `${i}#` : "";
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(f.used ?? {})) if (i ? k.startsWith(pre) : !/^\d+#/.test(k)) out[k.slice(pre.length)] = v;
+    return out;
+  };
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("Slashing");
   const [note, setNote] = useState("");
@@ -531,12 +558,37 @@ function FighterPanel({
           Tip · {note}
         </p>
       )}
+      {spellBlocks.length > 0 && (
+        <RollScope>
+        <div className="fight-spells">
+          <button type="button" className="fight-spells-head" aria-expanded={spellsOpen} onClick={onSpells}>
+            <span>
+              <strong>Spells · {blockTitle(spellBlocks[0])}</strong>
+              <small>{spellBlocks.map((b, i) => spellSummary(b, usedOf(i))).join(" · ")}</small>
+            </span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className={spellsOpen ? "flip" : ""}>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {spellsOpen &&
+            spellBlocks.map((b, i) => (
+              <div key={b.trait} className="fight-spells-body">
+                <div className="msp-head">
+                  {spellBlocks.length > 1 ? <strong>{b.trait}</strong> : <span />}
+                  <BlockNumbers b={b} who={name} />
+                </div>
+                <SpellsBox block={b} who={name} fight={{ used: usedOf(i), onUse: (k, n) => onUsed(`${i ? `${i}#` : ""}${k}`, n) }} />
+              </div>
+            ))}
+        </div>
+        </RollScope>
+      )}
       {slug && (
         <div className="fighter-block">
           <button type="button" className="link enc-block-link" aria-expanded={blockOpen} onClick={onBlock}>
             {blockOpen ? "Hide" : "Stat block"}
           </button>
-          {blockOpen && (monster ? <MonsterCard m={monster} startOpen /> : <p className="muted">{blockErr || "Loading…"}</p>)}
+          {blockOpen && (monster ? <MonsterCard m={monster} startOpen spells={f.spells} hideSpells={spellBlocks.length > 0} /> : <p className="muted">{blockErr || "Loading…"}</p>)}
         </div>
       )}
       <details className="fighter-more">

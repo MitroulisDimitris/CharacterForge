@@ -293,7 +293,7 @@ function spellRow(s: Sheet, c: Character, r: SpellRow, cols: { l: string; w: num
 }
 
 export async function buildPdf(c: Character, d: Derived, credits: string): Promise<Uint8Array> {
-  const { doc, fonts } = await createDoc(`${c.name} - ${d.cls.name} ${c.level} (D&D ${c.edition})`, c.playerName);
+  const { doc, fonts } = await createDoc(`${c.name} - ${d.cls.name} ${c.level} (D&D ${c.edition})`, c.playerName, JSON.stringify(c));
   const s = new Sheet(doc, fonts, { name: c.name, subtitle: `${d.identity} · ${d.bg.name.replace(" (2014 legacy)", "")} · D&D ${c.edition} rules` });
   pageMain(s, c, d, credits);
   s.flowSections("Features & Traits", d.featureGroups);

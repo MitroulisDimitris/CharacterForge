@@ -1,4 +1,5 @@
 // The saved character: only the player's choices. Everything else is derived.
+import type { PlayState } from "../../play";
 import type { Ability, AbilityScores, SkillId } from "./data/core";
 import type { FeatId, MagicInitiateList } from "./data/feats";
 import type { Edition } from "./rules";
@@ -66,6 +67,10 @@ export interface Details {
 export interface Character {
   /** Resources used since the last rest, by pool id (see resources.ts). */
   spent?: Record<string, number>;
+  /** The player's own tracker (src/play.ts): HP, conditions, exhaustion… Private. */
+  play?: PlayState;
+  /** Portrait (src/portrait.ts). */
+  portrait?: string;
   schema: number;
   /** Fixed by the game system chosen at creation. */
   edition: Edition;
@@ -87,6 +92,8 @@ export interface Character {
   size: "Medium" | "Small";
   speciesSpellAbility: CasterAbility;
   speciesSkills: SkillId[];
+  /** The species' chosen tool proficiency (toolChoice). */
+  speciesTool?: string;
   /** Species with chosen +1s (Half-Elf, Variant Human): which abilities. */
   legacyAsi: Ability[];
   /** 2014 + Tasha's: move species ability increases freely. */

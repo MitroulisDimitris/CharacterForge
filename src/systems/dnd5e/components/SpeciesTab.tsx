@@ -105,6 +105,11 @@ export function SpeciesTab({ c, d, set, books }: TabProps<Character, Derived>) {
               <Select value={c.lineage} options={[{ value: "", label: "Choose…" }, ...sp.lineages.map((l) => ({ value: l.id, label: l.name }))]} onChange={(lineage) => set({ lineage, speciesCantrip: "" })} />
             </Field>
           )}
+          {sp.toolChoice && (
+            <Field label="Tool proficiency" hint="Artisan's tools you're trained with.">
+              <Select value={c.speciesTool ?? ""} options={[{ value: "", label: "Choose…" }, ...sp.toolChoice.map((t) => ({ value: t, label: t }))]} onChange={(speciesTool) => set({ speciesTool })} />
+            </Field>
+          )}
           {sp.spellAbilityChoice && (
             <Field label={`Spellcasting ability for ${word.toLowerCase()} spells`}>
               <Select<CasterAbility>

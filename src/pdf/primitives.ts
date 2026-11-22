@@ -17,16 +17,23 @@ export const WHITE = rgb(1, 1, 1);
 const WIN_ANSI_EXTRA = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
 const REPLACE: Record<string, string> = { "−": "-", "◆": "*", "×": "x", "○": "o", "●": "*", "☀": "", "☾": "", "✓": "v", "≤": "<=", "≥": ">=", "◇": "<>", "⟳": "" };
 
+const winAnsi = (ch: string) => ch.charCodeAt(0) <= 255 || WIN_ANSI_EXTRA.includes(ch);
+// Set by createDoc: true when the sheet uses the Noto fonts (Greek and other non-Latin letters).
+let unicodeFonts = false;
+
 export function clean(s: string): string {
   let out = "";
   for (const ch of s) {
     if (ch in REPLACE) out += REPLACE[ch];
     else if (ch === "\t") out += " ";
-    else if (ch.charCodeAt(0) <= 255 || WIN_ANSI_EXTRA.includes(ch)) out += ch;
+    else if (unicodeFonts || winAnsi(ch)) out += ch;
     else out += "?";
   }
   return out;
 }
+
+/** Letters the built-in PDF fonts can't show (Greek, Cyrillic…): the sheet needs the Noto fonts. */
+export const needsUnicode = (text: string) => [...text].some((ch) => !(ch in REPLACE) && ch !== "\t" && ch !== "\n" && !winAnsi(ch));
 
 export interface Fonts {
   reg: PDFFont;
@@ -64,17 +71,38 @@ export function fit(text: string, font: PDFFont, size: number, width: number): s
   return t + "…";
 }
 
-export async function createDoc(title: string, author: string): Promise<{ doc: PDFDocument; fonts: Fonts }> {
+/** The Noto fonts (public/fonts/pdf, made by scripts/fetchFonts.py), fetched only when needed. */
+async function notoFonts(doc: PDFDocument, load: (file: string) => Promise<ArrayBuffer>): Promise<Fonts> {
+  const { default: fontkit } = await import("@pdf-lib/fontkit");
+  doc.registerFontkit(fontkit);
+  const files = ["NotoSans-400.ttf", "NotoSans-700.ttf", "NotoSans-400i.ttf", "NotoSerif-700.ttf"];
+  const [reg, bold, ital, head] = await Promise.all(files.map(async (f) => doc.embedFont(await load(f))));
+  return { reg, bold, ital, head };
+}
+const fetchFont = async (file: string) => {
+  const r = await fetch(`${import.meta.env.BASE_URL}fonts/pdf/${file}`);
+  if (!r.ok) throw new Error(`Couldn't load the PDF font (${r.status}). Try again in a moment.`);
+  return r.arrayBuffer();
+};
+
+/**
+ * A new PDF. `text` is everything the sheet will show (e.g. the character as JSON): when it has
+ * letters the built-in fonts can't show (Greek…), the Noto fonts are used instead.
+ */
+export async function createDoc(title: string, author: string, text = "", load = fetchFont): Promise<{ doc: PDFDocument; fonts: Fonts }> {
   const doc = await PDFDocument.create();
+  unicodeFonts = needsUnicode(`${title}${author}${text}`);
+  const fonts: Fonts = unicodeFonts
+    ? await notoFonts(doc, load)
+    : {
+        reg: await doc.embedFont(StandardFonts.Helvetica),
+        bold: await doc.embedFont(StandardFonts.HelveticaBold),
+        ital: await doc.embedFont(StandardFonts.HelveticaOblique),
+        head: await doc.embedFont(StandardFonts.TimesRomanBold),
+      };
   doc.setTitle(clean(title));
   doc.setAuthor(clean(author));
   doc.setCreator("Character Forge");
-  const fonts: Fonts = {
-    reg: await doc.embedFont(StandardFonts.Helvetica),
-    bold: await doc.embedFont(StandardFonts.HelveticaBold),
-    ital: await doc.embedFont(StandardFonts.HelveticaOblique),
-    head: await doc.embedFont(StandardFonts.TimesRomanBold),
-  };
   return { doc, fonts };
 }
 

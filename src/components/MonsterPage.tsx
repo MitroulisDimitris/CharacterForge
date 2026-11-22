@@ -1,10 +1,13 @@
 // Monster browse rows and the monster page (Lookup, host only). The list shows a small icon per
 // monster; the page shows the DM's own picture when they added one (else the icon), the numbers,
 // "At the table", the full SRD stat block with Roll buttons, and the Monster Manual page.
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { LootCard } from "./Loot";
 import { abilityMod, getMonster, keyTraits, speedText, splitList, toggleFavorite, isFavorite, type Monster, type MonsterBrief } from "../lookup";
-import { xpForCr, loadEncounters, saveEncounter, type Encounter } from "../encounters";
+import { addEntry, xpForCr, loadEncounters, saveEncounter, type Encounter, type EncounterMonster } from "../encounters";
+import { blockMap, checkBuild, deleteBuild, editableBlock, loadBuilds, monsterSpells, saveBuild, sameMap, strengthText, STRENGTH_SHORT, type BuildCheck, type MonsterBuild, type SpellMap } from "../monsterSpells";
+import { SpellSections, spellTraitNames, StrengthMark, useSpells } from "./MonsterSpells";
+import { BuildPicker } from "./MonsterBuilds";
 import { sessionError } from "../sessions";
 import { atTheTable, initiative, loadIcons, mmPage, passivePerception, pictureUrl, removePicture, savePicture, signed, typeColor } from "../monsters";
 import { RollChip, RollScope } from "./Dice";
@@ -95,7 +98,7 @@ export function MonsterText({ title, text }: { title: string; text: string }) {
 }
 
 /** "+ Add to an encounter": pick one of this session's encounters, or start a new one. */
-function AddToEncounter({ sessionId, m }: { sessionId: string; m: Monster }) {
+function AddToEncounter({ sessionId, entry, label = "+ Add to an encounter" }: { sessionId: string; entry: EncounterMonster; label?: string }) {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<Encounter[] | null>(null);
   const [note, setNote] = useState("");
@@ -107,17 +110,14 @@ function AddToEncounter({ sessionId, m }: { sessionId: string; m: Monster }) {
     window.addEventListener("mousedown", close);
     return () => window.removeEventListener("mousedown", close);
   }, [open, sessionId]);
-  const entry = { slug: m.slug, name: m.name, cr: m.challenge_rating, xp: xpForCr(m.challenge_rating), count: 1, ac: m.armor_class, hp: m.hit_points };
   const add = async (e: Encounter | null) => {
     setOpen(false);
     try {
       if (e) {
-        const has = e.monsters.some((x) => x.slug === m.slug);
-        const monsters = has ? e.monsters.map((x) => (x.slug === m.slug ? { ...x, count: x.count + 1 } : x)) : [...e.monsters, entry];
-        await saveEncounter({ id: e.id, session_id: sessionId, name: e.name, monsters, notes: e.notes });
-        setNote(`Added to “${e.name}”.`);
+        await saveEncounter({ id: e.id, session_id: sessionId, name: e.name, monsters: addEntry(e.monsters, entry), notes: e.notes });
+        setNote(`Added ${entry.name} to “${e.name}”.`);
       } else {
-        const saved = await saveEncounter({ session_id: sessionId, name: `${m.name} encounter`, monsters: [entry], notes: "" });
+        const saved = await saveEncounter({ session_id: sessionId, name: `${entry.name} encounter`, monsters: [{ ...entry, count: 1 }], notes: "" });
         setNote(`Started “${saved.name}” on the Encounters tab.`);
       }
     } catch (err) {
@@ -127,7 +127,7 @@ function AddToEncounter({ sessionId, m }: { sessionId: string; m: Monster }) {
   return (
     <div className="mon-add" ref={ref}>
       <button type="button" className="btn primary" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        + Add to an encounter
+        {label}
       </button>
       {open && (
         <div className="mon-add-menu" role="menu">
@@ -139,7 +139,7 @@ function AddToEncounter({ sessionId, m }: { sessionId: string; m: Monster }) {
             </button>
           ))}
           <button type="button" role="menuitem" className="mon-add-new" onClick={() => add(null)}>
-            + New encounter with {m.name}
+            + New encounter with {entry.name}
           </button>
         </div>
       )}
@@ -159,6 +159,34 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
   const [busy, setBusy] = useState(false);
   const [fav, setFav] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Spell builds (REQUIREMENTS §4.9): only on a session's Lookup, for a monster with "Spellcasting".
+  const blocks = useMemo(() => (m ? monsterSpells(m) : []), [m]);
+  const main = editableBlock(blocks);
+  const orig = useMemo(() => (main ? blockMap(main) : null), [main]);
+  const [builds, setBuilds] = useState<MonsterBuild[]>([]);
+  const [sel, setSel] = useState("orig");
+  const [work, setWork] = useState<SpellMap | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [buildErr, setBuildErr] = useState("");
+  const spellIdx = useSpells();
+  const hasMain = !!main;
+  const canBuild = !!sessionId && hasMain;
+  useEffect(() => {
+    setSel("orig");
+    setWork(null);
+    setEditing(false);
+    setBuilds([]);
+    setBuildErr("");
+    if (!sessionId || !hasMain) return;
+    let live = true;
+    loadBuilds(sessionId, slug).then(
+      (b) => live && setBuilds(b),
+      (e) => live && setBuildErr(sessionError(e)),
+    );
+    return () => {
+      live = false;
+    };
+  }, [sessionId, slug, hasMain]);
 
   useEffect(() => {
     let live = true;
@@ -186,6 +214,48 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
       </div>
     );
   if (!m) return <p className="muted mon-page">Loading…</p>;
+
+  const chosen = builds.find((b) => b.id === sel);
+  const base = chosen?.spells ?? orig;
+  const cur = work ?? base;
+  const dirty = !!work && !!base && !sameMap(work, base);
+  const checkOf = (map: SpellMap | null): BuildCheck => (map && orig && main && spellIdx ? checkBuild(orig, map, main.className, spellIdx) : { kind: "", added: [], removed: [] });
+  const strength = checkOf(cur);
+  const isBuild = !!chosen || dirty;
+  const buildName = chosen ? `${chosen.name}${dirty ? " (changed)" : ""}` : `${m.name} (changed)`;
+  const entry: EncounterMonster = {
+    slug: m.slug,
+    name: isBuild ? buildName : m.name,
+    cr: m.challenge_rating,
+    xp: xpForCr(m.challenge_rating),
+    count: 1,
+    ac: m.armor_class,
+    hp: m.hit_points,
+    ...(isBuild && cur ? { build: buildName, of: m.name, spells: cur, strength: strength.kind, strengthNote: strengthText(strength) } : {}),
+  };
+  const spellTraits = spellTraitNames(m);
+  const pickBuild = (id: string) => {
+    setSel(id);
+    setWork(null);
+    setEditing(false);
+  };
+  const saveNew = async (name: string) => {
+    if (!sessionId || !cur) return;
+    const b = await saveBuild({ session_id: sessionId, slug: m.slug, name, spells: cur });
+    setBuilds((l) => [...l, b]);
+    pickBuild(b.id);
+  };
+  const saveChanges = async () => {
+    if (!sessionId || !chosen || !work) return;
+    try {
+      const b = await saveBuild({ id: chosen.id, session_id: sessionId, slug: m.slug, name: chosen.name, spells: work });
+      setBuilds((l) => l.map((x) => (x.id === b.id ? b : x)));
+      setWork(null);
+      setEditing(false);
+    } catch (e) {
+      setBuildErr(sessionError(e));
+    }
+  };
 
   const pickFile = async (f: File | undefined) => {
     if (!f) return;
@@ -216,9 +286,10 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
     { label: "Initiative", value: signed(initiative(m)), sub: `d20 ${signed(initiative(m))}`, roll: "init" },
     ...(pp != null ? [{ label: "Passive Perception", value: String(pp), sub: "notices sneaking" }] : []),
   ];
-  const blocks: [string, { name: string; desc: string }[] | null | undefined][] = [
-    ["Traits", m.special_abilities],
-    ["Actions", m.actions],
+  const sections: [string, { name: string; desc: string }[] | null | undefined][] = [
+    ["Traits", m.special_abilities?.filter((t) => !spellTraits.has(t.name))],
+    ["Spells", null],
+    ["Actions", m.actions?.filter((t) => !spellTraits.has(t.name))],
     ["Bonus actions", m.bonus_actions],
     ["Reactions", m.reactions],
   ];
@@ -280,10 +351,40 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
               </button>
             )}
           </MoreMenu>
-          {sessionId && <AddToEncounter sessionId={sessionId} m={m} />}
+          {sessionId && <AddToEncounter sessionId={sessionId} entry={entry} label={isBuild ? `+ Add ${entry.name} to an encounter` : undefined} />}
         </div>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => (pickFile(e.target.files?.[0]), (e.target.value = ""))} />
       </header>
+      {canBuild && (
+        <div className="build-bar">
+          <BuildPicker
+            builds={builds}
+            sel={sel}
+            dirty={dirty}
+            checkOf={checkOf}
+            onSelect={pickBuild}
+            onSaveNew={saveNew}
+            onRename={async (name) => {
+              if (!sessionId || !chosen) return;
+              const b = await saveBuild({ id: chosen.id, session_id: sessionId, slug: m.slug, name, spells: chosen.spells });
+              setBuilds((l) => l.map((x) => (x.id === b.id ? b : x)));
+            }}
+            onDelete={async () => {
+              if (!chosen) return;
+              await deleteBuild(chosen.id);
+              setBuilds((l) => l.filter((x) => x.id !== chosen.id));
+              pickBuild("orig");
+            }}
+          />
+          <StrengthMark kind={strength.kind} note={strengthText(strength)} label={STRENGTH_SHORT[strength.kind]} />
+          {!editing && (
+            <button type="button" className="btn ghost build-change" onClick={() => (setEditing(true), setWork(cur ? { ...cur } : null))}>
+              Change spells
+            </button>
+          )}
+          {buildErr && <p className="auth-error">{buildErr}</p>}
+        </div>
+      )}
       {busy && <p className="muted">Saving the picture…</p>}
       {!pic && <p className="mon-pic-tip muted">Tip · ⋯ → Add a picture to show your own image here. Only you see it.</p>}
       {!sessionId && <p className="mon-pic-tip muted">Tip · Fighting it? Add it to an encounter from a session's Lookup.</p>}
@@ -384,8 +485,36 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
               <dt>Languages</dt>
               <dd>{m.languages || "—"}</dd>
             </dl>
-            {blocks.map(([title, items]) =>
-              items?.length ? (
+            {sections.map(([title, items]) =>
+              title === "Spells" ? (
+                blocks.length > 0 && (
+                  <Fragment key="spells">
+                    {editing && (
+                      <div className="build-edit" role="status">
+                        <span>
+                          Tap a spell to swap or remove it. <strong>+ Add</strong> puts in a new one.
+                        </span>
+                        <span className="build-edit-btns">
+                          {dirty && (
+                            <button type="button" className="btn ghost" onClick={() => setWork(base ? { ...base } : null)}>
+                              Undo changes
+                            </button>
+                          )}
+                          {dirty && chosen && (
+                            <button type="button" className="btn primary" onClick={() => void saveChanges()}>
+                              Save changes
+                            </button>
+                          )}
+                          <button type="button" className="btn ghost" onClick={() => setEditing(false)}>
+                            Done
+                          </button>
+                        </span>
+                      </div>
+                    )}
+                    <SpellSections m={m} spells={cur ?? undefined} edit={editing && cur && main ? { map: cur, cls: main.className, onChange: setWork } : undefined} />
+                  </Fragment>
+                )
+              ) : items?.length ? (
                 <section key={title} className="mon-sec">
                   <h4>{title}</h4>
                   {items.map((a) => {

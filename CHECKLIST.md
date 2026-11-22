@@ -57,8 +57,8 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
       on 2026-11-17). Supabase always makes the login at sign-up, so: make the profile only once the
       email is verified, and remove unverified sign-ups automatically after a day
 - [ ] Offline copy + sync when back online (keep both if changed on two devices)
-- [ ] Character portraits: add / change / remove, crop in a circle, shrink before upload
-- [ ] Portrait shown everywhere the crest appears; included in JSON export
+- [x] Character portraits: add / change / remove, crop in a circle, shrink before upload
+- [x] Portrait shown everywhere the crest appears; included in JSON export
 
 ## 4. Publish + online feedback
 - [x] Host-a-session picker: only D&D 5e 2014, others "Coming soon"
@@ -122,7 +122,9 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] Session side panel folds to a thin strip on PC
 - [x] Main page: "Your sessions" cards at the top (hosting / playing, players, last activity) · Sessions page: All / Hosting / Playing, Active / Ended, sort by last activity / newest / name
 - [x] Browse spells by level / class (Spells chip: level chips + class menu, spell page beside the list)
-- [ ] Spell names inside a stat block open that spell
+- [x] Spell names inside a stat block open that spell (4.9: spells as their own section, cards with dice)
+- [x] Change a monster's spells on the session Lookup (builds: save, rename, delete; ⚠ ↑/↓ outside the book's rule), add a build to encounters from the monster page
+- [x] Spells in the fight: own box inside the expanded monster, slots per monster, Cast uses a slot
 - [ ] Environment filter; favorites saved to the account (any device)
 
 ## 9. Encounters
@@ -133,7 +135,7 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] Plan for a party before anyone joins (players × level)
 - [x] Saved encounters per session: list with difficulty, open to edit, delete
 - [x] Tests for the maths (DMG examples) · browser test on desktop and phone
-- [ ] "Add to encounter" straight from a Lookup monster card
+- [x] "Add to encounter" straight from a Lookup monster card
 - [x] Suggest an encounter: pick Easy / Medium / Hard / Deadly + optional creature type and place; lands exactly on that difficulty for this party; "Try another"; opens in the builder to change and save
 - [x] Suggestions keep groups to one creature type most of the time; tests for every difficulty
 
@@ -144,6 +146,7 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] Class hexagon chart draws in Safari (2026-11-17)
 - [x] Creation on phones (every skin): one slim bar (back · step N of 9 · HP/AC opens the character as a sheet · ⋯ steps and skin), one tap picks a class and opens its chart, "Continue with …" folds the list; Back is an arrow, Next names the next step; charts shrink to fit (2026-11-17)
 - [x] No "Just changed" pop-up on the class step (2026-11-17)
+- [x] Greek everywhere you type: fonts on screen, PDF sheet (Noto fonts when needed), file names, accent-free note search, invite codes from a Greek keyboard (2026-11-21)
 - [ ] Screen-size check at 375 / 768 / 1280 / 1920 px in Hero, Dark, Parchment
 - [ ] Check on a real phone (iPhone Safari, Android Chrome)
 - [ ] Hover cards and previews open by tap
@@ -189,7 +192,17 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] Wiki on the main page: Spells, Monsters, Items, Classes and subclasses, Races, Backgrounds, Feats, Rules and conditions; one search; same pages as session Lookup (minus session actions); "Add to a character" for items and spells (`components/Wiki.tsx`)
 - [x] Phone: ☰ slide-in menu on the main pages (My characters, Sessions, Wiki and its sections); not inside a character
 
+## 13. Player QA fixes (2026-11-22, from the Claude-in-Chrome player run)
+- [x] Your own tracker: HP in the sidebar (damage with type/resistance, heal, temp), conditions, exhaustion, concentration, death saves at 0 HP; private, not sent to sessions
+- [x] Trackers for limited-use features (class, subclass, race, feats), Hit Dice, Short rest (spend Hit Dice: roll or type) and Long rest
+- [x] Session copies follow the character; the version picker is gone (rework later); the player's session page shows the DM's state read-only
+- [x] Joining: "Use the same character" or "Join with a copy"; the DM sets the session's level (host form, Name and level); a different level becomes a Level up / Lower suggestion
+- [x] Equipment step: Next puts the picked kit (or gold) in; no equipment at level 1 is a to-do
+- [x] Skills step shows the real weapon / armor / tool proficiencies; a hill dwarf can take the warhammer; the dwarf's tool is asked (and a to-do until picked)
+
 ## Later
+- [ ] Rework: one character, a different version per session (the old version picker; removed 2026-11-22)
+- [ ] Dice at the table: a player rolls inside a session and the DM sees the results (user, 2026-11-22; details to work out later: which rolls, hidden rolls, a shared log?)
 - [ ] Maybe: point out beginner-friendly classes in the class list (Barbarian, Cleric, Fighter, Paladin, Rogue: "For beginners: Easy" in `data2014/profiles.ts`). Tried as a green tag on each card on 2026-11-17 and removed (too much clutter for 5 of 13 cards); a single "Tip ·" line above the list was the other idea. Today it shows only in the class details ("For beginners").
 - [ ] Monster pictures, typo-tolerant search, search inside abilities
 - [ ] Custom monsters

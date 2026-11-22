@@ -5,6 +5,7 @@ import { supabase } from "./cloud";
 import { currentHp, type Live } from "./live";
 import { splitList } from "./lookup";
 import type { EncounterMonster } from "./encounters";
+import type { SpellMap } from "./monsterSpells";
 
 export interface Fighter {
   /** A player's session member id, or a random id. */
@@ -28,6 +29,10 @@ export interface Fighter {
   vulnerable?: string;
   /** Taken out of the fight (fled, dismissed). */
   out?: boolean;
+  /** A build's spell list (REQUIREMENTS §4.9); missing = the book's. */
+  spells?: SpellMap;
+  /** Spell slots / daily uses spent, by spell line ("3", "1/day each:darkness"). */
+  used?: Record<string, number>;
 }
 
 export interface Combat {
@@ -69,6 +74,7 @@ export function newCombat(monsters: EncounterMonster[], details: Record<string, 
         resist: d?.resist || undefined,
         immune: d?.immune || undefined,
         vulnerable: d?.vulnerable || undefined,
+        ...(m.spells ? { spells: m.spells } : {}),
       });
   }
   return { started: false, round: 0, turn: 0, fighters };

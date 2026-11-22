@@ -248,7 +248,16 @@ export function CreationStepper({
                 Skip for now
               </button>
             )}
-            <button type="button" className="btn primary" disabled={!!blocker} onClick={() => go(i + 1)}>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={!!blocker}
+              onClick={() => {
+                const patch = step?.onNext?.(char, d);
+                if (patch) set(patch);
+                go(i + 1);
+              }}
+            >
               {i === steps.length - 1 ? (
                 "Review →"
               ) : (
@@ -292,7 +301,7 @@ export function CreationStepper({
           <button type="button" className="hero-back" onClick={hero.onCancel}>
             ‹ Cancel
           </button>
-          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} size={96} badge={false} />
+          <Crest identity={d.identity} level={char.level} maxLevel={system.maxLevel} size={96} badge={false} portrait={char.portrait} />
           <div className="hero-id">
             <input className="hero-name" value={char.name} placeholder="Unnamed hero" onChange={(e) => set({ name: e.target.value })} aria-label="Character name" />
             <span className="hero-sub">{d.identity}</span>

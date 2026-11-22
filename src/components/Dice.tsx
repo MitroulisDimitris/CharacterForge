@@ -91,6 +91,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
           const res = resultOf(spec, dice, faces);
           table.current?.setDropped(res.dropped);
           setCard({ id, spec, res, quip: quipFor(spec, dice, faces, res) });
+          spec.onDone?.(res, faces);
           arm(CARD_MS);
         });
     },
@@ -165,7 +166,7 @@ export function DiceProvider({ children }: { children: ReactNode }) {
             )}
             {card.res.sub && <p className="dice-card-sub">{card.res.sub}</p>}
             <div className="dice-card-actions">
-              <button type="button" className="btn ghost small dice-again" onClick={() => roll({ ...card.spec })}>
+              <button type="button" className="btn ghost small dice-again" onClick={() => roll({ ...card.spec, onDone: undefined })}>
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <path d="M20 11a8 8 0 1 0-2.3 5.7" />
                   <path d="M20 4v7h-7" />

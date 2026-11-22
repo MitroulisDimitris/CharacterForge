@@ -2,11 +2,12 @@
 // builder (search monsters, set counts) that rates the difficulty live for this party with the
 // 2014 XP thresholds. Players never see encounters.
 import { useEffect, useMemo, useState } from "react";
-import { DIFFICULTY_TEXT, deleteEncounter, loadEncounters, rate, saveEncounter, xpForCr, type Encounter, type EncounterMonster, type Rating } from "../encounters";
+import { addEntry, DIFFICULTY_TEXT, deleteEncounter, entryKey, loadEncounters, rate, saveEncounter, xpForCr, type Encounter, type EncounterMonster, type Rating } from "../encounters";
 import { allMonsters, getMonster, PLACES, searchMonsters, type Monster, type MonsterBrief } from "../lookup";
 import { filterPool, SHAPE_TEXT, suggestEncounter, type Shape, type Suggestion, type Target } from "../suggest";
 import { sessionError } from "../sessions";
 import { MonsterCard } from "./Lookup";
+import { StrengthMark } from "./MonsterSpells";
 import { MoreMenu } from "./Hero";
 import { cardOf, OnlyYou, type HostMember } from "./Party";
 import { CombatView } from "./Combat";
@@ -86,7 +87,8 @@ function Builder({
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Monster[]>([]);
   const [searching, setSearching] = useState(false);
-  const [open, setOpen] = useState<Monster | null>(null);
+  // The line whose stat block is open (entryKey), and that monster.
+  const [open, setOpen] = useState<{ key: string; m: Monster } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const r = rate(monsters, party);
@@ -108,19 +110,15 @@ function Builder({
     };
   }, [q]);
 
-  const add = (m: Monster) =>
-    setMonsters((list) =>
-      list.some((x) => x.slug === m.slug)
-        ? list.map((x) => (x.slug === m.slug ? { ...x, count: x.count + 1 } : x))
-        : [...list, { slug: m.slug, name: m.name, cr: m.challenge_rating, xp: xpForCr(m.challenge_rating), count: 1, ac: m.armor_class, hp: m.hit_points }],
-    );
-  const setCount = (slug: string, n: number) => setMonsters((list) => (n <= 0 ? list.filter((x) => x.slug !== slug) : list.map((x) => (x.slug === slug ? { ...x, count: Math.min(50, n) } : x))));
-  const showBlock = async (slug: string) => {
-    if (open?.slug === slug) return setOpen(null);
+  const add = (m: Monster) => setMonsters((list) => addEntry(list, { slug: m.slug, name: m.name, cr: m.challenge_rating, xp: xpForCr(m.challenge_rating), count: 1, ac: m.armor_class, hp: m.hit_points }));
+  const setCount = (key: string, n: number) => setMonsters((list) => (n <= 0 ? list.filter((x) => entryKey(x) !== key) : list.map((x) => (entryKey(x) === key ? { ...x, count: Math.min(50, n) } : x))));
+  const showBlock = async (e: EncounterMonster) => {
+    const key = entryKey(e);
+    if (open?.key === key) return setOpen(null);
     try {
-      setOpen(await getMonster(slug));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setOpen({ key, m: await getMonster(e.slug) });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -201,32 +199,39 @@ function Builder({
             </h3>
             {monsters.length === 0 && <p className="muted">Search below and add monsters. Tip · Start with one or two kinds; it's easier to run.</p>}
             <ul className="enc-list">
-              {monsters.map((m) => (
-                <li key={m.slug}>
-                  <div className="enc-row">
-                    <span className="enc-name">
-                      <strong>{m.name}</strong>
-                      <small>
-                        CR {m.cr} · {fmt(m.xp)} XP{m.ac ? ` · AC ${m.ac}` : ""}
-                        {m.hp ? ` · HP ${m.hp}` : ""}
-                      </small>
-                    </span>
-                    <span className="stepper" role="group" aria-label={`How many ${m.name}`}>
-                      <button type="button" aria-label={`One less ${m.name}`} onClick={() => setCount(m.slug, m.count - 1)}>
-                        −
+              {monsters.map((m) => {
+                const key = entryKey(m);
+                const isOpen = open?.key === key;
+                return (
+                  <li key={key}>
+                    <div className="enc-row">
+                      <span className="enc-name">
+                        <strong>
+                          {m.name}
+                          {m.strength && <StrengthMark kind={m.strength} note={m.strengthNote ?? ""} />}
+                        </strong>
+                        <small>
+                          {m.build && m.of ? `${m.of} build · ` : ""}CR {m.cr} · {fmt(m.xp)} XP{m.ac ? ` · AC ${m.ac}` : ""}
+                          {m.hp ? ` · HP ${m.hp}` : ""}
+                        </small>
+                      </span>
+                      <span className="stepper" role="group" aria-label={`How many ${m.name}`}>
+                        <button type="button" aria-label={`One less ${m.name}`} onClick={() => setCount(key, m.count - 1)}>
+                          −
+                        </button>
+                        <strong>{m.count}</strong>
+                        <button type="button" aria-label={`One more ${m.name}`} onClick={() => setCount(key, m.count + 1)}>
+                          +
+                        </button>
+                      </span>
+                      <button type="button" className="link enc-block-link" aria-expanded={isOpen} onClick={() => showBlock(m)}>
+                        {isOpen ? "Hide" : "Stat block"}
                       </button>
-                      <strong>{m.count}</strong>
-                      <button type="button" aria-label={`One more ${m.name}`} onClick={() => setCount(m.slug, m.count + 1)}>
-                        +
-                      </button>
-                    </span>
-                    <button type="button" className="link enc-block-link" aria-expanded={open?.slug === m.slug} onClick={() => showBlock(m.slug)}>
-                      {open?.slug === m.slug ? "Hide" : "Stat block"}
-                    </button>
-                  </div>
-                  {open?.slug === m.slug && <MonsterCard m={open} startOpen />}
-                </li>
-              ))}
+                    </div>
+                    {isOpen && open && <MonsterCard m={open.m} startOpen spells={m.spells} title={m.name} />}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 

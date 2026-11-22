@@ -1,8 +1,9 @@
-// Tappable pips for spell slots, sorcery points and other pools, plus Short/Long rest.
-// Filled pip = still available. Tap a filled pip to spend it (and the ones after it); tap an
-// empty pip to get it back.
+// Tappable pips for spell slots, sorcery points and other pools. Filled pip = still available.
+// Tap a filled pip to spend it (and the ones after it); tap an empty pip to get it back. Big pools
+// (Lay on Hands) get − / + instead. Rests live in the Sheet's "In play" panel (InPlay.tsx), which
+// also brings back HP and Hit Dice.
 import type { BaseCharacter, ResourcePool } from "../systems/types";
-import { availableOf, clickPip, rest } from "../resources";
+import { availableOf, clickPip, setAvailable } from "../resources";
 
 export function ResourcePips({
   c,
@@ -14,10 +15,10 @@ export function ResourcePips({
   pools: ResourcePool[];
   set: (patch: Partial<BaseCharacter>) => void;
   compact?: boolean;
+  /** Kept for callers; rests are in the In play panel now. */
+  noRests?: boolean;
 }) {
   if (!pools.length) return null;
-  const anyShort = pools.some((p) => p.refresh === "short");
-  const anyUsed = pools.some((p) => availableOf(c, p) < p.max);
   return (
     <div className={`pools ${compact ? "compact" : ""}`}>
       {pools.map((p) => {
@@ -25,6 +26,17 @@ export function ResourcePips({
         return (
           <div className="pool" key={p.id}>
             <span className={`pool-label ${p.kind}`}>{p.label}</span>
+            {p.max > 10 ? (
+              <span className="stepper pool-stepper" role="group" aria-label={`${p.label}: ${avail} of ${p.max} left`}>
+                <button type="button" aria-label={`Use one ${p.label}`} disabled={!avail} onClick={() => set(setAvailable(c, p, avail - 1))}>
+                  −
+                </button>
+                <strong>{avail}</strong>
+                <button type="button" aria-label={`Get one ${p.label} back`} disabled={avail >= p.max} onClick={() => set(setAvailable(c, p, avail + 1))}>
+                  +
+                </button>
+              </span>
+            ) : (
             <span className="pool-pips" role="group" aria-label={`${p.label}: ${avail} of ${p.max} left`}>
               {Array.from({ length: p.max }, (_, i) => (
                 <button
@@ -37,22 +49,13 @@ export function ResourcePips({
                 />
               ))}
             </span>
+            )}
             <span className="pool-count">
               {avail}/{p.max}
             </span>
           </div>
         );
       })}
-      <div className="pool-rests">
-        {anyShort && (
-          <button type="button" className="btn small ghost" onClick={() => set(rest(c, pools, "short"))} title="Refills pools that come back on a short rest">
-            Short rest
-          </button>
-        )}
-        <button type="button" className="btn small ghost" disabled={!anyUsed} onClick={() => set(rest(c, pools, "long"))} title="Refills everything">
-          Long rest
-        </button>
-      </div>
     </div>
   );
 }

@@ -87,7 +87,8 @@ export function loadTheme(): Theme {
 }
 export const saveTheme = (t: Theme) => safeSet(THEME_KEY, t);
 
-export const fileSafe = (s: string) => s.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "character";
+// Letters of any language (Greek too) stay; only characters file systems dislike go.
+export const fileSafe = (s: string) => s.normalize("NFC").replace(/[^\p{L}\p{N}\p{M}_\- ]+/gu, "").trim().replace(/\s+/g, "_") || "character";
 
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

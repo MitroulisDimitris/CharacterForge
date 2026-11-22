@@ -2,6 +2,8 @@
 // wizard, editor, storage, export) only talks to systems through this.
 import type { FC } from "react";
 
+import type { PlayState } from "../play";
+
 export type SystemId = "dnd2024" | "dnd2014" | "dnd35" | "pf2e";
 
 export interface Book {
@@ -29,6 +31,10 @@ export interface BaseCharacter {
   level: number;
   /** Resources used since the last rest, by pool id (see resources.ts). */
   spent?: Record<string, number>;
+  /** Small square picture (JPEG data URL, src/portrait.ts) shown in the crest. */
+  portrait?: string;
+  /** The player's own in-play tracker (HP, conditions, death saves, Hit Dice); private, never sent to sessions. */
+  play?: PlayState;
 }
 
 /** One line of "what changes" (a preview, or what a pick just did). */
@@ -47,7 +53,7 @@ export interface ResourcePool {
   max: number;
   /** Which rest refills it. */
   refresh: "short" | "long";
-  kind: "slot" | "points";
+  kind: "slot" | "points" | "feature";
 }
 
 export interface DerivedBase {
@@ -127,6 +133,8 @@ export interface CreationStep<C, D> {
   tabs: string[];
   /** If set, the step can't be skipped until this returns null. */
   blocker?: (c: C, d: D) => string | null;
+  /** Changes made when the player presses Next (e.g. the picked starting kit goes in). */
+  onNext?: (c: C, d: D) => Partial<C> | null;
 }
 
 /** What the host needs at the table (REQUIREMENTS §3.3), the same shape for every rule set. */
@@ -142,6 +150,12 @@ export interface TableCard {
   /** Damage types the character resists (e.g. "Fire"), for the host's damage box. */
   resistances?: string[];
   immunities?: string[];
+  /** Hit dice (5e): the die, how many the character has, and the CON modifier each one adds. */
+  hitDie?: number;
+  hitDiceTotal?: number;
+  conMod?: number;
+  /** Constitution saving throw bonus (concentration checks). */
+  conSave?: number;
 }
 
 export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends DerivedBase = DerivedBase> {
@@ -164,6 +178,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   Summary: FC<{ c: C; d: D }>;
   /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
   resources?: (c: C, d: D) => ResourcePool[];
+  /** Spells the character can concentrate on (the In play panel's picker). */
+  concentrationSpells?: (c: C, d: D) => string[];
   /** Short card for the host's party view. */
   tableCard?: (c: C, d: D) => TableCard;
   /** What changed between two derived states (shown as a short note after each pick). */

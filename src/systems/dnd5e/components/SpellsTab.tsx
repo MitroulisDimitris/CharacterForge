@@ -70,7 +70,7 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
         {pools.length > 0 && (
           <div className="in-play">
             <span className="hero-label">In play · tap to use</span>
-            <ResourcePips c={c} pools={pools} set={set} />
+            <ResourcePips c={c} pools={pools.filter((p) => p.kind !== "feature")} set={set} />
           </div>
         )}
       </Card>

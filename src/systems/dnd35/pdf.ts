@@ -214,7 +214,7 @@ function pageDetails(s: Sheet, c: Character35) {
 }
 
 export async function buildPdf35(c: Character35, d: Derived35, credits: string): Promise<Uint8Array> {
-  const { doc, fonts } = await createDoc(`${c.name} - Sorcerer ${c.level} (D&D 3.5)`, c.playerName);
+  const { doc, fonts } = await createDoc(`${c.name} - Sorcerer ${c.level} (D&D 3.5)`, c.playerName, JSON.stringify(c));
   const s = new Sheet(doc, fonts, { name: c.name, subtitle: `${d.identity} · D&D 3.5 rules` });
   pageMain(s, c, d, credits);
   s.flowSections("Features & Feats", d.featureGroups);

@@ -64,7 +64,9 @@ export function StartingEquipment({ c, d, set, books, applyLabel = "Put it in my
               <div key={ch.id} className="equip-choice">
                 <div className="option-row">
                   {ch.options.map((o, i) => {
-                    const blocked = (o.needs === "martial" && !martial) || (o.needs === "heavy" && !heavy);
+                    // Proficient with that weapon itself counts too (a dwarf's warhammer).
+                    const ownWeapons = o.items.every((it) => d.weaponText.toLowerCase().includes(it.name.toLowerCase()));
+                    const blocked = (o.needs === "martial" && !martial && !ownWeapons) || (o.needs === "heavy" && !heavy);
                     return (
                       <button
                         type="button"

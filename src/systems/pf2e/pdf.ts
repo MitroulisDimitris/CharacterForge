@@ -193,7 +193,7 @@ function pageDetails(s: Sheet, c: CharacterPF2) {
 }
 
 export async function buildPdfPF2(c: CharacterPF2, d: DerivedPF2, credits: string): Promise<Uint8Array> {
-  const { doc, fonts } = await createDoc(`${c.name} - Sorcerer ${c.level} (Pathfinder 2e)`, c.playerName);
+  const { doc, fonts } = await createDoc(`${c.name} - Sorcerer ${c.level} (Pathfinder 2e)`, c.playerName, JSON.stringify(c));
   const s = new Sheet(doc, fonts, { name: c.name, subtitle: `${d.identity} · ${d.bg.name} · Pathfinder 2e Remaster` });
   pageMain(s, c, d, credits);
   s.flowSections("Features & Feats", d.featureGroups);

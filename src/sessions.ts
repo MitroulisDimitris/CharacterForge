@@ -5,6 +5,8 @@ import type { StoredCharacter } from "./storage";
 import { getSystem } from "./systems/registry";
 import type { SystemId } from "./systems/types";
 import type { Live } from "./live";
+import { validPortrait } from "./portrait";
+import { greekKeysToLatin } from "./text";
 
 export interface SessionInfo {
   id: string;
@@ -15,6 +17,8 @@ export interface SessionInfo {
   joining_locked: boolean;
   status: "active" | "ended";
   created_at: string;
+  /** The level the session plays at (set by the DM); null = not set. */
+  level: number | null;
 }
 
 /** My seat in a session: the session copy of one of my characters. */
@@ -40,6 +44,8 @@ export interface Summary {
   identity?: string;
   level?: number;
   system?: string;
+  /** Small picture (src/portrait.ts), when the player added one. */
+  portrait?: string;
 }
 
 export interface Preview {
@@ -52,6 +58,7 @@ export interface Preview {
   status: "active" | "ended";
   is_host: boolean;
   my_character: string | null;
+  level: number | null;
 }
 
 export interface RosterRow {
@@ -62,16 +69,27 @@ export interface RosterRow {
   joined_at: string;
 }
 
-const SESSION_COLS = "id, host_id, name, system, books, joining_locked, status, created_at";
+const SESSION_COLS = "id, host_id, name, system, books, joining_locked, status, created_at, level";
 const MEMBER_COLS = "id, session_id, character_id, books, data, pending, summary, joined_at, updated_at, live, level_award";
 
 /** "k7p2qx", "K7P 2QX" → "K7P-2QX". */
 export function normalizeCode(raw: string): string {
-  const s = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // A Greek keyboard types κ for K, ρ for R…: read those as the keys pressed.
+  const s = greekKeysToLatin(raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
   return s.length > 3 ? `${s.slice(0, 3)}-${s.slice(3, 6)}` : s;
 }
 export const codeComplete = (code: string) => /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(code);
 export const inviteLink = (code: string) => `${window.location.origin}${window.location.pathname}?join=${code}`;
+
+/**
+ * What a session gets of a character: everything but the player's private play state (their own HP
+ * tracker, conditions, used slots and resources). The DM keeps the session's own (`live`).
+ */
+export function sessionData(data: unknown): unknown {
+  if (!data || typeof data !== "object") return data;
+  const { play: _play, spent: _spent, ...rest } = data as Record<string, unknown>;
+  return rest;
+}
 
 /** The summary saved with a session copy, from the character's data. */
 export function summarize(system: SystemId, books: string[], data: unknown): Summary {
@@ -79,7 +97,7 @@ export function summarize(system: SystemId, books: string[], data: unknown): Sum
   if (!sys) return {};
   try {
     const c = sys.normalize(data);
-    return { name: c.name || "Unnamed", identity: sys.derive(c, books).identity, level: c.level, system };
+    return { name: c.name || "Unnamed", identity: sys.derive(c, books).identity, level: c.level, system, ...(validPortrait(c.portrait) ? { portrait: c.portrait } : {}) };
   } catch {
     return {};
   }
@@ -116,13 +134,13 @@ export async function loadMemberships(userId: string): Promise<Membership[]> {
   return data as Membership[];
 }
 
-export async function createSession(name: string, system: SystemId, books: string[]): Promise<SessionInfo> {
-  const { data, error } = await supabase.from("sessions").insert({ name, system, books }).select(SESSION_COLS).single();
+export async function createSession(name: string, system: SystemId, books: string[], level: number | null = null): Promise<SessionInfo> {
+  const { data, error } = await supabase.from("sessions").insert({ name, system, books, level }).select(SESSION_COLS).single();
   if (error) throw error;
   return data as SessionInfo;
 }
 
-export async function updateSession(id: string, patch: Partial<Pick<SessionInfo, "name" | "books" | "joining_locked" | "status">>): Promise<void> {
+export async function updateSession(id: string, patch: Partial<Pick<SessionInfo, "name" | "books" | "joining_locked" | "status" | "level">>): Promise<void> {
   const { error } = await supabase.from("sessions").update(patch).eq("id", id);
   if (error) throw error;
 }
@@ -154,7 +172,7 @@ export async function joinSession(code: string, rec: StoredCharacter): Promise<v
   const { error } = await supabase.rpc("join_session", {
     code,
     char_id: rec.id,
-    copy: rec.data,
+    copy: sessionData(rec.data),
     copy_pending: rec.pending ?? [],
     copy_summary: summarize(rec.system, rec.books, rec.data),
   });
@@ -165,7 +183,7 @@ export async function swapCharacter(sessionId: string, rec: StoredCharacter): Pr
   const { error } = await supabase.rpc("swap_character", {
     sid: sessionId,
     char_id: rec.id,
-    copy: rec.data,
+    copy: sessionData(rec.data),
     copy_pending: rec.pending ?? [],
     copy_summary: summarize(rec.system, rec.books, rec.data),
   });
@@ -235,23 +253,6 @@ export function pendingJoin(): string | null {
 export function clearPendingJoin() {
   try {
     localStorage.removeItem(JOIN_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-// The sheet version picked last on this device ("" = My character), per character.
-const versionKey = (charId: string) => `character-forge:version:${charId}`;
-export function loadVersion(charId: string): string {
-  try {
-    return localStorage.getItem(versionKey(charId)) ?? "";
-  } catch {
-    return "";
-  }
-}
-export function saveVersion(charId: string, memberId: string) {
-  try {
-    localStorage.setItem(versionKey(charId), memberId);
   } catch {
     /* ignore */
   }

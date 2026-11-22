@@ -1,6 +1,7 @@
 import { ABILITIES, ABILITY_NAMES, signed } from "../data/core";
 import type { Character } from "../character";
 import type { Derived } from "../derive";
+import { EXHAUSTION } from "../../../live";
 import { RollChip, useCanRoll, useDice } from "../../../components/Dice";
 import { abilityCheck, attackRolls, classRolls, initiativeRoll, savingThrow, skillCheck } from "../rollSpecs";
 
@@ -13,9 +14,14 @@ export function Summary({ c, d }: { c: Character; d: Derived }) {
         <Stat label="Armor Class" value={d.ac} title={d.acNote} big />
         <Stat label="Hit Points" value={d.hpMax} title={d.hpExtras.join(", ") || undefined} big />
         <Stat label="Initiative" value={signed(d.initiative)} roll={canRoll ? () => dice?.roll(initiativeRoll(d)) : undefined} />
-        <Stat label="Speed" value={`${d.speed} ft`} />
+        <Stat label="Speed" value={`${d.speed} ft`} title={d.exhaustion >= 2 ? `${d.baseSpeed} ft without exhaustion` : undefined} />
         <Stat label="Prof. Bonus" value={signed(d.pb)} />
       </div>
+      {d.exhaustion > 0 && (
+        <p className="exhaustion-note" role="note">
+          <strong>Exhaustion {d.exhaustion}:</strong> {EXHAUSTION.slice(1, d.exhaustion + 1).join(" · ")}.
+        </p>
+      )}
 
       <div className="abilities-grid">
         {ABILITIES.map((a) =>

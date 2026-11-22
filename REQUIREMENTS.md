@@ -77,9 +77,10 @@ Decided (2026-11-16):
   XP budget (Low / Moderate / High) comes with the 2024 rules.
 - **Feedback works online**, with the steps taken and the current state recorded (see 6.1).
 - **D2: a character can be in any number of sessions.** Joining makes a **session copy** of the
-  character, which levels and changes inside that session only. On the character's sheet a
-  **version dropdown** lists "My character" (the original) plus one entry per session it's in;
-  picking one shows and edits that version. See 4.2a.
+  character. **Changed 2026-11-22 (user):** the version dropdown is gone for now (to be reworked
+  later); a session's copy **follows "My character"**: every change to the sheet is sent to its
+  sessions, the DM's in-play state there (HP, conditions) stays the session's own, and a DM's
+  level award becomes a "Level up" to-do on the character. See 4.2a.
 - **D3: the host can't edit a player's sheet** (choices, spells, equipment: read-only), **but can
   change its in-play state** in that session: current HP, temporary HP, damage taken (with its
   type), conditions (poisoned, prone, …), exhaustion. The player sees those changes live on that
@@ -136,11 +137,33 @@ Decided (2026-11-16):
 - **Add / change:** from the character's "⋯" menu (**Add portrait** / **Change portrait**) or
   by tapping the crest on the sheet. Choose an image (JPG, PNG, WebP; or take a photo on a phone),
   then move and zoom it inside a circle preview, then **Save**.
-- **Remove:** "⋯" → **Remove portrait** brings the class icon back.
-- The app shrinks the image before uploading (about 512 × 512, under ~200 KB), so it's quick to
-  load and stays within free storage.
-- Stored online with the character; anyone who can see the character sees its portrait.
+- **Remove:** the same dialog has **Remove the portrait**; the class icon comes back.
+- Built 2026-11-20: the crop is saved at 256 × 256 px as a JPEG (~15–30 KB), sharp at the
+  largest crest on a 2× screen. Drag to move, pinch / wheel / slider to zoom, arrow keys and + / −.
+- Stored inside the character's data (no separate upload), so session copies carry it and the
+  roster passes it to the other players.
 - **JSON export** includes the portrait (embedded), so import brings it back.
+
+### 3.2b The player's own tracker (2026-11-22)
+- **Private** to the player and **independent of sessions** (the DM keeps each session's state,
+  D3; the player sees it read-only on the session page). Stored in the character as `play`, never
+  copied into sessions.
+- **HP** in the hero sidebar (every tab; on phones a row in the top bar; in the classic layouts at
+  the top of the Sheet): current / max / temp, an amount, an optional damage type (resistances
+  halve it, immunities stop it), Damage / Heal / Temp HP.
+- **In play panel** at the top of the Sheet: death saves at 0 HP (Roll a death save with the 3D
+  die marks itself; 1 = two failures, 20 = 1 HP back), conditions, exhaustion, concentration (pick
+  from your concentration spells or type one; damage reminds you of the CON save DC), limited-use
+  features, Hit Dice, Short rest (spend Hit Dice: roll or type what you rolled) and Long rest.
+- Rules from the Player's Handbook: dropping to 0 (unconscious, concentration ends), instant death
+  from massive damage, damage at 0 HP = failed death saves, long rest = all HP, half the Hit Dice
+  (at least one; user 2026-11-22). Exhaustion is never lowered for you: the long rest only
+  suggests one level less if you ate and drank (user 2026-11-22).
+- **Trackers** (class + subclass + race, levels 1–5) come from the features' uses in the rules
+  data: Channel Divinity, Rage, Ki, Action Surge, Second Wind, Bardic Inspiration (short rest from
+  5th), Wild Shape, Lay on Hands (a − / + pool), Divine Sense, Arcane Recovery, Superiority and
+  Psionic dice, subclass uses, Breath Weapon, Relentless Endurance, once-a-day racial and feat
+  spells, the Lucky feat.
 
 ### 3.3 Table card
 Every rule set provides a short **table card**, so the host never needs to know how each system
@@ -189,9 +212,14 @@ and the ones you play in).
 ### 4.2a One character, several sessions (D2)
 - Joining stores a **session copy** of the character (taken at the moment of joining). Leveling,
   spending slots and rests in that session change only that copy.
-- The sheet's sidebar shows a **version dropdown** when the character is in at least one session:
-  "My character" + one line per session ("Curse of the Ashen King · level 4"). The dropdown
-  remembers the last choice per device.
+- (Removed 2026-11-22, rework later) A version dropdown to open each session's copy. Now the copy
+  follows the character; the player's session page shows the DM's state for it, read-only.
+- **Joining asks how** (user, 2026-11-22): **Use the same character** (every session it's in
+  follows it) or **Join with a copy** (a separate character "Name (Session)" in the library that
+  levels on its own). A copy is picked first when the character already plays elsewhere.
+- **The session's level:** the DM sets the characters' level when creating the session (and in
+  "Name and level"). Joining with another level leaves a suggestion on the character: "Level up to
+  N" (a to-do) or "Lower to level N?" (Lower / Keep). Nothing changes the character by itself.
 - "My character" is the original; it's what new sessions copy when the character joins them.
 - (later) "Copy this version over My character" for players who want to carry progress over.
 
@@ -530,6 +558,38 @@ host sees them (section 5). Mockup: https://claude.ai/artifact/66jejAjRdg6i2Ly4E
 Decided 2026-11-20: drag to reorder, least-used colour (random on a tie), delete just asks, +
 makes "Notes N+1" with no starters, the toolbar above. Still open: shared tabs (above).
 
+### 4.9 Monster spells and builds (host)
+
+Decided with the user 2026-11-21 (mockup: "Monster Spellcasting Mockup" canvas).
+
+- **Spells get their own section** (blue edge, the spell colour) instead of a long paragraph in
+  Traits: one line per spell level ("1st level · 4 slots") or per innate line ("At will",
+  "3/day each"). Each spell is a pill; tapping it opens its card under the line: casting time,
+  range, components, duration, what it does with its dice as gold chips (3D dice), the save and
+  DC, the spell attack, cantrip damage at the monster's level, higher-slot text. A small **C**
+  marks concentration. Same everywhere a stat block shows (Wiki, Lookup, encounters, fight).
+- **In the fight** (inside an expanded monster): a **Spells** box that starts closed with a
+  one-line summary ("Slots left 4 · 3 · 3…"). It opens on its own; closing and reopening the
+  monster keeps it as it was left. Slots are gold dots to tick off, kept **per monster** (two
+  liches each have their own) and saved with the fight. **Cast** uses a slot of that level.
+  Innate spells: dots per spell per day ("Darkness 1/1").
+- **Changing spells only before the fight**, on the session Lookup's monster page (host). Rule
+  (Monster Manual, page 10): a spell can be swapped for another of the **same level from the same
+  class list**. The picker offers exactly those first; **Show all spells** allows any level or
+  class (kept loose on purpose).
+- **Outside the rule** the build gets a **warning triangle** with **↑** (stronger: more or
+  higher spells), **↓** (weaker) or **≈** (different class, same weight). Hover / tap shows:
+  "Stronger than the books allow. Monster Manual, page 10: … Added: … Removed: …".
+- **Builds:** "Build" picker on the monster page: Original (Monster Manual) plus saved builds
+  (the current one highlighted, ⚠ ↑/↓ on each). Save as a new build, rename, delete (asks).
+  No versions: an encounter keeps the spells it was given; changing or deleting a build later
+  doesn't touch encounters that already have it.
+- **+ Add to an encounter** adds the chosen build (or the unsaved changes as "Lich (changed)").
+  To use a build in more encounters, add it again from the monster page (user, 2026-11-21: no
+  "Add to another encounter" on the encounter line).
+- Only the monster's own "Spellcasting" (with a class list) can be changed. Innate and coven
+  (shared) spellcasting show the same way but aren't changed.
+
 ---
 
 ## 5. Who can see what
@@ -610,6 +670,10 @@ pointed at, and screenshots. In the published app:
   (UI rule 10). Touch targets ≥ 44 px.
 - **Skins:** Hero, Dark, and Parchment keep working on every new screen.
 - **Speed:** common actions (change HP, next turn, tap a pip) feel instant.
+- **Greek** (user, 2026-11-21): every field people type in takes Greek and shows it in the app's
+  look (Inter has Greek; EB Garamond's Greek stands in for Cinzel and Crimson Pro), in PDFs (Noto
+  fonts, only when a sheet needs them), in file names, and in searches of people's own text (case
+  and accents don't matter: "αρης" finds "Άρης"). Invite codes typed on a Greek keyboard work.
 - **Privacy:** only people with the code see a session; nothing public.
 - **Cost:** stays within free tiers.
 - **Checks before calling something done:** typecheck, tests, build, and a browser run (as today).
@@ -652,7 +716,8 @@ session_notes    id, session_id (deleted with the session), title, color, body, 
 session_members  session_id, user_id, character_id, joined_at,
                  data (JSON: the session copy, D2), pending, spent,
                  live (JSON: current/temp HP, damage log, conditions, exhaustion; host-editable, D3)
-encounters       id, session_id, name, monsters (JSON: ref + count), difficulty, total_xp
+encounters       id, session_id, name, monsters (JSON: ref + count, build + spells), difficulty, total_xp
+monster_builds   id, session_id, slug, name, spells (JSON: level → spell names)  (host only, 4.9)
 combats          id, session_id, encounter_id?, round, turn_index,
                  combatants (JSON: name, init, hp, max_hp, ac, conditions), active
 favorites        user_id, kind (monster / spell / condition), ref (Open5e slug or app id)

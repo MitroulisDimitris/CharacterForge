@@ -49,11 +49,11 @@ export function SkillsTab({ c, d, set }: TabProps<Character, Derived>) {
       <Card todo="tools-other" title="Tools & other proficiencies">
         <dl className="kv wide">
           <dt>Weapons</dt>
-          <dd>Simple Weapons</dd>
+          <dd>{d.weaponText || "None"}</dd>
           <dt>Armor</dt>
-          <dd>None</dd>
-          <dt>Tools (background)</dt>
-          <dd>{d.bg.tools}</dd>
+          <dd>{d.armorText}</dd>
+          <dt>Tools</dt>
+          <dd>{d.tools || "None"}</dd>
         </dl>
         <Field label="Other tools" hint="e.g. the specific gaming set or instrument you chose, or tools from the Skilled feat">
           <input value={c.extraTools} onChange={(e) => set({ extraTools: e.target.value })} placeholder="Playing Card Set" />

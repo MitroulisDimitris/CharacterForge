@@ -5,6 +5,7 @@ import type { Character, Details } from "./character";
 import type { Derived } from "./derive";
 import { STANDARD_ARRAY } from "./derive";
 import type { CreationStep, TabProps } from "../types";
+import { classKit, startingEquipment } from "./startingKit";
 import { Card, Field } from "../../components/ui";
 import { ClassTab } from "./components/ClassTab";
 import { SpeciesTab } from "./components/SpeciesTab";
@@ -153,6 +154,14 @@ export const CREATION_STEPS_2014: CreationStep<Character, Derived>[] = [
     intro: (_c, d) =>
       `Take the ${d.cls.name.toLowerCase()}'s starting equipment (choose between the options) plus your background's, or roll starting gold (${goldFormula(d.cls)}) and buy your own. Press the button to put it in your inventory.`,
     Component: EquipmentStep,
+    // Next puts the picked kit (or the starting gold) in, unless the player already did or a pick is
+    // still open (then the step stays a to-do; user, 2026-11-22).
+    onNext: (c, d) => {
+      if (c.inventory.length || Object.values(c.coins).some((v) => v > 0)) return null;
+      if (c.equipMode === "kit" && classKit(c, d.cls).missing.length) return null;
+      const { inventory, gp } = startingEquipment(c, d.cls, d.bg);
+      return { inventory, coins: { cp: 0, sp: 0, ep: 0, gp, pp: 0 } };
+    },
   },
   {
     id: "spells",

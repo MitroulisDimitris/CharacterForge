@@ -1,6 +1,7 @@
 // Pieces of the "Hero" skin layout: class crest with a level ring, and the "⋯" menu for
 // secondary actions (UI rules: secondary actions live in a menu, not as visible buttons).
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { validPortrait } from "../portrait";
 
 /** Class icon and colour, matched on the identity text. */
 const ICONS: [RegExp, string, string][] = [
@@ -21,7 +22,7 @@ const ICONS: [RegExp, string, string][] = [
 const SPARK = "M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z";
 
 /** Class crest with a ring showing how far along levels 1–max the character is. */
-export function Crest({ identity, level, maxLevel, size = 132, badge = true }: { identity: string; level: number; maxLevel: number; size?: number; badge?: boolean }) {
+export function Crest({ identity, level, maxLevel, size = 132, badge = true, portrait }: { identity: string; level: number; maxLevel: number; size?: number; badge?: boolean; portrait?: string }) {
   const hit = ICONS.find(([re]) => re.test(identity));
   const icon = hit?.[1] ?? SPARK;
   const r = size / 2 - 5;
@@ -34,9 +35,13 @@ export function Crest({ identity, level, maxLevel, size = 132, badge = true }: {
         <circle cx={size / 2} cy={size / 2} r={r} className="crest-fill" strokeDasharray={len} strokeDashoffset={len * (1 - filled)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       </svg>
       <div className="crest-core" style={{ width: size * 0.76, height: size * 0.76 }}>
-        <svg aria-hidden="true" width={size * 0.36} height={size * 0.36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d={icon} />
-        </svg>
+        {validPortrait(portrait) ? (
+          <img className="crest-photo" src={portrait} alt="" draggable={false} />
+        ) : (
+          <svg aria-hidden="true" width={size * 0.36} height={size * 0.36} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d={icon} />
+          </svg>
+        )}
       </div>
       {badge && <span className="crest-level">Level {level}</span>}
     </div>

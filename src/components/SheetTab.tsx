@@ -3,7 +3,7 @@
 // the sidebar (user request, 2026-11-16).
 import type { ReactNode } from "react";
 import type { AnySystem, BaseCharacter } from "../systems/types";
-import { ResourcePips } from "./ResourcePips";
+import { InPlayPanel } from "./InPlay";
 import { DiceButton, NextRoll, useCanRoll } from "./Dice";
 
 export const SHEET_TAB = "sheet";
@@ -14,9 +14,12 @@ export function SheetTab({
   d,
   set,
   top,
+  withHp = false,
 }: {
-  /** Shown above everything (the session's in-play state, set by the DM). */
+  /** Shown above everything. */
   top?: ReactNode;
+  /** Layouts without the sidebar show the HP box in the In play panel. */
+  withHp?: boolean;
   system: AnySystem;
   c: BaseCharacter;
   d: unknown;
@@ -37,16 +40,11 @@ export function SheetTab({
         <DiceButton />
       </div>
     )}
-    <div className={`sheet-tab ${pools.length ? "with-pools" : ""}`}>
+    <div className="sheet-tab">
+      <InPlayPanel c={c} card={system.tableCard?.(c, d) ?? null} pools={pools} set={set} concSpells={system.concentrationSpells?.(c, d) ?? []} withHp={withHp} />
       <section className="sheet-summary" aria-label="Character summary">
         <Summary c={c} d={d} />
       </section>
-      {pools.length > 0 && (
-        <section className="sheet-pools" aria-label="In play">
-          <span className="hero-label">In play · tap to use</span>
-          <ResourcePips c={c} pools={pools} set={set} />
-        </section>
-      )}
     </div>
     </>
   );

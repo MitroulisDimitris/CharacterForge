@@ -158,6 +158,19 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 - Session notes (2026-11-20, REQUIREMENTS 4.8): tabs in `components/NotesTabs.tsx`, the TipTap editor +
   toolbar in `components/NoteEditor.tsx` (lazy-loaded), helpers `src/notes.ts`, table `session_notes`
   (`ensure_session_notes` turns the old `sessions.notes` into "Notes 1"; the old column is a backup, never written).
+- Player tracker (2026-11-22): rules in `src/play.ts` (tests `play.test.ts`), UI `components/InPlay.tsx`
+  (`PlayHp` in the hero sidebar, `InPlayPanel` on the Sheet), stored as `play` in the character and stripped
+  from session copies (`sessionData` in `sessions.ts`). Feature trackers: `systems/dnd5e/resources.ts`
+  (`parseUses` reads the data's "uses" text). Session copies follow the character (App.tsx); no version picker.
+- Greek (2026-11-21): `src/text.ts` (`fold` = case/accent-free, length-keeping; Greek keyboard → Latin for
+  invite codes); fonts via `scripts/fetchFonts.py` (Inter Greek subsets, EB Garamond Greek as the fallback
+  for Cinzel/Crimson Pro); PDFs switch to Noto TTFs in `public/fonts/pdf` + `@pdf-lib/fontkit` when
+  `needsUnicode` (embedded whole: pdf-lib's subsetting garbles these fonts).
+- Monster spells (2026-11-21, REQUIREMENTS 4.9): parsing + builds + the book check in `src/monsterSpells.ts`,
+  UI `components/MonsterSpells.tsx` (SpellSections / SpellsBox), build picker `components/MonsterBuilds.tsx`,
+  table `monster_builds`; encounter lines carry `build`/`spells`, fighters carry `spells`/`used`.
+- Portraits (2026-11-20): `portrait` on every character = a 256 px JPEG data URL (`src/portrait.ts`, crop dialog
+  `components/Portrait.tsx`), shown by `Crest`'s `portrait` prop; session summaries carry it (`session_roster`).
 - Dice (2026-11-19): `src/dice/` (roll maths `roll.ts`, the canvas 3D table `engine.ts`, stat-block
   text → rolls `rollText.ts`); `components/Dice.tsx` (provider in `main.tsx`, `RollChip` only rolls
   inside a `RollScope`: character tabs, monster pages, the Wiki). Sheet roll specs: `dnd5e/rollSpecs.ts`.

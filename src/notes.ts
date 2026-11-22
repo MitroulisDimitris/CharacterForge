@@ -1,4 +1,5 @@
 // Session notes in tabs (REQUIREMENTS §4.8): pure helpers, no React, no network.
+import { fold } from "./text";
 
 export const NOTE_COLORS = [
   { id: "parchment", name: "Parchment", hex: "#e8d3a6" },
@@ -54,9 +55,10 @@ export function htmlToText(html: string): string {
 
 /** How many times `q` appears in `text` (case-insensitive). */
 export function countMatches(text: string, q: string): number {
-  const needle = q.trim().toLowerCase();
+  // Case and accents don't matter ("αρης" finds "Άρης").
+  const needle = fold(q.trim());
   if (!needle) return 0;
-  const hay = text.toLowerCase();
+  const hay = fold(text);
   let n = 0;
   for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + needle.length)) n++;
   return n;

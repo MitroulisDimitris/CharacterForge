@@ -45,6 +45,10 @@ const tableCard5e = (_c: Character, d: Derived): TableCard => ({
   spellDc: d.caster ? d.spellDc : undefined,
   resistances: d.resistances,
   immunities: d.immunities,
+  hitDie: Number(d.hitDice.split("d")[1]) || undefined,
+  hitDiceTotal: Number(d.hitDice.split("d")[0]) || undefined,
+  conMod: d.mods.CON,
+  conSave: d.saves.find((x) => x.ability === "CON")?.bonus,
 });
 
 export const dnd2024: GameSystem<Character, Derived> = {
@@ -69,6 +73,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
+  concentrationSpells: (_c, d) => [...new Set(d.spellRows.filter((r) => r.spell?.concentration).map((r) => r.name))].sort(),
   describeChange: (a, b) => diffDerived(a, b),
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2024),
   credits: CREDITS_2024,
@@ -98,6 +103,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
+  concentrationSpells: (_c, d) => [...new Set(d.spellRows.filter((r) => r.spell?.concentration).map((r) => r.name))].sort(),
   describeChange: (a, b) => diffDerived(a, b),
   buildPdf: async (c, d) => (await import("./pdf")).buildPdf(c, d, CREDITS_2014),
   credits: CREDITS_2014,

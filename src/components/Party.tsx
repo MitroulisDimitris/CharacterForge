@@ -24,14 +24,14 @@ import { Crest, MoreMenu } from "./Hero";
 
 export type HostMember = Membership & { user_id: string };
 
-export function cardOf(m: Membership, system: string): { card: TableCard | null; name: string; identity: string; level: number } {
+export function cardOf(m: Membership, system: string): { card: TableCard | null; name: string; identity: string; level: number; portrait?: string } {
   const sys = getSystem(system);
   try {
     const c = sys!.normalize(m.data);
     const d = sys!.derive(c, m.books);
-    return { card: sys!.tableCard?.(c, d) ?? null, name: c.name || "Unnamed", identity: d.identity, level: c.level };
+    return { card: sys!.tableCard?.(c, d) ?? null, name: c.name || "Unnamed", identity: d.identity, level: c.level, portrait: c.portrait };
   } catch {
-    return { card: null, name: m.summary.name ?? "Unnamed", identity: m.summary.identity ?? "", level: m.summary.level ?? 1 };
+    return { card: null, name: m.summary.name ?? "Unnamed", identity: m.summary.identity ?? "", level: m.summary.level ?? 1, portrait: m.summary.portrait };
   }
 }
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
@@ -133,12 +133,12 @@ export function PartyTab({
       {error && <p className="auth-error">{error}</p>}
       <div className="roster">
         {members.map((m) => {
-          const { card, name, identity, level } = cardOf(m, system);
+          const { card, name, identity, level, portrait } = cardOf(m, system);
           const player = roster.find((r) => r.member_id === m.id)?.display_name || "A player";
           return (
             <article key={m.id} className="roster-card party-card">
               <button type="button" className="party-open" onClick={() => onOpen(m.id)} aria-label={`Open ${name}'s sheet`}>
-                <Crest identity={identity} level={level} maxLevel={sys?.maxLevel ?? 20} size={60} badge={false} />
+                <Crest identity={identity} level={level} maxLevel={sys?.maxLevel ?? 20} size={60} badge={false} portrait={portrait} />
                 <span className="roster-text">
                   <strong>{name}</strong>
                   <span className="muted">
@@ -243,7 +243,7 @@ export function MemberView({ member, system, player, onBack, onChanged }: { memb
         ‹ Party
       </button>
       <header className="member-head">
-        <Crest identity={d.identity} level={c.level} maxLevel={sys.maxLevel} size={72} badge={false} />
+        <Crest identity={d.identity} level={c.level} maxLevel={sys.maxLevel} size={72} badge={false} portrait={c.portrait} />
         <div>
           <h2>{c.name || "Unnamed"}</h2>
           <span className="muted">

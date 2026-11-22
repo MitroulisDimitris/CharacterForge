@@ -10,6 +10,7 @@ import Highlight from "@tiptap/extension-highlight";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { MAX_CHARS, NOTE_COLORS } from "../notes";
+import { foldIndex } from "../text";
 
 export interface NoteEditorHandle {
   /** Select the first match of `q` and scroll to it. False if there's none. */
@@ -89,15 +90,16 @@ export function NoteEditor({
 }
 
 function findIn(editor: Editor, q: string): boolean {
-  const needle = q.trim().toLowerCase();
+  const needle = q.trim();
   if (!needle) return false;
   let hit: { from: number; to: number } | null = null;
   editor.state.doc.descendants((node, pos) => {
     if (hit) return false;
     if (!node.isTextblock) return true;
     // One character per inline leaf (line breaks) so offsets line up with document positions.
-    const text = node.textBetween(0, node.content.size, undefined, "￼").toLowerCase();
-    const i = text.indexOf(needle);
+    // Case and accents don't matter; fold keeps positions, so the match lines up with the text.
+    const text = node.textBetween(0, node.content.size, undefined, "￼");
+    const i = foldIndex(text, needle);
     if (i >= 0) hit = { from: pos + 1 + i, to: pos + 1 + i + needle.length };
     return false;
   });

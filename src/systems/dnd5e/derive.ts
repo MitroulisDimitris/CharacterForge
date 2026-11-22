@@ -345,7 +345,10 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   if (c.languages.length < languageLimit) warnings.push({ level: "info", tab: "skills", section: "languages", text: `You can know ${languageLimit} languages; ${c.languages.length} chosen.` });
   if (c.languages.length > languageLimit) warnings.push({ level: "warn", tab: "skills", section: "languages", text: `${c.languages.length} languages chosen but only ${languageLimit} allowed.` });
   for (const l of [...subclassLanguages, ...classLanguages]) if (!c.languages.includes(l)) warnings.push({ level: "info", tab: "skills", section: "languages", text: `${l === "Druidic" || l === "Thieves' Cant" ? CL.name : subclass?.name} lets you speak ${l}; add it to your languages.` });
-  const toolList = [bg.custom ? c.bgCustomTools : bg.tools, ...CL.tools, ...c.classTools.slice(0, CL.toolChoice?.count ?? 0), ...(subclassActive ? (subclass!.tools ?? []) : []), c.extraTools].filter(Boolean);
+  const speciesTool = species.toolChoice?.includes(c.speciesTool ?? "") ? c.speciesTool! : "";
+  if (species.toolChoice && !speciesTool)
+    warnings.push({ level: "warn", tab: "species", section: "species-choices", text: `${species.name}: choose your tool proficiency (${species.toolChoice.join(", ").toLowerCase()}).` });
+  const toolList = [bg.custom ? c.bgCustomTools : bg.tools, speciesTool, ...CL.tools, ...c.classTools.slice(0, CL.toolChoice?.count ?? 0), ...(subclassActive ? (subclass!.tools ?? []) : []), c.extraTools].filter(Boolean);
   const tools = [...new Set(toolList)].join(", ");
   if (CL.toolChoice && c.classTools.filter(Boolean).length < CL.toolChoice.count)
     warnings.push({ level: "warn", tab: "class", section: "tools", text: `${CL.name}: choose ${CL.toolChoice.label.toLowerCase()}.` });
@@ -426,6 +429,11 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
   const armorWorn: "none" | "light" | "medium" | "heavy" = wornArmor ? (wornArmor.category as "light" | "medium" | "heavy") : "none";
   const classSpeed = CL.speedBonus ? CL.speedBonus(level, armorWorn, shieldUsable && best.shieldOk) : 0;
   const speed = (lineage?.speed ?? species.speed) + (is2014 && hasFeat("mobile") ? 10 : 0) + (hasFeat("squatNimbleness") ? 5 : 0) + classSpeed - (wornArmor?.strength && scores.STR < wornArmor.strength ? 10 : 0);
+  // Exhaustion from the player's tracker (Player's Handbook, appendix A): 2 = speed halved,
+  // 4 = hit point maximum halved, 5 = speed 0. The disadvantages (1 and 3) are listed on the sheet.
+  const exhaustion = Math.max(0, Math.min(6, c.play?.exhaustion ?? 0));
+  const speedNow = exhaustion >= 5 ? 0 : exhaustion >= 2 ? Math.floor(speed / 2) : speed;
+  if (exhaustion >= 4) hpExtras.push(`Exhaustion ${exhaustion}: maximum halved (${Math.floor(hpMax / 2)})`);
   const darkvision = Math.max(lineage?.darkvision ?? species.darkvision, subclassActive ? (subclass!.darkvision ?? 0) : 0);
   const resistances = [...species.resistances, ...(lineage?.resistances ?? []), ...(hasFeat("infernalConstitution") ? ["Cold", "Poison"] : [])];
   const immunities = species.immunities ?? [];
@@ -697,6 +705,10 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     { title: "Feats & Background", items: otherFeatures },
   ].filter((g) => g.items.length > 0);
 
+  // Nothing to fight with: no items and no money (a skipped starting kit gives AC 10 + DEX).
+  if (c.edition === "2014" && level === 1 && !c.inventory.length && !Object.values(c.coins).some((v) => v > 0))
+    warnings.push({ level: "warn", tab: "equipment", section: "starting-equipment", text: "No equipment yet: take your starting equipment (or starting gold)." });
+
   // ---------- encumbrance ----------
   const carried = c.inventory.reduce((s, i) => s + i.qty * i.weight, 0);
   const coinCount = c.coins.cp + c.coins.sp + c.coins.ep + c.coins.gp + c.coins.pp;
@@ -794,14 +806,18 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
     armorText,
     weaponText,
     languageLimit,
-    hpMax,
+    hpMax: exhaustion >= 4 ? Math.floor(hpMax / 2) : hpMax,
+    /** Exhaustion level from the player's tracker (0 = none). */
+    exhaustion,
+    /** Speed before exhaustion. */
+    baseSpeed: speed,
     hpPerLevel: perLevel,
     hpExtras,
     hitDice: `${level}d${hd}`,
     ac,
     acNote,
     initiative,
-    speed,
+    speed: speedNow,
     darkvision,
     resistances,
     immunities,

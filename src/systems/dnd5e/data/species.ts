@@ -41,6 +41,8 @@ export interface Species {
   spellAbility?: Ability;
   skills?: SkillId[];
   skillChoice?: { count: number; from?: SkillId[] };
+  /** One tool proficiency to choose from these (2014 Dwarf: smith's, brewer's or mason's). */
+  toolChoice?: string[];
   /** Ability increases from the species itself (2014 races and legacy species). */
   asi?: { fixed: Partial<Record<Ability, number>>; chooseCount?: number; exclude?: Ability[]; /** Custom Lineage: the chosen ability gets +2 instead of +1. */ chooseAmount?: number };
   languages?: string[];
