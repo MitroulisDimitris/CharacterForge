@@ -9857,3 +9857,120 @@ button.sess-tr:focus-visible {
   margin-top: 3px;
   flex: none;
 }
+
+/* Session name and level, edited in place by the host (user, 2026-11-22). */
+.session-name {
+  max-width: 100%;
+}
+.session-name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 2px 8px;
+  margin: -2px -8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+.session-name-btn > span {
+  min-width: 0;
+}
+.session-name-pen {
+  flex: none;
+  color: var(--muted);
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.session-name-btn:hover,
+.session-name-btn:focus-visible {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.session-name-btn:hover .session-name-pen,
+.session-name-btn:focus-visible .session-name-pen {
+  opacity: 1;
+}
+.session-name.editing {
+  width: 100%;
+}
+.session-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: inherit;
+}
+.session-level select {
+  min-height: 36px;
+  padding: 4px 28px 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  width: auto;
+}
+.session-level-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.identity-sub .session-level select {
+  min-height: 30px;
+  font-size: 12px;
+}
+.session-level-drawer .session-level select {
+  min-height: 44px;
+  font-size: 14px;
+}
+@media (max-width: 860px) {
+  .hero-side > .session-id .session-level,
+  .hero-side > .session-id .session-level-text {
+    display: none;
+  }
+  .hero-side > .session-id .session-name-btn {
+    min-height: 40px;
+  }
+  .hero-side > .session-id .session-name-pen {
+    display: none;
+  }
+}
+.session-level-drawer .side-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Spell rows: the meta line carries dice chips, so it wraps instead of cutting them off. */
+.spell-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  white-space: normal;
+  overflow: visible;
+}
+.spell-meta-bit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.spell-row-meta .roll-chip,
+.spell-row-body .roll-chip {
+  vertical-align: baseline;
+}

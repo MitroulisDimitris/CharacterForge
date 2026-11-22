@@ -1,6 +1,6 @@
 // Sessions UI (REQUIREMENTS §4): the library's Sessions section, Host and Join dialogs, and the
 // session page for the host and for players.
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getSystem, isAvailable, SYSTEMS } from "../systems/registry";
 import { bookName, type AnySystem, type SystemId } from "../systems/types";
 import type { StoredCharacter, Theme } from "../storage";
@@ -241,9 +241,9 @@ export function HostDialog({ onClose, onCreated, onOpen }: { onClose: () => void
   );
 }
 
-function LevelSelect({ max, value, onChange }: { max: number; value: number; onChange: (n: number) => void }) {
+function LevelSelect({ max, value, onChange, label }: { max: number; value: number; onChange: (n: number) => void; label?: string }) {
   return (
-    <select value={value} onChange={(e) => onChange(Number(e.target.value))}>
+    <select value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
       {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((n) => (
         <option key={n} value={n}>
           Level {n}
@@ -489,53 +489,6 @@ export function JoinDialog({
 // ---------------------------------------------------------------------------------------------
 // Small dialogs for the host's menu.
 
-function RenameDialog({ session, onClose, onSaved }: { session: SessionInfo; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState(session.name);
-  const [level, setLevel] = useState(session.level ?? 1);
-  const [error, setError] = useState("");
-  const max = getSystem(session.system)?.maxLevel ?? 20;
-  const changed = (name.trim() && name.trim() !== session.name) || level !== (session.level ?? 1);
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateSession(session.id, { name: name.trim() || session.name, level });
-      onSaved();
-      onClose();
-    } catch (err) {
-      setError(sessionError(err));
-    }
-  };
-  return (
-    <Dialog
-      title="Name and level"
-      onClose={onClose}
-      foot={
-        <>
-          <button type="button" className="btn ghost" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" form="rename-form" className="btn primary" disabled={!name.trim() || !changed}>
-            Save
-          </button>
-        </>
-      }
-    >
-      <form id="rename-form" className="auth-form" onSubmit={save}>
-        <label className="auth-field">
-          <span>Name</span>
-          <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus />
-        </label>
-        <label className="auth-field">
-          <span>Characters' level</span>
-          <LevelSelect max={max} value={Math.min(level, max)} onChange={setLevel} />
-          <small className="auth-hint">For players who join from now on. To level up the players already in, use Party → Award a level to everyone.</small>
-        </label>
-        <Err text={error} />
-      </form>
-    </Dialog>
-  );
-}
-
 function BooksDialog({ session, onClose, onSaved }: { session: SessionInfo; onClose: () => void; onSaved: () => void }) {
   const system = getSystem(session.system)!;
   const [books, setBooks] = useState(session.books);
@@ -612,7 +565,7 @@ export function SessionPage({
   const [roster, setRoster] = useState<RosterRow[] | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [dialog, setDialog] = useState<"rename" | "books" | "swap" | null>(null);
+  const [dialog, setDialog] = useState<"books" | "swap" | null>(null);
   const [tick, setTick] = useState(0);
   const ended = session.status !== "active";
   const [sideOpen, setSideOpen] = useState(false);
@@ -701,9 +654,6 @@ export function SessionPage({
               {session.joining_locked ? "Unlock joining" : "Lock joining"}
             </button>
           )}
-          <button type="button" onClick={() => setDialog("rename")}>
-            Name and level
-          </button>
           <button type="button" onClick={() => setDialog("books")}>
             Allowed books
           </button>
@@ -811,7 +761,6 @@ export function SessionPage({
 
   const dialogs = (
     <>
-      {dialog === "rename" && <RenameDialog session={session} onClose={() => setDialog(null)} onSaved={() => act(async () => {})} />}
       {dialog === "books" && <BooksDialog session={session} onClose={() => setDialog(null)} onSaved={() => act(async () => {})} />}
       {dialog === "swap" && membership && (
         <JoinDialog
@@ -876,12 +825,15 @@ export function SessionPage({
     </>
   );
 
+  const saveName = (name: string) => act(() => updateSession(session.id, { name }));
+  const saveLevel = (level: number) => act(() => updateSession(session.id, { level }));
+  const levelPick = isHost ? <SessionLevel session={session} max={system?.maxLevel ?? 20} onSave={saveLevel} /> : null;
   const identity = (
     <div className="session-id">
-      <h1>{session.name}</h1>
+      <SessionName name={session.name} canEdit={isHost} onSave={saveName} />
+      {levelPick ?? (session.level ? <span className="session-level-text">Level {session.level}</span> : null)}
       <span className="hero-sub">{isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`}</span>
       <span className="hero-system" title={`Books: ${books}`}>
-        {session.level ? `Level ${session.level} · ` : ""}
         {system?.short} · {session.books.length} book{session.books.length === 1 ? "" : "s"}
       </span>
       {status}
@@ -915,6 +867,12 @@ export function SessionPage({
               <MainNav current="sessions" go={(p) => (setSideOpen(false), go(p))} />
             </div>
           )}
+          {levelPick && (
+            <div className="drawer-only session-level-drawer">
+              <span className="side-label">Characters' level</span>
+              {levelPick}
+            </div>
+          )}
           {isHost && code && !ended && <InviteBox code={code} name={session.name} />}
           <div className="hero-foot">
             {mainAction}
@@ -944,10 +902,11 @@ export function SessionPage({
       <header className="topbar">
         <Brand onClick={onBack} />
         <div className="identity">
-          <h1 className="page-title">{session.name}</h1>
+          <SessionName name={session.name} canEdit={isHost} onSave={saveName} className="page-title" />
           <span className="identity-sub">
-            {isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`}
-            {session.level ? ` · Level ${session.level}` : ""} · {system?.short} · {books}
+            {levelPick ?? (session.level ? `Level ${session.level} · ` : "")}
+            {levelPick ? " · " : ""}
+            {isHost ? "You host this session" : `You play ${myChar ? charName(myChar) : "here"}`} · {system?.short} · {books}
           </span>
         </div>
         <div className="actions">
@@ -976,5 +935,72 @@ export function SessionPage({
       </div>
       {dialogs}
     </div>
+  );
+}
+
+/** The session's name; the host clicks it to rename (Enter or leaving the box saves, Esc cancels). */
+function SessionName({ name, canEdit, onSave, className }: { name: string; canEdit: boolean; onSave: (name: string) => Promise<void>; className?: string }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  // Shown until the saved name comes back, so the old one doesn't flash.
+  const [pending, setPending] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => setPending(null), [name]);
+  useEffect(() => {
+    if (draft !== null) {
+      input.current?.focus();
+      input.current?.select();
+    }
+  }, [draft !== null]);
+  const shown = pending ?? name;
+  const finish = (save: boolean) => {
+    const next = (draft ?? "").trim().slice(0, 80);
+    setDraft(null);
+    if (save && next && next !== name) {
+      setPending(next);
+      onSave(next).finally(() => setPending(null));
+    }
+  };
+  if (!canEdit) return <h1 className={className}>{shown}</h1>;
+  if (draft !== null)
+    return (
+      <h1 className={`${className ?? ""} session-name editing`}>
+        <input
+          ref={input}
+          className="session-name-input"
+          value={draft}
+          maxLength={80}
+          aria-label="Session name"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => finish(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") finish(true);
+            else if (e.key === "Escape") finish(false);
+          }}
+        />
+      </h1>
+    );
+  return (
+    <h1 className={`${className ?? ""} session-name`}>
+      <button type="button" className="session-name-btn" onClick={() => setDraft(shown)} title="Rename the session">
+        <span>{shown}</span>
+        <svg className="session-name-pen" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+          <path d="M14 6l4 4" />
+        </svg>
+      </button>
+    </h1>
+  );
+}
+
+/** The level the session plays at; the host changes it right here. */
+function SessionLevel({ session, max, onSave }: { session: SessionInfo; max: number; onSave: (level: number) => Promise<void> }) {
+  const level = Math.min(session.level ?? 1, max);
+  return (
+    <span
+      className="session-level"
+      title="The characters' level. Players who join from now on get a suggestion to match it. Players already in keep theirs: use Party → Award a level to everyone."
+    >
+      <LevelSelect max={max} value={level} onChange={(n) => n !== level && onSave(n)} label="Characters' level" />
+    </span>
   );
 }

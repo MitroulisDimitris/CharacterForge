@@ -217,8 +217,8 @@ and the ones you play in).
 - **Joining asks how** (user, 2026-11-22): **Use the same character** (every session it's in
   follows it) or **Join with a copy** (a separate character "Name (Session)" in the library that
   levels on its own). A copy is picked first when the character already plays elsewhere.
-- **The session's level:** the DM sets the characters' level when creating the session (and in
-  "Name and level"). Joining with another level leaves a suggestion on the character: "Level up to
+- **The session's level:** the DM sets the characters' level when creating the session (and changes it
+  under the session name in the side panel). Joining with another level leaves a suggestion on the character: "Level up to
   N" (a to-do) or "Lower to level N?" (Lower / Keep). Nothing changes the character by itself.
 - "My character" is the original; it's what new sessions copy when the character joins them.
 - (later) "Copy this version over My character" for players who want to carry progress over.
@@ -245,7 +245,7 @@ sidebar's main action is the search ("Look up a monster, spell or condition"), n
 - Copy / share the invite code and link
 - **New code:** makes a fresh code; the old one stops working
 - **Lock joining:** nobody new can join until unlocked
-- Rename the session
+- Rename the session: click its name in the side panel (user, 2026-11-22)
 - Add allowed books (removing a book flags members whose characters use it, without removing them)
 - **End session:** moves it to "Past sessions"; players keep their characters; nothing is deleted
 - Delete session (asks first)

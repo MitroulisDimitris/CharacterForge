@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ABILITY_NAMES, signed } from "../data/core";
+import { useState, type ReactNode } from "react";
+import { ABILITY_NAMES, signed, type Ability } from "../data/core";
 import { castingTimeLabel, cantripDamage, levelLabel, type Spell } from "../data/spells";
 import type { TabProps } from "../../types";
 import type { Character } from "../character";
@@ -8,6 +8,8 @@ import { Card, Counter, Segmented } from "../../../components/ui";
 import { ResourcePips } from "../../../components/ResourcePips";
 import { resources5e } from "../resources";
 import { PreviewHead, WithPreview, useHover } from "./Preview";
+import { RollChip } from "../../../components/Dice";
+import { spellAttackRoll, spellDiceBits } from "../rollSpecs";
 
 /**
  * Spells tab, two views (UI rules: calm first):
@@ -58,7 +60,11 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
             <span>Save DC</span>
           </div>
           <div>
-            <strong>{signed(d.spellAttack)}</strong>
+            <strong>
+              <RollChip spec={() => spellAttackRoll(d, "", d.spellAttack, d.castAbility)} label={`Roll a spell attack, ${signed(d.spellAttack)}`} icon={false}>
+                {signed(d.spellAttack)}
+              </RollChip>
+            </strong>
             <span>Spell attack</span>
           </div>
           <div>
@@ -98,7 +104,7 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
 // ---------- "Your spells": compact rows, details on click ----------
 function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: string; onLearn: (() => void) | null }) {
   const get = (n: string) => d.rules.getSpell(n);
-  type Row = { key: string; s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean };
+  type Row = { key: string; s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean; ability: Ability };
   const rows: Row[] = [];
   const seen = new Set<string>();
   const add = (r: Row) => {
@@ -106,11 +112,12 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
     seen.add(r.name);
     rows.push(r);
   };
-  c.cantrips.forEach((n) => add({ key: "c" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }));
-  c.prepared.forEach((n) => add({ key: "p" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }));
+  const own = d.castAbility;
+  c.cantrips.forEach((n) => add({ key: "c" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false, ability: own }));
+  c.prepared.forEach((n) => add({ key: "p" + n, s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false, ability: own }));
   d.spellRows
     .filter((r) => r.kind === "Always" || r.kind === "Innate")
-    .forEach((r) => add({ key: "g" + r.source + r.name, s: r.spell, name: r.name, source: r.source, note: r.note, dc: r.saveDc, atk: r.attackBonus, granted: true }));
+    .forEach((r) => add({ key: "g" + r.source + r.name, s: r.spell, name: r.name, source: r.source, note: r.note, dc: r.saveDc, atk: r.attackBonus, granted: true, ability: r.ability }));
   const bookOnly = d.spell?.spellbook ? c.spellbook.filter((n) => !c.prepared.includes(n)) : [];
 
   if (!rows.length && !bookOnly.length)
@@ -137,7 +144,7 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
           {rows
             .filter((r) => levelOf(r) === lvl)
             .map((r) => (
-              <SpellRowItem key={r.key} r={r} level={c.level} core={core} />
+              <SpellRowItem key={r.key} r={r} level={c.level} core={core} d={d} />
             ))}
         </section>
       ))}
@@ -145,7 +152,7 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
         <details className="spell-group spellbook-rest">
           <summary className="hero-label">In your spellbook, not prepared today ({bookOnly.length})</summary>
           {bookOnly.map((n) => (
-            <SpellRowItem key={"b" + n} r={{ s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false }} level={c.level} core={core} />
+            <SpellRowItem key={"b" + n} r={{ s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false, ability: own }} level={c.level} core={core} d={d} />
           ))}
         </details>
       )}
@@ -153,20 +160,78 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
   );
 }
 
+/** Plain-text summary (the Learn preview). */
 function shortMeta(s: Spell, level: number, dc: number, atk: number) {
   const dmg = s.level === 0 ? cantripDamage(s, level) : s.damage;
   const time = castingTimeLabel(s.time);
   return [time !== "Action" ? time : "", s.range, s.save ? `${s.save} save` : s.attack ? `attack ${signed(atk)}` : "", dmg ?? ""].filter(Boolean).join(" · ") || `DC ${dc}`;
 }
 
-function SpellRowItem({ r, level, core }: { r: { s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean }; level: number; core: string }) {
+type RowInfo = { s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean; ability: Ability };
+
+/** Damage or healing text with its dice as gold chips (plain text outside a roll scope). */
+function SpellDice({ text, r, d }: { text: string; r: RowInfo; d: Derived }) {
+  const s = r.s!;
+  const half = !!s.save && /half/i.test(s.desc);
+  return (
+    <>
+      {spellDiceBits(text, { label: r.name, mod: d.mods[r.ability], half }).map((b, i) =>
+        b.spec ? (
+          <RollChip key={i} spec={b.spec} fire={b.fire} label={`Roll ${b.text}${b.spec.unit ? ` ${b.spec.unit}` : ""} for ${r.name}`}>
+            {b.text}
+          </RollChip>
+        ) : (
+          <span key={i}>{b.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+function AttackChip({ r, d }: { r: RowInfo; d: Derived }) {
+  return (
+    <RollChip spec={() => spellAttackRoll(d, r.name, r.atk, r.ability)} label={`Roll a spell attack for ${r.name}, ${signed(r.atk)}`}>
+      {signed(r.atk)}
+    </RollChip>
+  );
+}
+
+function SpellMeta({ r, level, d }: { r: RowInfo; level: number; d: Derived }) {
+  const s = r.s!;
+  const dmg = s.level === 0 ? cantripDamage(s, level) : s.damage;
+  const time = castingTimeLabel(s.time);
+  const parts: ReactNode[] = [];
+  if (time !== "Action") parts.push(time);
+  if (s.range) parts.push(s.range);
+  if (s.save) parts.push(`${s.save} save DC ${r.dc}`);
+  else if (s.attack)
+    parts.push(
+      <>
+        attack <AttackChip r={r} d={d} />
+      </>,
+    );
+  if (dmg) parts.push(<SpellDice text={dmg} r={r} d={d} />);
+  if (!parts.length) parts.push(`DC ${r.dc}`);
+  return (
+    <>
+      {parts.map((p, i) => (
+        <span key={i} className="spell-meta-bit">
+          {i > 0 && <span aria-hidden="true">· </span>}
+          {p}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function SpellRowItem({ r, level, core, d }: { r: RowInfo; level: number; core: string; d: Derived }) {
   const s = r.s;
   return (
     <details className="spell-row">
       <summary>
         <span className="spell-chip">{s ? (s.level === 0 ? "C" : s.level) : "?"}</span>
         <span className="spell-row-name">{r.name}</span>
-        <span className="spell-row-meta">{s ? shortMeta(s, level, r.dc, r.atk) : ""}</span>
+        <span className="spell-row-meta">{s ? <SpellMeta r={r} level={level} d={d} /> : ""}</span>
         {s?.concentration && (
           <span className="tag conc" title="Concentration: you can keep only one such spell going; taking damage means a CON save to keep it.">
             Concentration
@@ -189,11 +254,19 @@ function SpellRowItem({ r, level, core }: { r: { s?: Spell; name: string; source
       <div className="spell-row-body">
         {s ? (
           <>
-            <p>{s.desc}</p>
+            <p>
+              <SpellDice text={s.desc} r={r} d={d} />
+            </p>
             <p className="muted">
               {s.school} · {castingTimeLabel(s.time)} · {s.range} · {s.components}
               {s.material ? ` (${s.material})` : ""} · {s.duration}
-              {s.save ? ` · ${s.save} save DC ${r.dc}` : s.attack ? ` · spell attack ${signed(r.atk)}` : ""}
+              {s.save ? ` · ${s.save} save DC ${r.dc}` : ""}
+              {s.attack && (
+                <>
+                  {" · spell attack "}
+                  <AttackChip r={r} d={d} />
+                </>
+              )}
               {s.book !== core ? ` · ${s.book}` : ""}
             </p>
             {r.granted && r.note && <p className="muted">{r.note}</p>}

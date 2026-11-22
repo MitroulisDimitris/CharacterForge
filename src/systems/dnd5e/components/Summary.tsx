@@ -3,7 +3,7 @@ import type { Character } from "../character";
 import type { Derived } from "../derive";
 import { EXHAUSTION } from "../../../live";
 import { RollChip, useCanRoll, useDice } from "../../../components/Dice";
-import { abilityCheck, attackRolls, classRolls, initiativeRoll, savingThrow, skillCheck } from "../rollSpecs";
+import { abilityCheck, attackRolls, classRolls, initiativeRoll, savingThrow, skillCheck, spellAttackRoll } from "../rollSpecs";
 
 export function Summary({ c, d }: { c: Character; d: Derived }) {
   const canRoll = useCanRoll();
@@ -48,7 +48,15 @@ export function Summary({ c, d }: { c: Character; d: Derived }) {
         </div>
         <div>
           <span className="muted">Spell Attack</span>
-          <strong>{d.caster ? signed(d.spellAttack) : "—"}</strong>
+          <strong>
+            {d.caster ? (
+              <RollChip spec={() => spellAttackRoll(d, "", d.spellAttack, d.castAbility)} label={`Roll a spell attack, ${signed(d.spellAttack)}`} icon={false}>
+                {signed(d.spellAttack)}
+              </RollChip>
+            ) : (
+              "—"
+            )}
+          </strong>
         </div>
         {d.cls.sorcery ? (
           <div>

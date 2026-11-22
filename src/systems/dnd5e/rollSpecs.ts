@@ -178,3 +178,61 @@ export function classRolls(d: Derived): ClassRoll[] {
   if (id === "sorcerer" && sub === "wild") out.push({ name: "Wild Magic Surge", note: "After a 1st-level or higher sorcerer spell, if the DM asks", text: "d20 (a 1 surges)", spec: { label: "Wild Magic Surge check", kind: "free", groups: [{ n: 1, sides: 20 }], tone: "player" } });
   return out;
 }
+
+// ---------- Spells (user, 2026-11-22: "roll dice on my spells from my character page") ----------
+
+/** A spell attack: d20 + the casting ability + proficiency (+ items like a Wand of the War Mage). */
+export const spellAttackRoll = (d: Derived, name: string, total: number, ability: Ability): RollSpec => ({
+  label: name ? `${name} · spell attack` : "Spell attack",
+  kind: "attack",
+  groups: D20,
+  parts: checkParts(d, ability, total, "prof"),
+  tone: "player",
+});
+
+const DAMAGE_TYPES = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
+
+/** A piece of a spell's damage text: plain, or dice that roll. */
+export interface SpellDiceBit {
+  text: string;
+  spec?: RollSpec;
+  fire?: boolean;
+}
+
+/**
+ * Spell damage or healing text → pieces with rolls: "3d8 (chosen type)", "1d4 + mod healing"
+ * ("mod" becomes the casting modifier), "2d4+4 Temp HP", "1d10 Piercing + 2d6 Cold" (two rolls).
+ */
+export function spellDiceBits(text: string, o: { label: string; mod: number; half?: boolean }): SpellDiceBit[] {
+  const t = text.replace(/\+\s*mod\b/gi, o.mod < 0 ? `− ${Math.abs(o.mod)}` : `+ ${o.mod}`);
+  const out: SpellDiceBit[] = [];
+  let at = 0;
+  for (const m of t.matchAll(/\d+d\d+(?:\s*[+−-]\s*\d+(?![\dd]))?/g)) {
+    const p = parseDice(m[0]);
+    if (!p) continue;
+    const i = m.index ?? 0;
+    if (i > at) out.push({ text: t.slice(at, i) });
+    const after = t.slice(i + m[0].length);
+    const word = (/^\)?\s*([A-Za-z]+(?: HP)?)/.exec(after)?.[1] ?? "").toLowerCase();
+    const heal = word === "healing";
+    const temp = word === "temp hp";
+    const type = DAMAGE_TYPES.includes(word) ? word : "";
+    const fire = type === "fire";
+    out.push({
+      text: m[0],
+      fire,
+      spec: {
+        label: `${o.label} · ${heal ? "healing" : temp ? "temporary hit points" : "damage"}`,
+        kind: heal || temp ? "heal" : "damage",
+        groups: p.groups.map((g) => ({ ...g, tone: fire ? ("fire" as const) : undefined })),
+        bonus: p.bonus,
+        unit: heal ? "hit points back" : temp ? "temporary hit points" : type || "damage",
+        half: !!o.half && !heal && !temp,
+        tone: "player",
+      },
+    });
+    at = i + m[0].length;
+  }
+  if (at < t.length) out.push({ text: t.slice(at) });
+  return out;
+}

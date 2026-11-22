@@ -91,7 +91,8 @@ for a real player or DM. Be concrete.
 - Log out. Log in as **Account A**. **Host a session** "QA Crypt", with **Characters' level: 3**.
 - Open it:
   - "Level 3" should show on the session;
-  - ⋯ → **Name and level** should let you change it (set it back to 3).
+  - Click the session name in the side panel: rename it (Enter saves, Esc cancels), then change it back.
+  - The level picker under the name should change the level (set it back to 3).
 - Note the **invite code**.
 
 ## Part 6 · Monster spells and builds (Account A, in QA Crypt)

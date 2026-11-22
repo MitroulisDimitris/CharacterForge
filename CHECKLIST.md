@@ -196,7 +196,9 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] Your own tracker: HP in the sidebar (damage with type/resistance, heal, temp), conditions, exhaustion, concentration, death saves at 0 HP; private, not sent to sessions
 - [x] Trackers for limited-use features (class, subclass, race, feats), Hit Dice, Short rest (spend Hit Dice: roll or type) and Long rest
 - [x] Session copies follow the character; the version picker is gone (rework later); the player's session page shows the DM's state read-only
-- [x] Joining: "Use the same character" or "Join with a copy"; the DM sets the session's level (host form, Name and level); a different level becomes a Level up / Lower suggestion
+- [x] Joining: "Use the same character" or "Join with a copy"; the DM sets the session's level (host form; later under the session name); a different level becomes a Level up / Lower suggestion
+- [x] Session name and level edit in place in the side panel (click the name; the level picker below it); "Name and level" left the ⋯ menu (2026-11-22)
+- [x] Spell rolls on the character: each spell's attack and damage/healing dice are gold chips on the Spells tab (row and open text; "+ mod" uses the casting modifier; fire in orange; "half on a save" shown), and the Spell attack numbers on the Sheet and Spells tab roll (2026-11-22; `spellDiceBits`/`spellAttackRoll` in `dnd5e/rollSpecs.ts`). Not yet: casting with a slot, upcast dice
 - [x] Equipment step: Next puts the picked kit (or gold) in; no equipment at level 1 is a to-do
 - [x] Skills step shows the real weapon / armor / tool proficiencies; a hill dwarf can take the warhammer; the dwarf's tool is asked (and a to-do until picked)
 
