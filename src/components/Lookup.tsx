@@ -17,6 +17,7 @@ import {
   addRecent,
   allMonsters,
   allSpells,
+  bookSpell,
   favorites,
   getMonster,
   getSpell,
@@ -241,6 +242,12 @@ export function SpellCard({ s, startOpen = false }: { s: Spell; startOpen?: bool
         <dd>{s.duration}</dd>
         <dt>Classes</dt>
         <dd>{s.dnd_class || "—"}</dd>
+        {s.book && (
+          <>
+            <dt>Book</dt>
+            <dd>{s.book}</dd>
+          </>
+        )}
       </dl>
       <button type="button" className="link lk-more" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {open ? "Hide description" : "What it does"}
@@ -352,29 +359,10 @@ function SpellRow({ s, current, onOpen }: { s: SpellBrief; current: boolean; onO
   );
 }
 
-const CAST: Record<string, string> = { "1A": "1 action", "1BA": "1 bonus action", "1R": "1 reaction", "1m": "1 minute", "10m": "10 minutes" };
-/** The app's own write-up of a spell (levels 0–3, PHB / Xanathar's / Tasha's) in the Lookup's shape. */
+/** A spell's write-up from the characters' data, shown at once while the list loads. */
 function appSpell(slug: string, name: string): Spell | null {
   const a = RULES["2014"].getSpell(name);
-  if (!a) return null;
-  const classes = [...new Set([...(a.lists ?? []).map((l) => l.split("@")[0]), ...(a.sorcerer ? ["sorcerer"] : [])])].map((c) => c.charAt(0).toUpperCase() + c.slice(1)).sort();
-  return {
-    slug,
-    name: a.name,
-    desc: a.desc,
-    higher_level: "",
-    range: a.range,
-    components: a.components.replace(/,/g, ", "),
-    material: a.material ?? "",
-    duration: a.duration,
-    requires_concentration: !!a.concentration,
-    can_be_cast_as_ritual: !!a.ritual,
-    casting_time: CAST[a.time] ?? a.time,
-    level: a.level === 0 ? "Cantrip" : `${ordinal(a.level)}-level`,
-    level_int: a.level,
-    school: a.school,
-    dnd_class: classes.join(", "),
-  };
+  return a ? bookSpell(a, slug) : null;
 }
 
 /** The spell open beside the list: everything about it. The app's own write-up shows at once;

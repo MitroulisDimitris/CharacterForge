@@ -1,6 +1,10 @@
 // Lookup data (REQUIREMENTS §4.4): the SRD 5.1 monsters and spells, saved in the app
 // (public/srd-monsters.json, public/srd-spells.json; made from Open5e by scripts/fetchSrd.ts),
 // loaded once and kept in memory; favorites and recently viewed in this browser.
+// The spell list adds the 2014 book spells the SRD leaves out (Chromatic Orb, Hex, Toll the Dead…)
+// from the characters' own spell data (user, 2026-11-22).
+import { RULES } from "./systems/dnd5e/rules";
+import type { Spell as BookSpell } from "./systems/dnd5e/data/spells";
 
 export interface Named {
   name: string;
@@ -65,6 +69,8 @@ export interface Spell {
   level_int: number;
   school: string;
   dnd_class: string;
+  /** Spells from the characters' data (not in the SRD): the book it's from. */
+  book?: string;
 }
 
 const files = new Map<string, Promise<unknown>>();
@@ -83,7 +89,56 @@ function load<T>(name: string): Promise<T> {
   return p as Promise<T>;
 }
 const monstersFile = () => load<Monster[]>("srd-monsters.json");
-const spellsFile = () => load<Spell[]>("srd-spells.json");
+const BOOK_NAMES: Record<string, string> = { PHB14: "Player's Handbook", PHB: "Player's Handbook", XGE: "Xanathar's Guide to Everything", TCE: "Tasha's Cauldron of Everything" };
+const CAST: Record<string, string> = { "1A": "1 action", "1BA": "1 bonus action", "1R": "1 reaction", "1m": "1 minute", "10m": "10 minutes" };
+const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
+export const spellSlug = (name: string) => name.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/** A spell from the characters' 2014 data, in the Lookup's shape. */
+export function bookSpell(a: BookSpell, slug = spellSlug(a.name)): Spell {
+  const classes = [...new Set([...(a.lists ?? []).map((l) => l.split("@")[0]), ...(a.sorcerer ? ["sorcerer"] : [])])].map((c) => c.charAt(0).toUpperCase() + c.slice(1)).sort();
+  return {
+    slug,
+    name: a.name,
+    desc: a.desc,
+    higher_level: "",
+    range: a.range,
+    components: a.components.replace(/,/g, ", "),
+    material: a.material ?? "",
+    duration: a.duration,
+    requires_concentration: !!a.concentration,
+    can_be_cast_as_ritual: !!a.ritual,
+    casting_time: CAST[a.time] ?? a.time,
+    level: a.level === 0 ? "Cantrip" : `${ordinal(a.level)}-level`,
+    level_int: a.level,
+    school: a.school,
+    dnd_class: classes.join(", "),
+    book: BOOK_NAMES[a.book] ?? a.book,
+  };
+}
+
+/** The SRD spells plus the 2014 book spells it leaves out. */
+export function withBookSpells(srd: Spell[], book: BookSpell[]): Spell[] {
+  const names = new Set(srd.map((s) => s.name.toLowerCase()));
+  const slugs = new Set(srd.map((s) => s.slug));
+  const extra = book
+    .filter((a) => !names.has(a.name.toLowerCase()))
+    .map((a) => {
+      const slug = spellSlug(a.name);
+      return bookSpell(a, slugs.has(slug) ? `${slug}-book` : slug);
+    });
+  return [...srd, ...extra];
+}
+
+let spellsAll: Promise<Spell[]> | null = null;
+const spellsFile = () =>
+  (spellsAll ??= load<Spell[]>("srd-spells.json").then(
+    (srd) => withBookSpells(srd, RULES["2014"].spells),
+    (e) => {
+      spellsAll = null;
+      throw e;
+    },
+  ));
 const matches = (name: string, q: string) => name.toLowerCase().includes(q.trim().toLowerCase());
 
 export async function searchMonsters(q: string): Promise<Monster[]> {
