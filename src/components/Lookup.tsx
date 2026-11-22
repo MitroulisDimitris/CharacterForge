@@ -8,6 +8,7 @@ import { RollChip, RollScope } from "./Dice";
 import { SpellSections, spellTraitNames } from "./MonsterSpells";
 import type { SpellMap } from "../monsterSpells";
 import { parseDice } from "../dice/roll";
+import { spellTextRolls } from "../dice/rollText";
 import { signed } from "../monsters";
 import { typeColor } from "../monsters";
 import { CONDITIONS, EXHAUSTION } from "../live";
@@ -213,9 +214,27 @@ export function MonsterCard({ m, startOpen = false, spells, hideSpells = false, 
   );
 }
 
+/** Spell text with its dice as gold chips (user, 2026-11-22: roll from the Wiki's spell list). */
+function SpellProse({ text, name }: { text: string; name: string }) {
+  return (
+    <>
+      {spellTextRolls(text, name).map((b, i) =>
+        b.spec ? (
+          <RollChip key={i} spec={b.spec} fire={b.fire} label={`Roll ${b.text}${b.spec.unit ? ` ${b.spec.unit}` : ""} for ${name}`}>
+            {b.text}
+          </RollChip>
+        ) : (
+          <span key={i}>{b.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 export function SpellCard({ s, startOpen = false }: { s: Spell; startOpen?: boolean }) {
   const [open, setOpen] = useState(startOpen);
   return (
+    <RollScope>
     <article className="lk-card spell">
       <header className="lk-head">
         <div>
@@ -255,16 +274,19 @@ export function SpellCard({ s, startOpen = false }: { s: Spell; startOpen?: bool
       {open && (
         <div className="lk-full lk-text">
           {s.desc.split(/\n+/).map((p, i) => (
-            <p key={i}>{p}</p>
+            <p key={i}>
+              <SpellProse text={p.replace(/\*\*/g, "")} name={s.name} />
+            </p>
           ))}
           {s.higher_level && (
             <p>
-              <strong>At higher levels.</strong> {s.higher_level}
+              <strong>At higher levels.</strong> <SpellProse text={s.higher_level} name={s.name} />
             </p>
           )}
         </div>
       )}
     </article>
+    </RollScope>
   );
 }
 
