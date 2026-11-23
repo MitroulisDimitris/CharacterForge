@@ -9974,3 +9974,234 @@ button.sess-tr:focus-visible {
 .spell-row-body .roll-chip {
   vertical-align: baseline;
 }
+
+/* ---------- Sheet tab, calmer (user, 2026-11-23; mockup "Sheet tab on phone — cleaner") ----------
+   Saves sit in the ability tiles, conditions / exhaustion / concentration open from one Status
+   line, and on phones the name + HP scroll away while the tabs stay pinned. */
+.summary.sheet-numbers .stat-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.spell-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--gold-soft);
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.spell-line > span > strong {
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 1.05rem;
+}
+.abilities-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 0.9rem;
+}
+.abilities-head h4 {
+  margin: 0;
+}
+.abilities-head .prof {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.abilities-head + .abilities-grid {
+  margin-top: 0.45rem;
+}
+.abilities-grid .ability {
+  padding: 0;
+  align-content: start;
+  overflow: hidden;
+}
+.ability-check {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.ability-check.roll-box:hover {
+  transform: none;
+  background: var(--gold-soft);
+}
+.ability-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.ability-save.prof {
+  color: var(--text);
+  font-weight: 600;
+}
+.ability-save .roll-chip {
+  padding: 0 6px;
+}
+
+/* The roll row: Normal / Advantage / Disadvantage + Dice, then the tip under it */
+.sheet-dice-tip {
+  flex: 1 1 100%;
+}
+@media (max-width: 720px) {
+  .sheet-dice .next-roll {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .sheet-dice .next-roll-label,
+  .sheet-dice .dice-btn-label {
+    display: none;
+  }
+  .sheet-dice .seg-btn {
+    padding: 0 4px;
+  }
+  .sheet-dice .dice-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+  .sheet-dice .sheet-dice-tip {
+    margin-top: -4px;
+  }
+}
+
+/* "Status · All clear": opens conditions, exhaustion and concentration */
+.play-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.play-status:hover {
+  border-color: var(--gold);
+}
+.play-status > svg:first-child {
+  flex: none;
+  color: #6fbf73;
+}
+:root[data-theme="parchment"] .play-status > svg:first-child {
+  color: #2e6b32;
+}
+.play-status > svg:last-child {
+  flex: none;
+  color: var(--muted);
+}
+.play-status-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+}
+.play-status-text strong {
+  color: var(--text);
+}
+.play-status.on {
+  border-style: solid;
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.play-status.on > svg:first-child,
+.play-status.on .play-status-text {
+  color: var(--gold);
+}
+.status-modal {
+  width: min(560px, 100%);
+}
+.status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.status-head .dice-card-x {
+  width: 44px;
+  height: 44px;
+}
+.status-body {
+  gap: 1.1rem;
+}
+.status-body .play-row {
+  align-items: flex-start;
+}
+.status-body .cond-toggle {
+  flex: 1 1 260px;
+}
+.status-cond-text {
+  flex-basis: 100%;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .status-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .status-modal {
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+    max-height: 88vh;
+    max-height: 88dvh;
+  }
+  .status-modal .modal-foot {
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom));
+  }
+  .status-modal .modal-foot .btn {
+    flex: 1;
+    min-height: 48px;
+  }
+  .status-body .cond-btn {
+    min-height: 44px;
+  }
+}
+
+/* Phones: the character's name, portrait and HP scroll away; the tabs stay pinned. */
+@media (max-width: 860px) {
+  .hero-side.char-side {
+    position: static;
+    box-shadow: none;
+  }
+  .char-main > .tabs {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    margin: -14px -16px 1rem;
+    padding: 0 16px;
+    background: var(--bg);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  }
+}
+.summary.in-sheet > .abilities-head:first-child {
+  margin-top: 0;
+}
+.sheet-numbers {
+  margin-bottom: 14px;
+}

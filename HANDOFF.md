@@ -1,9 +1,78 @@
-# Character Forge — handoff (state on 2026-11-16)
+# Character Forge — handoff (state on 2026-11-22)
 
 Everything a new session needs to pick up this project. `CLAUDE.md` (auto-loaded) holds the
 product direction and the **UI rules**; this file holds the full picture: what exists, how it is
 built, how it was checked, what's open, and how the user likes to work. **`REQUIREMENTS.md`** is
-the roadmap for what comes next (accounts, sessions, publishing).
+the roadmap; **`CHECKLIST.md`** is the user's tracker (tick items as they're done). Sections 0a and
+below are older history: where they disagree with section 00, section 00 wins.
+
+---
+
+## 00. Current state (2026-11-22) — start here
+
+**Live:** https://character-forge-d8q.pages.dev (Cloudflare Pages, builds from `origin/main`
+automatically on push; GitHub `MitroulisDimitris/CharacterForge`). Netlify is no longer used.
+Supabase project `jyjnarwlylmpsjdnanrx` (accounts, characters, sessions, notes, encounters,
+builds, feedback, audit log).
+
+**Git:** everything is committed and pushed (2026-11-23: the calmer Sheet tab, from the "UI is cramped"
+feedback; mockup canvas https://claude.ai/artifact/E3VPUAeBnk1aWySVCPaaWr). Commit only when the user asks.
+Never add Claude as co-author/session lines.
+
+**Built in the 2026-11-20 → 22 sessions** (details in `CHECKLIST.md` §13 and `CLAUDE.md` dev notes):
+- Character portraits (256 px crop dialog), shown in sessions too.
+- Monster spells as their own section, spell cards with dice, monster **builds** (save/rename/
+  delete, ⚠ ↑/↓ "stronger/weaker than the books" check), per-monster slots in the fight.
+- **Greek** everywhere you can type (fonts, accent-free search, Greek-keyboard invite codes,
+  Unicode PDFs via Noto TTFs + fontkit, embedded whole).
+- **Player tracker** (`play` on the character, private, stripped from session copies): HP, temp
+  HP, damage types (resist/immune/vulnerable), conditions, concentration (CON save DC), death
+  saves (3D die), hit dice, short/long rest, exhaustion (speed halved at 2, HP max halved at 4,
+  speed 0 at 5; long rest only *suggests* lowering it). Feature trackers (Channel Divinity, Rage,
+  Ki, Lay on Hands, Lucky, racial spells).
+- QA fixes: starting equipment applied on Next, dwarf tool choice, real proficiencies in Skills.
+- **Session level**: host picks "Characters' level" when creating; joining offers **Use the same
+  character** or **Join with a copy**; a different level becomes a "Level up to N" to-do or a
+  "Lower to level N?" suggestion (never automatic). The per-session version picker was removed
+  (rework is in CHECKLIST "Later").
+- Session **name and level edit in place** in the side panel (click the name; level picker under
+  it; phone: in the ☰ drawer). "Name and level" left the ⋯ menu.
+- **Spell rolls on the character**: Spells tab rows have a to-hit chip (+N, d20) and damage/
+  healing dice chips (`spellDiceBits`, `spellAttackRoll` in `dnd5e/rollSpecs.ts`); the Spell attack
+  numbers on Sheet and Spells tab roll. Not yet: casting uses a slot, upcast dice.
+- **Wiki spells**: the list merges the SRD file with the 90 2014 book spells it lacks
+  (`withBookSpells` in `src/lookup.ts`; 409 spells; "Book" line on their page). Their text is the
+  short write-up, no "At higher levels". Spell pages roll dice from the text (`spellTextRolls` in
+  `src/dice/rollText.ts`: damage type, half on a save, healing, temp HP, plain rolls like Bless).
+
+**Database migrations** (all applied; the user prefers to run SQL themselves when asked):
+`20261120_portrait_roster.sql`, `20261121_monster_builds.sql`, `20261122_session_level.sql`.
+
+**Checks:** `npx tsc --noEmit` (never `tsc -b`), `npx vitest run` (222 tests), `npx vite build`.
+**Browser checks:** puppeteer-core 23.11.1 + Chrome headless against the **user's own dev server
+on http://localhost:5173** (don't start/restart it unless asked; check it's up with curl). Log in
+with the **test account** (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD` in `.env.local`), never the
+user's (one active login per account). Create throwaway "QA …" rows with the Supabase JS client
+signed in as the test account, delete them in `finally`. The scripts lived in the session
+scratchpad (`pp/*.cjs`: tracker, mspells, slevel, spellcast, wikiorb…) and may be gone; recreate
+from this recipe. Selectors that matter: dice result `.dice-card`, library open `.hero-card-open`,
+back `.hero-back`, tabs `.tabs button`.
+
+**Open / next** (ask the user which):
+- Spells: "Cast" with a slot (spend it), upcast dice; "At higher levels" for the 90 book spells
+  (needs reading each spell in the user's books, same work as upcasting).
+- QA quick wins not done: Parchment library portraits, the Feedback button covering content,
+  the potion table's markdown, slot taps one at a time on the sheet.
+- Untested in a browser: a second account actually joining (same/copy) and its level suggestion
+  (the user can run `docs/qa-new-features.md` in Claude-in-Chrome); real iPhone/Safari.
+- Feedback button: open items exist (badge showed 7 on 2026-11-22); "fix the feedback" flow is
+  in `CLAUDE.md`.
+- CHECKLIST "Later": per-session versions rework; dice at the table (player rolls seen by the DM).
+
+**Answered for the user (rules):** 2014 sorcerers choose Sorcerous Origin (Draconic Bloodline)
+at **1st level** (PHB p.101, XGE p.50, TCE agree); in the 2024 PHB subclasses come at level 3.
+The user's "Parry Hotter Impr…" is a 2014 Half-Elf Draconic Sorcerer 3.
+Shocking Grasp etc.: the +N chip is the d20 to-hit roll; damage only on a hit.
 
 ---
 
@@ -149,7 +218,9 @@ Spells: levels 0–3 only (enough for character level 5).
 
 - Run: `start.bat` or `npm run dev` → http://localhost:5173 (port fixed in `vite.config.ts`).
 - Checks (run all three before saying something works):
-  `npx tsc --noEmit` · `npx vitest run` (72 tests) · `npx vite build`.
+  `npx tsc --noEmit` · `npx vitest run` (222 tests on 2026-11-22) · `npx vite build`.
+- Browser checks today: see section 00 (the user's dev server on 5173 + the test account). The
+  older recipe below (second server on 5179) is from before accounts.
 - Browser testing used **puppeteer-core 23.11.1** with
   `C:/Program Files/Google/Chrome/Application/chrome.exe` (headless) against a second dev server:
   `npx vite --port 5179 --strictPort`. The scripts lived in the session scratchpad (gone now);
@@ -231,9 +302,8 @@ Spells: levels 0–3 only (enough for character level 5).
 
 ## 6. Open items / backlog
 
-- **Not pushed**: 7 local commits on `main` ahead of `origin/main`
-  (https://github.com/MitroulisDimitris/CharacterForge). Pushing deploys to Netlify. The user said
-  (2026-11-16) don't push yet, build first; ask before pushing.
+- (2026-11-22: see section 00 for the current open items. Pushing `main` deploys to Cloudflare
+  Pages; push only when the user says "commit and push".)
 - **Feedback file**: 1 open item ("why do I get Sorcerous Origin at creation?"). Answered in chat:
   correct for 2014 rules (PHB p.100–101: chosen at level 1; the user's D&D Beyond character is 2024,
   where it's level 3). Ask the user whether to mark it fixed.
@@ -262,7 +332,11 @@ Spells: levels 0–3 only (enough for character level 5).
 - They test in the browser and send screenshots or Feedback-button notes; they prefer drafts/
   mockups (Design canvas artifact) for bigger UI changes before building.
 - Verify before claiming: types + tests + build + a browser run; say plainly what wasn't checked.
-- Commits end with the session attribution lines; ask before pushing.
+- Commit/push only when asked ("commit and push"); commit messages are just the change, with
+  **no** Claude co-author / session / "Generated with" lines (user, 2026-11-20).
+- They want my assumptions listed in the end report, and questions asked instead of guesses.
+- They prefer to run database SQL themselves: give them the script (idempotent) when a migration
+  is needed, and tell them before changing Supabase.
 
 ## 8. Environment gotchas (Windows, Git Bash)
 

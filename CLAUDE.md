@@ -169,6 +169,18 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 - Monster spells (2026-11-21, REQUIREMENTS 4.9): parsing + builds + the book check in `src/monsterSpells.ts`,
   UI `components/MonsterSpells.tsx` (SpellSections / SpellsBox), build picker `components/MonsterBuilds.tsx`,
   table `monster_builds`; encounter lines carry `build`/`spells`, fighters carry `spells`/`used`.
+- Spell rolls (2026-11-22): character Spells tab chips from `spellDiceBits` / `spellAttackRoll`
+  (`dnd5e/rollSpecs.ts`; one d20 chip per spell, on its row); Wiki/Lookup spell text from
+  `spellTextRolls` (`src/dice/rollText.ts`). The Wiki spell list = SRD file + the 2014 book spells it
+  lacks (`withBookSpells`, `bookSpell` in `src/lookup.ts`).
+- Sessions (2026-11-22): `sessions.level` (host picks it; join/swap set `level_award` when it differs);
+  name and level edit in place in the session side panel (`SessionName`, `SessionLevel` in `Sessions.tsx`).
+- Sheet tab layout (2026-11-23): `GameSystem.SheetNumbers` (dnd5e: `SheetNumbers` in `Summary.tsx`) shows the key
+  numbers at the top; `Summary` with `inSheet` leaves them out and merges saving throws into the ability tiles.
+  Conditions / exhaustion / concentration live in `StatusDialog` (`InPlay.tsx`), opened from the Status line.
+  Phones: `.char-side` (hero sidebar) scrolls away, `.char-main > .tabs` is sticky.
+- **No regex lookbehind** (`(?<=…)`, `(?<!…)`) in app code: Safari before 16.4 fails to parse the
+  whole module. Use `\b` or capture groups.
 - Portraits (2026-11-20): `portrait` on every character = a 256 px JPEG data URL (`src/portrait.ts`, crop dialog
   `components/Portrait.tsx`), shown by `Crest`'s `portrait` prop; session summaries carry it (`session_roster`).
 - Dice (2026-11-19): `src/dice/` (roll maths `roll.ts`, the canvas 3D table `engine.ts`, stat-block

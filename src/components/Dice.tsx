@@ -316,9 +316,9 @@ export function DiceButton() {
   if (!dice) return null;
   return (
     <div className="dice-btn-wrap" ref={ref}>
-      <button type="button" className={`btn dice-btn ${open ? "on" : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className={`btn dice-btn ${open ? "on" : ""}`} aria-expanded={open} aria-label="Dice" onClick={() => setOpen((o) => !o)}>
         <DieIcon size={18} />
-        Dice
+        <span className="dice-btn-label">Dice</span>
       </button>
       {open && (
         <div className="dice-pop" role="dialog" aria-label="Throw dice">

@@ -5,88 +5,135 @@ import { EXHAUSTION } from "../../../live";
 import { RollChip, useCanRoll, useDice } from "../../../components/Dice";
 import { abilityCheck, attackRolls, classRolls, initiativeRoll, savingThrow, skillCheck, spellAttackRoll } from "../rollSpecs";
 
-export function Summary({ c, d }: { c: Character; d: Derived }) {
+/** AC, speed, initiative, proficiency and the spell numbers: the top of the Sheet tab. */
+export function SheetNumbers({ d }: { c: Character; d: Derived }) {
   const canRoll = useCanRoll();
   const dice = useDice();
   return (
-    <div className={`summary ${canRoll ? "rollable" : ""}`}>
+    <section className={`summary sheet-numbers ${canRoll ? "rollable" : ""}`} aria-label="Key numbers">
       <div className="stat-row">
         <Stat label="Armor Class" value={d.ac} title={d.acNote} big />
-        <Stat label="Hit Points" value={d.hpMax} title={d.hpExtras.join(", ") || undefined} big />
-        <Stat label="Initiative" value={signed(d.initiative)} roll={canRoll ? () => dice?.roll(initiativeRoll(d)) : undefined} />
         <Stat label="Speed" value={`${d.speed} ft`} title={d.exhaustion >= 2 ? `${d.baseSpeed} ft without exhaustion` : undefined} />
+        <Stat label="Initiative" value={signed(d.initiative)} roll={canRoll ? () => dice?.roll(initiativeRoll(d)) : undefined} />
         <Stat label="Prof. Bonus" value={signed(d.pb)} />
       </div>
+      {d.caster && (
+        <div className="spell-line">
+          <span>
+            Spell save DC <strong>{d.spellDc}</strong>
+          </span>
+          <span>
+            Spell attack{" "}
+            <RollChip spec={() => spellAttackRoll(d, "", d.spellAttack, d.castAbility)} label={`Roll a spell attack, ${signed(d.spellAttack)}`} icon={false}>
+              <strong>{signed(d.spellAttack)}</strong>
+            </RollChip>
+          </span>
+        </div>
+      )}
       {d.exhaustion > 0 && (
         <p className="exhaustion-note" role="note">
           <strong>Exhaustion {d.exhaustion}:</strong> {EXHAUSTION.slice(1, d.exhaustion + 1).join(" · ")}.
         </p>
       )}
+    </section>
+  );
+}
 
-      <div className="abilities-grid">
-        {ABILITIES.map((a) =>
-          canRoll ? (
-            <button type="button" className="ability roll-box" key={a} title={`Roll a ${ABILITY_NAMES[a]} check`} aria-label={`Roll a ${ABILITY_NAMES[a]} check, ${signed(d.mods[a])}`} onClick={() => dice?.roll(abilityCheck(d, a))}>
-              <span className="ability-name">{a}</span>
-              <span className="ability-mod">{signed(d.mods[a])}</span>
-              <span className="ability-score">{d.scores[a]}</span>
-            </button>
-          ) : (
-            <div className="ability" key={a} title={ABILITY_NAMES[a]}>
-              <span className="ability-name">{a}</span>
-              <span className="ability-mod">{signed(d.mods[a])}</span>
-              <span className="ability-score">{d.scores[a]}</span>
+export function Summary({ c, d, inSheet = false }: { c: Character; d: Derived; inSheet?: boolean }) {
+  const canRoll = useCanRoll();
+  const dice = useDice();
+  return (
+    <div className={`summary ${canRoll ? "rollable" : ""} ${inSheet ? "in-sheet" : ""}`}>
+      {!inSheet && (
+        <>
+          <div className="stat-row">
+            <Stat label="Armor Class" value={d.ac} title={d.acNote} big />
+            <Stat label="Hit Points" value={d.hpMax} title={d.hpExtras.join(", ") || undefined} big />
+            <Stat label="Initiative" value={signed(d.initiative)} roll={canRoll ? () => dice?.roll(initiativeRoll(d)) : undefined} />
+            <Stat label="Speed" value={`${d.speed} ft`} title={d.exhaustion >= 2 ? `${d.baseSpeed} ft without exhaustion` : undefined} />
+            <Stat label="Prof. Bonus" value={signed(d.pb)} />
+          </div>
+          <div className="spell-strip">
+            <div>
+              <span className="muted">Spell DC</span>
+              <strong>{d.caster ? d.spellDc : "—"}</strong>
             </div>
-          ),
-        )}
-      </div>
-
-      <div className="spell-strip">
-        <div>
-          <span className="muted">Spell DC</span>
-          <strong>{d.caster ? d.spellDc : "—"}</strong>
-        </div>
-        <div>
-          <span className="muted">Spell Attack</span>
-          <strong>
-            {d.caster ? (
-              <RollChip spec={() => spellAttackRoll(d, "", d.spellAttack, d.castAbility)} label={`Roll a spell attack, ${signed(d.spellAttack)}`} icon={false}>
-                {signed(d.spellAttack)}
-              </RollChip>
+            <div>
+              <span className="muted">Spell Attack</span>
+              <strong>
+                {d.caster ? (
+                  <RollChip spec={() => spellAttackRoll(d, "", d.spellAttack, d.castAbility)} label={`Roll a spell attack, ${signed(d.spellAttack)}`} icon={false}>
+                    {signed(d.spellAttack)}
+                  </RollChip>
+                ) : (
+                  "—"
+                )}
+              </strong>
+            </div>
+            {d.cls.sorcery ? (
+              <div>
+                <span className="muted">Sorcery Pts</span>
+                <strong>{d.sorceryPoints}</strong>
+              </div>
             ) : (
-              "—"
+              <div>
+                <span className="muted">Hit Die</span>
+                <strong>d{d.cls.hitDie}</strong>
+              </div>
             )}
-          </strong>
-        </div>
-        {d.cls.sorcery ? (
-          <div>
-            <span className="muted">Sorcery Pts</span>
-            <strong>{d.sorceryPoints}</strong>
+            <div>
+              <span className="muted">Slots</span>
+              <strong>{d.slots.filter(Boolean).length ? d.slots.map((n, i) => (n ? `${n}×${i + 1}` : "")).filter(Boolean).join(" ") + (d.pact ? " (pact)" : "") : "—"}</strong>
+            </div>
           </div>
-        ) : (
-          <div>
-            <span className="muted">Hit Die</span>
-            <strong>d{d.cls.hitDie}</strong>
-          </div>
-        )}
-        <div>
-          <span className="muted">Slots</span>
-          <strong>{d.slots.filter(Boolean).length ? d.slots.map((n, i) => (n ? `${n}×${i + 1}` : "")).filter(Boolean).join(" ") + (d.pact ? " (pact)" : "") : "—"}</strong>
-        </div>
-      </div>
+          {d.exhaustion > 0 && (
+            <p className="exhaustion-note" role="note">
+              <strong>Exhaustion {d.exhaustion}:</strong> {EXHAUSTION.slice(1, d.exhaustion + 1).join(" · ")}.
+            </p>
+          )}
+        </>
+      )}
 
-      <h4>Saving Throws</h4>
-      <ul className="mini-list cols-2">
-        {d.saves.map((s) => (
-          <li key={s.ability} className={s.proficient ? "prof" : ""}>
-            <span className="dot" />
-            <span>{ABILITY_NAMES[s.ability]}</span>
-            <RollChip spec={() => savingThrow(d, s)} label={`Roll a ${ABILITY_NAMES[s.ability]} saving throw, ${signed(s.bonus)}`} icon={false}>
-              <strong>{signed(s.bonus)}</strong>
-            </RollChip>
-          </li>
-        ))}
-      </ul>
+      <div className="abilities-head">
+        <h4>Abilities &amp; saving throws</h4>
+        <span className="muted prof">
+          <span className="dot" /> proficient save
+        </span>
+      </div>
+      <div className="abilities-grid">
+        {ABILITIES.map((a) => {
+          const save = d.saves.find((x) => x.ability === a);
+          const inner = (
+            <>
+              <span className="ability-name">{a}</span>
+              <span className="ability-mod">{signed(d.mods[a])}</span>
+              <span className="ability-score">{d.scores[a]}</span>
+            </>
+          );
+          return (
+            <div className="ability" key={a}>
+              {canRoll ? (
+                <button type="button" className="ability-check roll-box" title={`Roll a ${ABILITY_NAMES[a]} check`} aria-label={`Roll a ${ABILITY_NAMES[a]} check, ${signed(d.mods[a])}`} onClick={() => dice?.roll(abilityCheck(d, a))}>
+                  {inner}
+                </button>
+              ) : (
+                <div className="ability-check" title={ABILITY_NAMES[a]}>
+                  {inner}
+                </div>
+              )}
+              {save && (
+                <span className={`ability-save ${save.proficient ? "prof" : ""}`}>
+                  <span className="dot" aria-hidden="true" />
+                  <span>Save</span>
+                  <RollChip spec={() => savingThrow(d, save)} label={`Roll a ${ABILITY_NAMES[a]} saving throw, ${signed(save.bonus)}${save.proficient ? " (proficient)" : ""}`} icon={false}>
+                    <strong>{signed(save.bonus)}</strong>
+                  </RollChip>
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       <h4>Skills</h4>
       <ul className="mini-list">

@@ -16,7 +16,7 @@ import { EquipmentTab } from "./components/EquipmentTab";
 import { SkillsTab } from "./components/SkillsTab";
 import { SpeciesTab } from "./components/SpeciesTab";
 import { SpellsTab } from "./components/SpellsTab";
-import { Summary } from "./components/Summary";
+import { SheetNumbers, Summary } from "./components/Summary";
 
 const tabs = (speciesWord: string) => [
   { id: "class", label: "Class", Component: ClassTab },
@@ -70,6 +70,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   derive: (c, books) => deriveCharacter({ ...c, edition: "2024" }, books),
   tabs: tabs("Species"),
   Summary,
+  SheetNumbers,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
@@ -100,6 +101,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   derive: (c, books) => deriveCharacter({ ...c, edition: "2014" }, books),
   tabs: tabs("Race"),
   Summary,
+  SheetNumbers,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,

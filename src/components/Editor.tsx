@@ -228,7 +228,7 @@ export function Editor({
     const books = rec.books.map((b) => bookName(system, b)).join(", ");
     return (
       <div className="hero-shell">
-        <aside className={`hero-side ${sideOpen ? "open" : ""}`}>
+        <aside className={`hero-side char-side ${sideOpen ? "open" : ""}`}>
           <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
             ‹ <span className="back-label">My characters</span>
           </button>
@@ -302,7 +302,7 @@ export function Editor({
           </div>
           </div>
         </aside>
-        <main className="hero-main">
+        <main className="hero-main char-main">
           {tabsNav}
           <div className="tab-body" ref={bodyRef}>
             {body}

@@ -2,7 +2,7 @@
 // sidebar, always in view), and the Sheet's "In play" panel: death saves at 0 HP, conditions,
 // exhaustion, concentration, limited-use features, Hit Dice and rests. Private: never sent to
 // sessions, where the DM keeps the session's own state.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BaseCharacter, ResourcePool, TableCard } from "../systems/types";
 import { CONDITIONS, DAMAGE_TYPES, EXHAUSTION, conditionOf, currentHp } from "../live";
 import { deathSave, heal, longRest, setConc, setExh, setTempHp, spendHitDie, takeDamage, toggleCond, type PlayState } from "../play";
@@ -133,8 +133,7 @@ export function InPlayPanel({
   const setNotes = (text: string[], play: PlayState | undefined = latest.current.c.play) => setNoteFor({ play, level: latest.current.c.level, text });
   const [resting, setResting] = useState<"" | "short" | "long">("");
   const [rolled, setRolled] = useState("");
-  const [addingCond, setAddingCond] = useState(false);
-  const [concText, setConcText] = useState("");
+  const [statusOpen, setStatusOpen] = useState(false);
   const savesRef = useRef<HTMLDivElement>(null);
   // Refs so a dice result applies to the newest state (the roll lands ~1 s later).
   const latest = useRef({ c, set });
@@ -199,8 +198,7 @@ export function InPlayPanel({
     setResting("");
     setNotes(["Long rest done: spell slots and features are back.", ...r.notes], r.play);
   };
-  const active = (p.conditions ?? []).filter((x) => x !== "concentrating");
-  const concLeft = p.conc;
+  const status = statusLine(p);
 
   return (
     <section className="in-play" aria-label="In play">
@@ -240,92 +238,18 @@ export function InPlayPanel({
         </div>
       )}
 
-      <div className="play-row">
-        <span className="play-label">Conditions</span>
-        <div className="play-chips">
-          {active.map((id) => (
-            <button key={id} type="button" className="cond-chip on" title={conditionOf(id)?.text} onClick={() => play(toggleCond(p, id))} aria-label={`Remove ${conditionOf(id)?.name ?? id}`}>
-              {conditionOf(id)?.name ?? id} <span aria-hidden="true">×</span>
-            </button>
-          ))}
-          <button type="button" className="cond-chip add" aria-expanded={addingCond} onClick={() => setAddingCond((o) => !o)}>
-            {addingCond ? "Done" : active.length ? "+ Add" : "None · + Add"}
-          </button>
-        </div>
-        {addingCond && (
-          <div className="cond-toggle" role="group" aria-label="Conditions">
-            {CONDITIONS.filter((x) => x.id !== "concentrating").map((cd) => {
-              const on = !!p.conditions?.includes(cd.id);
-              return (
-                <button key={cd.id} type="button" className={`cond-btn ${on ? "on" : ""}`} aria-pressed={on} title={cd.text} onClick={() => play(toggleCond(p, cd.id))}>
-                  {cd.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="play-row">
-        <span className="play-label">Exhaustion</span>
-        <span className="stepper" role="group" aria-label="Exhaustion level">
-          <button type="button" aria-label="One level less" disabled={!p.exhaustion} onClick={() => play(setExh(p, (p.exhaustion ?? 0) - 1))}>
-            −
-          </button>
-          <strong>{p.exhaustion ?? 0}</strong>
-          <button type="button" aria-label="One level more" disabled={(p.exhaustion ?? 0) >= 6} onClick={() => play(setExh(p, (p.exhaustion ?? 0) + 1))}>
-            +
-          </button>
+      <button type="button" className={`play-status ${status.length ? "on" : ""}`} aria-haspopup="dialog" onClick={() => setStatusOpen(true)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {status.length ? <path d="M12 8v5M12 16.5v.5M10.3 3.9 2.6 17.3A2 2 0 0 0 4.3 20.3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /> : <><circle cx="12" cy="12" r="9" /><path d="M8 12.5l2.5 2.5L16 9.5" /></>}
+        </svg>
+        <span className="play-status-text">
+          <strong>Status</strong> · {status.length ? status.join(" · ") : "All clear"}
         </span>
-        {p.exhaustion ? <span className="muted play-small">{EXHAUSTION.slice(1, (p.exhaustion ?? 0) + 1).join(" · ")}</span> : null}
-      </div>
-
-      <div className="play-row">
-        <span className="play-label">Concentrating</span>
-        {concLeft ? (
-          <span className="play-conc">
-            <strong>{concLeft}</strong>
-            <button type="button" className="btn small ghost" onClick={() => play(setConc(p, ""))}>
-              End
-            </button>
-            <span className="muted play-small">Taking damage: Constitution save, DC 10 or half the damage{card?.conSave != null ? ` (you add ${card.conSave >= 0 ? "+" : ""}${card.conSave})` : ""}.</span>
-          </span>
-        ) : (
-          <span className="play-conc">
-            <select
-              value=""
-              aria-label="Start concentrating on a spell"
-              onChange={(e) => {
-                if (e.target.value === "__other") return setConcText(" ");
-                if (e.target.value) play(setConc(p, e.target.value));
-              }}
-            >
-              <option value="">Not concentrating</option>
-              {concSpells.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-              <option value="__other">Another spell…</option>
-            </select>
-            {concText && (
-              <form
-                className="play-conc-other"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (concText.trim()) play(setConc(p, concText));
-                  setConcText("");
-                }}
-              >
-                <input autoFocus value={concText.trimStart()} maxLength={60} onChange={(e) => setConcText(e.target.value || " ")} placeholder="Spell name" aria-label="Spell name" />
-                <button type="submit" className="btn small">
-                  Start
-                </button>
-              </form>
-            )}
-          </span>
-        )}
-      </div>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+      {statusOpen && <StatusDialog p={p} card={card} concSpells={concSpells} play={play} onClose={() => setStatusOpen(false)} />}
 
       {pools.length > 0 && <ResourcePips c={c} pools={pools} set={set} noRests />}
 
@@ -401,5 +325,127 @@ export function InPlayPanel({
         </p>
       )}
     </section>
+  );
+}
+
+/** One line for the Status button: active conditions, exhaustion, concentration. */
+function statusLine(p: PlayState): string[] {
+  const out = (p.conditions ?? []).filter((x) => x !== "concentrating").map((id) => conditionOf(id)?.name ?? id);
+  if (p.exhaustion) out.push(`Exhaustion ${p.exhaustion}`);
+  if (p.conc) out.push(`Concentrating on ${p.conc}`);
+  return out;
+}
+
+/** Conditions, exhaustion and concentration, in a panel that opens from the Status line
+ *  (user, 2026-11-23: "popping up only if necessary"). A sheet from the bottom on phones. */
+function StatusDialog({ p, card, concSpells, play, onClose }: { p: PlayState; card: TableCard | null; concSpells: string[]; play: (next: PlayState, notes?: string[]) => void; onClose: () => void }) {
+  const [concText, setConcText] = useState("");
+  const concLeft = p.conc;
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
+  return (
+    <div className="modal-backdrop status-backdrop" role="dialog" aria-modal="true" aria-label="Status" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal status-modal">
+        <header className="modal-hero compact status-head">
+          <h2>Status</h2>
+          <button type="button" className="dice-card-x" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </header>
+        <div className="modal-body status-body">
+          <div className="play-row">
+            <span className="play-label">Conditions</span>
+            <div className="cond-toggle" role="group" aria-label="Conditions">
+              {CONDITIONS.filter((x) => x.id !== "concentrating").map((cd) => {
+                const on = !!p.conditions?.includes(cd.id);
+                return (
+                  <button key={cd.id} type="button" className={`cond-btn ${on ? "on" : ""}`} aria-pressed={on} title={cd.text} onClick={() => play(toggleCond(p, cd.id))}>
+                    {cd.name}
+                  </button>
+                );
+              })}
+            </div>
+            {(p.conditions ?? [])
+              .filter((x) => x !== "concentrating")
+              .map((id) => (
+                <p key={id} className="muted play-small status-cond-text">
+                  <strong>{conditionOf(id)?.name ?? id}:</strong> {conditionOf(id)?.text}
+                </p>
+              ))}
+          </div>
+
+          <div className="play-row">
+            <span className="play-label">Exhaustion</span>
+            <span className="stepper" role="group" aria-label="Exhaustion level">
+              <button type="button" aria-label="One level less" disabled={!p.exhaustion} onClick={() => play(setExh(p, (p.exhaustion ?? 0) - 1))}>
+                −
+              </button>
+              <strong>{p.exhaustion ?? 0}</strong>
+              <button type="button" aria-label="One level more" disabled={(p.exhaustion ?? 0) >= 6} onClick={() => play(setExh(p, (p.exhaustion ?? 0) + 1))}>
+                +
+              </button>
+            </span>
+            {p.exhaustion ? <span className="muted play-small">{EXHAUSTION.slice(1, (p.exhaustion ?? 0) + 1).join(" · ")}</span> : null}
+          </div>
+
+          <div className="play-row">
+            <span className="play-label">Concentrating</span>
+            {concLeft ? (
+              <span className="play-conc">
+                <strong>{concLeft}</strong>
+                <button type="button" className="btn small ghost" onClick={() => play(setConc(p, ""))}>
+                  End
+                </button>
+                <span className="muted play-small">Taking damage: Constitution save, DC 10 or half the damage{card?.conSave != null ? ` (you add ${card.conSave >= 0 ? "+" : ""}${card.conSave})` : ""}.</span>
+              </span>
+            ) : (
+              <span className="play-conc">
+                <select
+                  value=""
+                  aria-label="Start concentrating on a spell"
+                  onChange={(e) => {
+                    if (e.target.value === "__other") return setConcText(" ");
+                    if (e.target.value) play(setConc(p, e.target.value));
+                  }}
+                >
+                  <option value="">Not concentrating</option>
+                  {concSpells.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                  <option value="__other">Another spell…</option>
+                </select>
+                {concText && (
+                  <form
+                    className="play-conc-other"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (concText.trim()) play(setConc(p, concText));
+                      setConcText("");
+                    }}
+                  >
+                    <input autoFocus value={concText.trimStart()} maxLength={60} onChange={(e) => setConcText(e.target.value || " ")} placeholder="Spell name" aria-label="Spell name" />
+                    <button type="submit" className="btn small">
+                      Start
+                    </button>
+                  </form>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
+        <footer className="modal-foot">
+          <button type="button" className="btn primary" onClick={onClose}>
+            Done
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }

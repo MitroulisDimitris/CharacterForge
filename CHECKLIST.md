@@ -2,7 +2,7 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; to do: remove unverified sign-ups).
+Last updated: 2026-11-23 (built: calmer Sheet tab on phones, from the "UI is cramped" feedback).
 
 ---
 
@@ -24,6 +24,7 @@ Last updated: 2026-11-20 (built: host notes in tabs with a formatting toolbar; t
 - [x] One column on narrow screens (slots and points on top)
 - [x] Rolled ability scores with real dice (4d6, drop the lowest; pick which roll goes where, swap between abilities) (2026-11-17)
 - [x] Leaving character creation asks first (Cancel, back, logo, closing the tab); the draft stays on this device (2026-11-17)
+- [x] Calmer Sheet tab (2026-11-23, feedback "UI is cramped" on a phone; mockup canvas "Sheet tab on phone — cleaner"): key numbers on top (AC, Speed, Initiative, Prof + Spell DC / attack); one roll row (Normal / Advantage / Disadvantage + Dice, the tip under it); conditions, exhaustion and concentration behind one **Status** line (gold when something is on) that opens a panel (from the bottom on phones); saving throws inside the ability tiles; all 18 skills, attacks, class dice and senses as before. Phones: the name, portrait and HP scroll away and the tabs stay pinned. Creation and the DM's party view keep the full strip (HP, slots, sorcery points)
 
 ## 2. Accounts, part 1 (login + characters online)
 - [x] Supabase tables: `profiles`, `characters`, with security rules (each account sees only its own)

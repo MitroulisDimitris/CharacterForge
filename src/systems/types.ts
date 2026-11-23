@@ -175,7 +175,11 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   normalize(raw: unknown): C;
   derive(c: C, books: string[]): D;
   tabs: { id: string; label: string; Component: FC<TabProps<C, D>> }[];
-  Summary: FC<{ c: C; d: D }>;
+  /** `inSheet`: on the Sheet tab, where HP, slots and other pools have their own trackers. */
+  Summary: FC<{ c: C; d: D; inSheet?: boolean }>;
+  /** The key numbers (AC, speed, initiative...) at the top of the Sheet tab; when set, `Summary`
+   *  leaves them out there. */
+  SheetNumbers?: FC<{ c: C; d: D }>;
   /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
   resources?: (c: C, d: D) => ResourcePool[];
   /** Spells the character can concentrate on (the In play panel's picker). */

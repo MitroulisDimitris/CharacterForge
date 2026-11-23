@@ -26,24 +26,26 @@ export function SheetTab({
   set: (patch: Partial<BaseCharacter>) => void;
 }) {
   const Summary = system.Summary;
+  const Numbers = system.SheetNumbers;
   const pools = system.resources?.(c, d) ?? [];
   const canRoll = useCanRoll();
   return (
     <>
     {top}
+    {Numbers && <Numbers c={c} d={d} />}
     {canRoll && (
       <div className="sheet-dice">
+        <NextRoll />
+        <DiceButton />
         <p className="sheet-dice-tip muted">
           <b>Tip ·</b> Tap a gold number to roll it. Your bonus is added for you.
         </p>
-        <NextRoll />
-        <DiceButton />
       </div>
     )}
     <div className="sheet-tab">
       <InPlayPanel c={c} card={system.tableCard?.(c, d) ?? null} pools={pools} set={set} concSpells={system.concentrationSpells?.(c, d) ?? []} withHp={withHp} />
       <section className="sheet-summary" aria-label="Character summary">
-        <Summary c={c} d={d} />
+        <Summary c={c} d={d} inSheet />
       </section>
     </div>
     </>
