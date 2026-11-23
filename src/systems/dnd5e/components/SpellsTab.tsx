@@ -261,12 +261,6 @@ function SpellRowItem({ r, level, core, d }: { r: RowInfo; level: number; core: 
               {s.school} · {castingTimeLabel(s.time)} · {s.range} · {s.components}
               {s.material ? ` (${s.material})` : ""} · {s.duration}
               {s.save ? ` · ${s.save} save DC ${r.dc}` : ""}
-              {s.attack && (
-                <>
-                  {" · spell attack "}
-                  <AttackChip r={r} d={d} />
-                </>
-              )}
               {s.book !== core ? ` · ${s.book}` : ""}
             </p>
             {r.granted && r.note && <p className="muted">{r.note}</p>}
