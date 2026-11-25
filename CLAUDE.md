@@ -187,7 +187,8 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 - Damage animations (2026-11-25, replaced the CSS/SVG version): GSAP stories + one shared WebGL context.
   `src/dice/fxEngine.ts` (`runFx`: waits for the host's full size, plays or shows the held picture; one WebGL
   context draws every effect and copies it onto each host's 2D canvas), `fxShaders.ts` (GLSL; never reversed
-  `smoothstep`, use `sstep`; never `distance * step(…)`), `fxStories.ts` (one per type, `"fire:melee"`-style
+  `smoothstep`, use `sstep`; never `distance * step(…)`; no `fract(sin(…) * 43758…)` hash: phone GPUs compute
+  `sin` of big numbers coarsely and the noise turns into stripes, use the sine-free `hash`/`hash2` already there), `fxStories.ts` (one per type, `"fire:melee"`-style
   keys for how it was dealt), component `components/DamageFx.tsx` (`fxTypeOf`), styles `src/damageFx.css`
   (type colours `.lf-<type>`). Copied from the mockup canvas (page "Damage animations", boards "Every damage
   type" / "How it was dealt"; their files `project/DamageAll.dc.html`, `DamageDeliv.dc.html` hold the same code).
@@ -205,6 +206,14 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
   "Welcome to level N" page. Copied from the mockup canvas https://claude.ai/artifact/EELKVpJ2uGxC75wo1evU4Z
   (boards "Class trees, all 13 classes" and "Final level up story"). WebGL contexts are released only once their
   canvas has left the page (StrictMode mounts twice; a lost context can't be reused).
+- **Phone GPU check** (2026-11-25, after the tree's fire striped on the user's Android phone): desktop GPUs do
+  shader maths exactly, phones don't. `src/shaders.phone.test.ts` (in `npm test`, or `npm run test:phone`) draws every
+  WebGL effect in Chrome twice, SwiftShader (exact) vs ANGLE on Vulkan (`--use-angle=vulkan`: the RTX 3060 then does
+  phone-like looser maths, half-precision mediump), and fails when they differ; a control scene (the old sine hash)
+  proves the phone mode still works. Pictures of failures in `test-results/phone-gpu/` (`PHONE_GPU_SAVE=1`: all).
+  `PHONE_GPU_OLD=1` adds older phones without highp: most effects fail that today (would need a noise texture).
+  Needs Chrome + a Vulkan GPU (puppeteer-core), else skipped. For screenshots/recordings of the real app, also run
+  Chrome with `--use-angle=vulkan`: it reproduced the user's phone bug on the live site. Not a model of iPhones.
 - Sessions (2026-11-22): `sessions.level` (host picks it; join/swap set `level_award` when it differs);
   name and level edit in place in the session side panel (`SessionName`, `SessionLevel` in `Sessions.tsx`).
 - Sheet tab layout (2026-11-23): `GameSystem.SheetNumbers` (dnd5e: `SheetNumbers` in `Summary.tsx`) shows the key

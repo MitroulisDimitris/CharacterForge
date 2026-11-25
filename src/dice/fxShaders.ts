@@ -4,6 +4,8 @@
 // line, 2.5 on the result card); A–D are what the story animates; t is the clock (it slows with the story).
 // GLSL rule: never use smoothstep with reversed edges (undefined in the spec; some phone GPUs draw
 // garbage) — use sstep. Never write `distance * step(…)` (0 = full brightness outside the mask).
+// No sine-based hash (`fract(sin(x) * 43758.5)`): phone GPUs compute sin of big numbers coarsely and
+// the noise comes out as stripes (user's phone, 2026-11-25). hash/hash2 below use no sin().
 
 export const FX_HEAD = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -12,8 +14,8 @@ precision highp float;
 precision mediump float;
 #endif
 uniform vec2 res, num, ip; uniform float t, unit, sz, A, B, C, D, seed;
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-vec2 hash2(vec2 p){ return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+vec2 hash2(vec2 p){ vec3 q = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y); }
 float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a * noise(p); p = p * 2.03 + 7.1; a *= .5; } return v; }

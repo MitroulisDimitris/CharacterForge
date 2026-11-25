@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:phone": "vitest run src/shaders.phone.test.ts",
     "preview": "vite preview",
     "pdf:sample": "vite build --ssr scripts/sample-pdf.ts --outDir .sample-build --emptyOutDir && node .sample-build/sample-pdf.js",
     "feedback:pull": "node scripts/feedback.mjs pull",
@@ -35,6 +36,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.0.0",
+    "puppeteer-core": "23.11.1",
     "typescript": "^5.8.3",
     "vite": "^7.1.0",
     "vitest": "^3.2.7"

@@ -11,3 +11,6 @@ backups/
 # spell text extraction (scripts/spelltext.py): intermediate files
 scripts/out/
 __pycache__/
+
+# phone GPU check pictures (src/shaders.phone.test.ts)
+test-results/
