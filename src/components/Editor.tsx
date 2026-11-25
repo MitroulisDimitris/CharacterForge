@@ -18,6 +18,9 @@ import { VersionPicker, VersionStrip, type VersionsProp } from "./Versions";
 import { skinOf } from "../skins";
 import type { SaveState } from "../App";
 
+/** The Progression tab (when the rule set has one): the class as a tree, where level-ups play. */
+const PROGRESS_TAB = "progression";
+
 const SAVE_TEXT: Record<SaveState, string> = {
   saved: "Saved to your account",
   saving: "Saving…",
@@ -57,6 +60,28 @@ export function Editor({
   const [sideOpen, setSideOpen] = useState(false);
   const [portraitOpen, setPortraitOpen] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "change"; target: number } | { kind: "resume"; ids: string[] } | null>(null);
+  /** The level when the open level-change dialog started (a level-up is celebrated on the tree once it closes). */
+  const dialogFrom = useRef(0);
+  const [celebrate, setCelebrate] = useState<{ level: number; n: number } | null>(null);
+  const charRef = useRef(char);
+  charRef.current = char;
+  const changeLevel = (target: number) => {
+    dialogFrom.current = char.level;
+    setDialog({ kind: "change", target });
+  };
+  const closeDialog = () => {
+    const was = dialog?.kind === "change" ? dialogFrom.current : 0;
+    setDialog(null);
+    const now = charRef.current.level;
+    if (system.Progress && was && now > was) {
+      setTab(PROGRESS_TAB);
+      setCelebrate((c) => ({ level: now, n: (c?.n ?? 0) + 1 }));
+    }
+  };
+  const openTab = (t: string) => {
+    setTab(t);
+    if (t !== PROGRESS_TAB) setCelebrate(null);
+  };
   const d = useMemo(() => system.derive(char, rec.books), [system, char, rec.books]);
 
   const set = (patch: Partial<BaseCharacter>) => {
@@ -66,6 +91,7 @@ export function Editor({
   };
 
   const commitFromDialog = (next: BaseCharacter, nextPending: string[]) => {
+    charRef.current = next;
     setChar(next);
     setPending(nextPending);
     onUpdate({ data: next, pending: nextPending });
@@ -102,7 +128,7 @@ export function Editor({
     return () => window.clearTimeout(t);
   }, [flash]);
   const go = (t: Todo) => {
-    if (t.tab) setTab(t.tab);
+    if (t.tab) openTab(t.tab);
     setSideOpen(false);
     setFlash((f) => ({ section: t.section, words: t.find, n: (f?.n ?? 0) + 1 }));
   };
@@ -122,10 +148,31 @@ export function Editor({
 
   const tabErrors = (id: string) => (d.warnings as Warning[]).filter((w) => w.tab === id && w.level !== "info").length;
   const Active = system.tabs.find((t) => t.id === tab)?.Component;
+  const Progress = tab === PROGRESS_TAB ? system.Progress : undefined;
   const maxLevel = system.maxLevelFor?.(char) ?? system.maxLevel;
   const card = system.tableCard?.(char, d) ?? null;
   const hero = skinOf(theme).layout === "hero";
-  const body = <RollScope>{Active ? <Active c={char} d={d} set={set} books={rec.books} /> : <SheetTab system={system} c={char} d={d} set={set} withHp={!hero} />}</RollScope>;
+  const body = (
+    <RollScope>
+      {Progress ? (
+        <Progress
+          c={char}
+          d={d}
+          set={set}
+          books={rec.books}
+          celebrate={celebrate}
+          onCelebrated={() => setCelebrate(null)}
+          onLevelUp={char.level < maxLevel ? () => changeLevel(char.level + 1) : undefined}
+          sidebarLevelUp={hero}
+          onTab={openTab}
+        />
+      ) : Active ? (
+        <Active c={char} d={d} set={set} books={rec.books} />
+      ) : (
+        <SheetTab system={system} c={char} d={d} set={set} withHp={!hero} />
+      )}
+    </RollScope>
+  );
   const target = levelReady && levelReady.level !== char.level ? Math.min(levelReady.level, maxLevel) : null;
   const awardItem =
     target && target > char.level ? (
@@ -134,7 +181,7 @@ export function Editor({
         <span>
           {levelReady!.session} plays at level {target}. See what you gain and make your choices.
         </span>
-        <button type="button" className="btn primary small" onClick={() => setDialog({ kind: "change", target })}>
+        <button type="button" className="btn primary small" onClick={() => changeLevel(target)}>
           Level up to {target}
         </button>
       </div>
@@ -145,7 +192,7 @@ export function Editor({
           {levelReady!.session} plays at level {target}; {char.name || "this character"} is level {char.level}. A suggestion: you decide.
         </span>
         <span className="award-btns">
-          <button type="button" className="btn small" onClick={() => setDialog({ kind: "change", target })}>
+          <button type="button" className="btn small" onClick={() => changeLevel(target)}>
             Lower to {target}
           </button>
           {onKeepLevel && (
@@ -168,11 +215,16 @@ export function Editor({
 
   const tabsNav = (
     <nav className="tabs" role="tablist">
-      <button role="tab" aria-selected={!Active} className={!Active ? "on" : ""} onClick={() => setTab(SHEET_TAB)}>
+      <button role="tab" aria-selected={!Active && !Progress} className={!Active && !Progress ? "on" : ""} onClick={() => openTab(SHEET_TAB)}>
         Sheet
       </button>
+      {system.Progress && (
+        <button role="tab" aria-selected={!!Progress} className={Progress ? "on" : ""} onClick={() => openTab(PROGRESS_TAB)}>
+          Progression
+        </button>
+      )}
       {system.tabs.map((t) => (
-        <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
+        <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""} onClick={() => openTab(t.id)}>
           {t.label}
           {tabErrors(t.id) > 0 && <span className="badge">{tabErrors(t.id)}</span>}
         </button>
@@ -222,7 +274,8 @@ export function Editor({
           pending={pending}
           mode={dialog}
           onCommit={commitFromDialog}
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
+          celebrated={!!system.Progress}
         />
       )}
     </>
@@ -267,14 +320,14 @@ export function Editor({
           />
           <div className="hero-foot">
             {char.level < maxLevel && (
-              <button type="button" className="btn primary hero-levelup" onClick={() => setDialog({ kind: "change", target: char.level + 1 })}>
+              <button type="button" className="btn primary hero-levelup" onClick={() => changeLevel(char.level + 1)}>
                 Level up to {char.level + 1}
               </button>
             )}
             <div className="hero-foot-row">
               <label className="level-pick">
                 <span>Level</span>
-                <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && setDialog({ kind: "change", target: Number(e.target.value) })}>
+                <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && changeLevel(Number(e.target.value))}>
                   {levelOptions.map((l) => (
                     <option key={l} value={l}>
                       {l}
@@ -347,7 +400,7 @@ export function Editor({
         )}
         <label className="level-pick">
           <span>Level</span>
-          <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && setDialog({ kind: "change", target: Number(e.target.value) })}>
+          <select value={char.level} onChange={(e) => Number(e.target.value) !== char.level && changeLevel(Number(e.target.value))}>
             {levelOptions.map((l) => (
               <option key={l} value={l}>
                 {l}

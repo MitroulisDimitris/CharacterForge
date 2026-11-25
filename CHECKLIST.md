@@ -2,12 +2,13 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-24 (built: book and page on every Wiki entry; unverified-account cleanup script; per-session versions; dice at the table).
+Last updated: 2026-11-25 (built: progression trees for all 13 classes; damage animations; book and page on every Wiki entry; per-session versions; dice at the table).
 
 ---
 
-## Waiting for your check (built 2026-11-24, not committed yet)
+## Waiting for your check (built 2026-11-24/25)
 Tick each one once you've looked at it in the app. Until then they count as built, not verified.
+- [ ] Progression tab (next to Sheet): each class's tree, one row per level, its own look; tap a step to read it; choices (subclass, fighting style, metamagic, pact boon, invocations) glow gold and can be picked right there. Try a level-up: after the level-up window closes, the tree tells the class's story and the "Level up!" card shows; at level 5 the Sorcerer, Fighter and Wizard get their big final story. Check on your phone too (the details open as a sheet from the bottom)
 - [ ] Portrait feedback item marked fixed; the sender sees "every character has a portrait; tap the circle on the character (or ⋯ → Add a portrait)" (11 feedback items still open)
 - [ ] Wiki: every entry shows its book and page ("Player's Handbook, page 46"): open a few in each section (classes, subclasses, races, backgrounds, feats, conditions, rules, items, spells, monsters) and compare with your books
 - [ ] Monsters: the 33 that had no Monster Manual page now have one (Adult Red Dragon, Imp 69, Frost Giant 151…). Some pages are where the monster's section starts, not its stat block
@@ -237,3 +238,4 @@ Tick each one once you've looked at it in the app. Until then they count as buil
 - [ ] Shared notes for players, live turn order on players' phones
 - [ ] Other rule sets (D&D 2024, 3.5, Pathfinder 2e)
 - [ ] Levels 6–20, higher-level spells, multiclassing
+- [ ] Natural 1 / natural 20 animations on every d20 roll (attacks, checks, saves), with or without a damage type (user, 2026-11-25). Starting point: the mockup board "How it was dealt" (page "Damage animations"): the 20 slams down with a golden flash, rays and a shine; the 1 drops with a thud, a crack and a sad puff of smoke. The user wants to look at them again first

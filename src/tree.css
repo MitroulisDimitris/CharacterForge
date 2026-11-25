@@ -1,0 +1,110 @@
+/* Progression tree (systems/dnd5e/components/ProgressionTab.tsx). The tree card is its own dark
+   illustration in every skin; the header and the details panel use the skin's tokens. */
+@keyframes pt-pop { from { opacity: 0; transform: translateY(14px) scale(.85); } to { opacity: 1; transform: none; } }
+@keyframes pt-unlock { 0% { opacity: 0; transform: scale(.3); filter: brightness(3); } 55% { opacity: 1; transform: scale(1.2); filter: brightness(1.6); } 100% { transform: none; filter: none; } }
+@keyframes pt-ringout { from { transform: scale(.7); opacity: .95; } to { transform: scale(2.6); opacity: 0; } }
+@keyframes pt-drawline { to { stroke-dashoffset: 0; } }
+@keyframes pt-fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pt-flow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pt-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(212,166,74,.5), 0 0 14px rgba(212,166,74,.3); } 50% { box-shadow: 0 0 0 4px rgba(212,166,74,.15), 0 0 34px rgba(212,166,74,.7); } }
+@keyframes pt-nowpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(192,53,74,.55); } 60% { box-shadow: 0 0 0 9px rgba(192,53,74,0); } }
+@keyframes pt-nextpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(212,166,74,.5); } 60% { box-shadow: 0 0 0 8px rgba(212,166,74,0); } }
+@keyframes pt-nextglow { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes pt-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes pt-spin { to { transform: rotate(360deg); } }
+@keyframes pt-spinback { to { transform: rotate(-360deg); } }
+@keyframes pt-gleam { 0%, 60% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+@keyframes pt-sheetup { from { transform: translateY(100%); } to { transform: none; } }
+
+.ptree { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pt-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.pt-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pt-title h2 { margin: 0; font-family: var(--font-head); font-size: 28px; }
+.pt-title span { font-size: 14px; color: var(--muted); }
+.ptree.compact .pt-title h2 { font-size: 24px; }
+.ptree.compact .pt-title span { font-size: 13px; }
+.pt-progress { display: flex; flex-direction: column; gap: 6px; min-width: 150px; font-size: 12px; color: var(--muted); }
+.pt-progress strong { font-size: 15px; }
+.pt-bar { height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+.pt-bar > span { display: block; height: 100%; border-radius: 6px; transition: width .8s ease; }
+
+.pt-body { display: flex; gap: 20px; align-items: stretch; }
+.pt-card {
+  position: relative; flex: 1; min-width: 0; display: grid; place-items: center; overflow: hidden;
+  border-radius: 18px; border: 1px solid; color: #efe4d2; font-family: Inter, system-ui, sans-serif;
+  box-shadow: inset 0 0 70px rgba(0,0,0,.5), 0 18px 40px rgba(0,0,0,0.35); transition: background .4s ease;
+}
+.ptree.compact .pt-card { flex: none; align-self: center; }
+.ptree.compact .pt-body { justify-content: center; }
+.pt-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.pt-node { transition: transform .18s ease; -webkit-tap-highlight-color: transparent; }
+.pt-node:hover { transform: translateY(-3px) scale(1.05); }
+.pt-node:active { transform: scale(.95); }
+.pt-node:focus-visible, .pt-opt:focus-visible, .pt-more:focus-visible { outline: 2px solid #ecc46e; outline-offset: 3px; }
+.pt-levelup { align-self: stretch; min-height: 48px; }
+.ptree.wide .pt-levelup { align-self: flex-start; }
+
+/* details: beside the tree on wide screens, a bottom sheet otherwise */
+.pt-panel {
+  box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 20px;
+  background: linear-gradient(170deg, rgba(255,255,255,0.03), transparent 50%), var(--surface);
+  color: var(--text); border: 1px solid var(--border); border-top: 3px solid var(--gold);
+}
+.pt-panel.side { width: 340px; flex: none; border-radius: 16px; box-shadow: 0 18px 40px rgba(0,0,0,0.35); overflow: hidden; max-height: 650px; }
+.pt-sheet-wrap { position: fixed; inset: 0; z-index: 900; }
+.pt-backdrop { position: absolute; inset: 0; border: 0; padding: 0; background: rgba(0,0,0,0.55); animation: pt-fadein .2s ease both; cursor: default; }
+.pt-panel.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 640px; max-height: 78vh; max-height: 78dvh;
+  padding: 10px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; border-bottom: 0;
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.6); animation: pt-sheetup .35s cubic-bezier(.2,.8,.2,1) both;
+}
+.pt-grip { align-self: center; width: 44px; height: 5px; border-radius: 999px; background: var(--border-strong); flex: none; }
+.pt-panel-head { display: flex; align-items: flex-start; gap: 10px; }
+.pt-panel-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pt-panel-title h2 { margin: 0; font-family: var(--font-head); font-size: 24px; }
+.pt-lane { align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 10px; border-radius: 999px; border: 1px solid; }
+.pt-status { font-size: 13px; font-weight: 700; color: var(--muted); }
+.pt-status.ok { color: var(--ok); }
+.pt-status.act { color: var(--gold); }
+.pt-x { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.pt-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; }
+.pt-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.pt-text { margin: 0; font-size: 15px; line-height: 1.5; }
+.pt-tip { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.pt-tip strong { color: var(--gold); }
+.pt-opts { display: flex; flex-direction: column; gap: 8px; }
+.pt-opts-head { display: flex; align-items: center; justify-content: space-between; }
+.pt-count { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); }
+.pt-count.ok { border-color: var(--ok); color: var(--ok); }
+.pt-opt {
+  display: flex; flex-direction: column; gap: 4px; min-height: 44px; padding: 10px 12px; border-radius: 12px; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer; background: var(--surface-2); border: 1px solid var(--border); transition: border-color .15s, background .15s;
+}
+.pt-opt.on { background: var(--gold-soft); border-color: var(--gold); }
+.pt-opt[aria-disabled] { opacity: .55; cursor: default; }
+.pt-opt-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.pt-opt-row strong { flex: 1; font-size: 14px; }
+.pt-check { flex: none; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border-strong); }
+.pt-check.multi { border-radius: 5px; }
+.pt-check svg { visibility: hidden; }
+.pt-opt.on .pt-check { background: var(--gold); border-color: var(--gold); }
+.pt-opt.on .pt-check svg { visibility: visible; }
+.pt-tag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); white-space: nowrap; }
+.pt-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.pt-opt-text { font-size: 13px; line-height: 1.4; color: var(--muted); padding-left: 26px; }
+.pt-more { align-self: flex-start; min-height: 36px; padding: 0; border: 0; background: none; color: var(--gold); font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.pt-done { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(111,191,115,0.12); border: 1px solid rgba(111,191,115,0.45); font-size: 14px; animation: pt-fadein .35s ease both; }
+
+/* the "Level up!" card and the final story */
+.pt-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; font-family: Inter, system-ui, sans-serif; color: #efe4d2; }
+.pt-overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pt-card-x, .pt-story-x { position: absolute; z-index: 3; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: 12px; cursor: pointer; }
+.pt-card-x { top: 8px; right: 8px; border: 0; background: transparent; color: #c9b9a0; }
+.pt-story-x { top: calc(14px + env(safe-area-inset-top)); right: 14px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,8,7,.55); color: #e9dcc6; }
+.pt-go { position: relative; min-height: 48px; padding: 0 22px; margin-top: 6px; border-radius: 12px; border: 1px solid #c0354a; background: #c0354a; color: #fff; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 0 18px rgba(192,53,74,.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ptree *, .pt-overlay *, .pt-panel, .pt-backdrop { animation: none !important; transition: none !important; }
+  /* lines that would have drawn themselves are simply there */
+  .ptree path[data-edge] { stroke-dashoffset: 0 !important; opacity: 1 !important; }
+}

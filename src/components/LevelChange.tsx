@@ -13,6 +13,8 @@ interface Props {
   mode: Mode;
   onCommit: (char: BaseCharacter, pending: string[]) => void;
   onClose: () => void;
+  /** A level-up is celebrated elsewhere once the dialog closes (the progression tree): skip the "Welcome to level N" page. */
+  celebrated?: boolean;
 }
 
 /** All unlocks for levels in (from, to], generated with each level's own context. */
@@ -85,7 +87,7 @@ function GainList({ groups, lost }: { groups: { level: number; gains: Gain[] }[]
   );
 }
 
-export function LevelChangeDialog({ system, char: liveChar, books, pending, mode, onCommit, onClose }: Props) {
+export function LevelChangeDialog({ system, char: liveChar, books, pending, mode, onCommit, onClose, celebrated }: Props) {
   // Freeze the character as it was when the dialog opened; edits go to `current`.
   const [char] = useState(liveChar);
   const from = char.level;
@@ -127,7 +129,9 @@ export function LevelChangeDialog({ system, char: liveChar, books, pending, mode
     const p = [...new Set([...pend, ...required.map((u) => u.id)])];
     commit(promoted, p);
     setStep(0);
-    setStage(steps.length ? "choose" : "finish");
+    if (steps.length) setStage("choose");
+    else if (celebrated) onClose();
+    else setStage("finish");
   };
   const applyLater = () => {
     commit(promoted, [...new Set([...pend, ...required.map((u) => u.id)])]);
@@ -140,7 +144,7 @@ export function LevelChangeDialog({ system, char: liveChar, books, pending, mode
       commit(current, p);
     }
     if (step + 1 < steps.length) setStep(step + 1);
-    else if (mode.kind === "resume") onClose();
+    else if (mode.kind === "resume" || celebrated) onClose();
     else setStage("finish");
   };
 

@@ -70,6 +70,20 @@ export interface TabProps<C, D> {
   books: string[];
 }
 
+/** The Progression tab (the class as a tree), with what the shell hands it around level-ups. */
+export interface ProgressProps<C, D> extends TabProps<C, D> {
+  /** A level-up just happened: tell its story (`n` changes each time). */
+  celebrate?: { level: number; n: number } | null;
+  /** The story is told. */
+  onCelebrated?: () => void;
+  /** Open the level-up dialog. */
+  onLevelUp?: () => void;
+  /** The hero sidebar already shows the Level up button (wide screens). */
+  sidebarLevelUp?: boolean;
+  /** Open another tab. */
+  onTab?: (tab: string) => void;
+}
+
 export interface Template<C> {
   id: string;
   name: string;
@@ -175,6 +189,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   normalize(raw: unknown): C;
   derive(c: C, books: string[]): D;
   tabs: { id: string; label: string; Component: FC<TabProps<C, D>> }[];
+  /** The Progression tab, shown right after Sheet; a level-up plays its story there. */
+  Progress?: FC<ProgressProps<C, D>>;
   /** `inSheet`: on the Sheet tab, where HP, slots and other pools have their own trackers. */
   Summary: FC<{ c: C; d: D; inSheet?: boolean }>;
   /** The key numbers (AC, speed, initiative...) at the top of the Sheet tab; when set, `Summary`

@@ -195,6 +195,16 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
   in derive, `spellVia`), sent as `session_rolls.via` (migration `20261125_session_rolls_via.sql`;
   `rolls.ts` falls back without it). Used by `RollLine` (TableDice.tsx, `FX_ROWS`) and the result card (Dice.tsx).
   Check animations by recording them (web-motion skill) before showing the user.
+- Progression tree (2026-11-25): the **Progression** tab right after Sheet (`GameSystem.Progress`, dnd5e
+  `components/ProgressionTab.tsx`). Content per character from the class data in `dnd5e/tree/build.ts` (rows 1–5, at
+  most 4 steps a row, choices picked in the panel via `pickPatch`; tests `tree/tree.test.ts`), each class's look in
+  `tree/looks.ts`, motion in `tree/fx.ts` (one WebGL canvas behind the tree + GSAP level-up stories, the "Level up!"
+  card, the final-level story for Sorcerer/Fighter/Wizard at the class's top level), GLSL in `tree/shaders.ts`, styles
+  `src/tree.css`. Layout: one trunk up the middle, steps branch left/right, a second step on a side hangs off the first.
+  A level-up (Editor `closeDialog`) switches to the tab and passes `celebrate`; LevelChange's `celebrated` skips its
+  "Welcome to level N" page. Copied from the mockup canvas https://claude.ai/artifact/EELKVpJ2uGxC75wo1evU4Z
+  (boards "Class trees, all 13 classes" and "Final level up story"). WebGL contexts are released only once their
+  canvas has left the page (StrictMode mounts twice; a lost context can't be reused).
 - Sessions (2026-11-22): `sessions.level` (host picks it; join/swap set `level_award` when it differs);
   name and level edit in place in the session side panel (`SessionName`, `SessionLevel` in `Sessions.tsx`).
 - Sheet tab layout (2026-11-23): `GameSystem.SheetNumbers` (dnd5e: `SheetNumbers` in `Summary.tsx`) shows the key

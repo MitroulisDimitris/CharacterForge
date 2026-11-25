@@ -308,10 +308,8 @@ Spells: levels 0–3 only (enough for character level 5).
 - **Feedback file**: 1 open item ("why do I get Sorcerous Origin at creation?"). Answered in chat:
   correct for 2014 rules (PHB p.100–101: chosen at level 1; the user's D&D Beyond character is 2024,
   where it's level 3). Ask the user whether to mark it fixed.
-- **Progression tree** per class: mockup approved in direction (skill-tree look, hover explains
-  everything, pick choices only at the right level, visible at character selection and after
-  creation). Mockup artifact: https://claude.ai/artifact/5GUNPqB2jQDm5SEqQvrcdN (canvas also holds
-  the style options A–D, the Hero-style app screens, and the class/race chart drafts). **Not built.**
+- **Progression tree** per class: built 2026-11-25 (the Progression tab; see the dev note in `CLAUDE.md`).
+  Mockup canvas: https://claude.ai/artifact/EELKVpJ2uGxC75wo1evU4Z (page "Progression Tree").
 - Question left open: should the folded "What you get at each level" table on the Class tab go too?
 - Previews and pips exist for D&D 5e only (PF2e / 3.5 have the shared hooks but no pools/previews).
 - Previews need a mouse (touch shows the current choice only).

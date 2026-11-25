@@ -18,6 +18,7 @@ import { SpeciesTab } from "./components/SpeciesTab";
 import { SpellsTab } from "./components/SpellsTab";
 import { SheetNumbers, Summary } from "./components/Summary";
 import { TableRolls } from "./components/TableRolls";
+import { ProgressionTab } from "./components/ProgressionTab";
 
 // Spells right after Sheet: what players open most in a game (feedback 2026-11-23, phone).
 const tabs = (speciesWord: string) => [
@@ -74,6 +75,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   Summary,
   SheetNumbers,
   TableRolls,
+  Progress: ProgressionTab,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
@@ -106,6 +108,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   Summary,
   SheetNumbers,
   TableRolls,
+  Progress: ProgressionTab,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
