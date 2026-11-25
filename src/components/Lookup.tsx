@@ -2,6 +2,8 @@
 // what a host needs first (CR, AC, HP, speed, Weak to / Resists / Immune to, 1–4 key traits);
 // the full stat block is one tap away.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { SpellParts } from "./SpellParts";
+import { refOf } from "../wikiRefs";
 import { xpForCr } from "../encounters";
 import { ABILITY_LABEL, MonsterPage, MonsterRow, MonsterText, check, modOf } from "./MonsterPage";
 import { RollChip, RollScope } from "./Dice";
@@ -27,6 +29,7 @@ import {
   PLACES,
   recent,
   speedText,
+  spellSlug,
   splitList,
   toggleFavorite,
   type LookupKind,
@@ -273,15 +276,21 @@ export function SpellCard({ s, startOpen = false }: { s: Spell; startOpen?: bool
       </button>
       {open && (
         <div className="lk-full lk-text">
-          {s.desc.split(/\n+/).map((p, i) => (
-            <p key={i}>
-              <SpellProse text={p.replace(/\*\*/g, "")} name={s.name} />
-            </p>
-          ))}
-          {s.higher_level && (
-            <p>
-              <strong>At higher levels.</strong> <SpellProse text={s.higher_level} name={s.name} />
-            </p>
+          {s.parts ? (
+            <SpellParts parts={s.parts} higher={s.higher_level} prose={(t) => <SpellProse text={t} name={s.name} />} />
+          ) : (
+            <>
+              {s.desc.split(/\n+/).map((p, i) => (
+                <p key={i}>
+                  <SpellProse text={p.replace(/\*\*/g, "")} name={s.name} />
+                </p>
+              ))}
+              {s.higher_level && (
+                <p>
+                  <strong>At higher levels.</strong> <SpellProse text={s.higher_level} name={s.name} />
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
@@ -305,6 +314,7 @@ function ConditionCard({ id }: { id: string }) {
             <li key={t}>{t}</li>
           ))}
         </ol>
+        <p className="muted lk-ref">{refOf("cond:exhaustion")}</p>
       </article>
     );
   if (!c) return null;
@@ -315,6 +325,7 @@ function ConditionCard({ id }: { id: string }) {
         <Star refItem={{ kind: "condition", slug: c.id, name: c.name }} />
       </header>
       <p>{c.text}</p>
+      <p className="muted lk-ref">{refOf(`cond:${c.id}`)}</p>
     </article>
   );
 }
@@ -389,7 +400,7 @@ function appSpell(slug: string, name: string): Spell | null {
 
 /** The spell open beside the list: everything about it. The app's own write-up shows at once;
  *  the full SRD text replaces it when Open5e answers (it can be slow). */
-function SpellPage({ slug, name, onBack, action }: { slug: string; name?: string; onBack: () => void; action?: (s: Spell) => ReactNode }) {
+function SpellPage({ slug, name, onBack, action, backLabel = "Spells" }: { slug: string; name?: string; onBack: () => void; action?: (s: Spell) => ReactNode; backLabel?: string }) {
   const [s, setS] = useState<Spell | null>(() => (name ? appSpell(slug, name) : null));
   const [err, setErr] = useState("");
   useEffect(() => {
@@ -405,7 +416,7 @@ function SpellPage({ slug, name, onBack, action }: { slug: string; name?: string
   return (
     <div className="mon-page spell-page">
       <button type="button" className="link mon-back" onClick={onBack}>
-        ‹ Spells
+        ‹ {backLabel}
       </button>
       {err && !s ? (
         <p className="auth-error">{err}</p>
@@ -508,7 +519,9 @@ export function Lookup({
   const [spellClass, setSpellClass] = useState("");
   const [error, setError] = useState("");
   /** The monster or spell open beside the list. */
-  const [open, setOpen] = useState<{ kind: "monster" | "spell"; slug: string } | null>(initialOpen ?? null);
+  /** `from`: the page that opened this one (a monster's spell link), for "‹ Back". */
+  type Open = { kind: "monster" | "spell"; slug: string; name?: string; from?: Open };
+  const [open, setOpen] = useState<Open | null>(initialOpen ?? null);
   const [picked, setPicked] = useState<LookupRef | null>(null);
   const [, setTick] = useState(0);
 
@@ -683,6 +696,7 @@ export function Lookup({
           onChange={(e) => {
             setQ(e.target.value);
             setPicked(null);
+            if (pageHidesList()) setOpen(null);
           }}
           placeholder={only === "monster" ? "Search monsters, or browse below" : only === "spell" ? "Search spells, or browse below" : "Look up a monster, spell or condition, or browse below"}
           aria-label={only === "monster" ? "Search monsters" : only === "spell" ? "Search spells" : "Look up a monster, spell or condition"}
@@ -690,7 +704,7 @@ export function Lookup({
       </label>
       {!only && <div className="lk-filters" role="group" aria-label="What to look up">
         {(["all", "monster", "spell", "condition"] as Kind[]).map((k) => (
-          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null), k === "monster" && setPicks(ENEMY_TYPES))}>
+          <button key={k} type="button" className={`lk-kind ${kind === k ? "on" : ""}`} aria-pressed={kind === k} onClick={() => (setKind(k), setPicked(null), pageHidesList() && setOpen(null), k === "monster" && setPicks(ENEMY_TYPES))}>
             {k === "all" ? "Everything" : k === "monster" ? "Monsters" : k === "spell" ? "Spells" : "Conditions"}
           </button>
         ))}
@@ -770,9 +784,9 @@ export function Lookup({
           {open && (
             <div className="lk-page">
               {open.kind === "monster" ? (
-                <MonsterPage key={open.slug} slug={open.slug} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} />
+                <MonsterPage key={open.slug} slug={open.slug} userId={userId} sessionId={sessionId} onBack={() => setOpen(null)} onSpell={(name) => setOpen({ kind: "spell", slug: spellSlug(name), name, from: open })} />
               ) : (
-                <SpellPage key={open.slug} slug={open.slug} name={spellBrief?.find((x) => x.slug === open.slug)?.name} onBack={() => setOpen(null)} action={spellAction} />
+                <SpellPage key={open.slug} slug={open.slug} name={open.name ?? spellBrief?.find((x) => x.slug === open.slug)?.name} onBack={() => setOpen(open.from ?? null)} backLabel={open.from ? "Back" : undefined} action={spellAction} />
               )}
             </div>
           )}
@@ -782,5 +796,9 @@ export function Lookup({
     </div>
   );
 }
+
+/** True where an open page hides the list beside it (same width as the `.lookup.has-page` CSS).
+ *  There, searching or filtering closes the page so the results show (feedback 2026-11-23). */
+export const pageHidesList = () => typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1100px)").matches;
 
 export type { LookupKind };

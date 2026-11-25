@@ -3615,7 +3615,9 @@ button.hero-system:hover {
   margin: 0;
   font-family: var(--font-head);
   font-size: 22px;
-  overflow-wrap: anywhere;
+  /* break-word, not anywhere: "anywhere" lets the box shrink a short name to "TE / ST" (feedback 2026-11-24). */
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 .session-status {
   display: flex;
@@ -9881,6 +9883,7 @@ button.sess-tr:focus-visible {
 }
 .session-name-btn > span {
   min-width: 0;
+  overflow-wrap: break-word;
 }
 .session-name-pen {
   flex: none;
@@ -10204,4 +10207,787 @@ button.sess-tr:focus-visible {
 }
 .sheet-numbers {
   margin-bottom: 14px;
+}
+
+/* Attacks on phones (feedback 2026-11-23, "Fire Bolt and Shocking Grasp misaligned"): the name on
+   its own line, the roll buttons under it, the same for every attack. */
+@media (max-width: 640px) {
+  .attack-rolls:not(.class-rolls) .attack-rolls-name {
+    flex-basis: 100%;
+  }
+}
+
+/* A spell's full book text (src/spellText.ts, components/SpellParts.tsx) */
+.spell-full {
+  display: grid;
+  gap: 0.5rem;
+}
+.spell-full p,
+.lk-text .spell-block p {
+  margin: 0;
+}
+.spell-bullet {
+  position: relative;
+  padding-left: 1.1em;
+}
+.spell-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 0.2em;
+  color: var(--gold);
+}
+.spell-ref {
+  font-size: 0.82rem;
+}
+.spell-table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 12rem;
+  margin: 0.2rem 0;
+}
+.spell-table th,
+.spell-table td {
+  text-align: left;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.spell-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.spell-block {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  margin: 0.3rem 0;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid #e0485e;
+  background: var(--surface-2);
+  font-size: 0.88rem;
+}
+.spell-block-name {
+  font-family: var(--font-head);
+  font-size: 1.05rem;
+}
+.spell-block-kind {
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.spell-block-head {
+  margin: 6px 0 0;
+  font-family: var(--font-head);
+  font-size: 0.9rem;
+  color: #e0485e;
+  border-bottom: 1px solid var(--border);
+}
+.spell-block-abilities {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  margin: 4px 0;
+  text-align: center;
+}
+.spell-block-abilities dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.spell-block-abilities dd {
+  margin: 0;
+  font-size: 0.8rem;
+}
+@media (max-width: 420px) {
+  .spell-block-abilities {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Monster page: spells that don't affect it */
+.mon-noeffect {
+  margin-top: 8px;
+}
+.mon-noeffect summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.mon-noeffect summary::-webkit-details-marker {
+  display: none;
+}
+.mon-noeffect-first {
+  font-size: 0.85rem;
+}
+.mon-noeffect ul {
+  margin: 4px 0 6px;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+.mon-noeffect-ref {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.mon-spell-link {
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
+  min-height: 0;
+}
+.mon-partly {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.mon-partly-head {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.lk-ref {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+}
+
+/* Per-session versions (2026-11-24): the Version dropdown and the strip above the tabs (components/Versions.tsx). */
+.version-pick {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.version-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.version-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.version-btn svg {
+  color: var(--muted);
+  flex: none;
+}
+.version-btn-text,
+.version-menu button > span:first-child {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.version-btn-text strong,
+.version-menu strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.version-btn-text span,
+.version-menu button span span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.version-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  min-width: 240px;
+}
+.version-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.version-menu button:hover,
+.version-menu button:focus-visible {
+  background: var(--surface-3, var(--surface));
+}
+.version-menu button.on {
+  background: var(--gold-soft, color-mix(in srgb, var(--gold) 14%, transparent));
+}
+.version-open {
+  font-size: 12px;
+  color: var(--gold);
+  flex: none;
+}
+.version-hint {
+  margin: 4px 0 0;
+  padding: 8px 10px 4px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.version-bar {
+  max-width: 320px;
+  margin: 0 0 12px;
+}
+.version-strip {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: var(--gold-soft, color-mix(in srgb, var(--gold) 12%, transparent));
+}
+.version-strip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.version-strip-row svg {
+  color: var(--gold);
+  flex: none;
+}
+.version-strip-text {
+  flex: 1 1 200px;
+  font-size: 14px;
+}
+.version-diff summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.version-diff ul {
+  margin: 4px 0 2px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.version-diff li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.version-same {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Dice at the table (2026-11-24): the player's roller on the session page and the DM's Rolls tab
+   (components/TableDice.tsx, systems/dnd5e/components/TableRolls.tsx). */
+.dice-card-shared {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ok);
+}
+.tab-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  vertical-align: middle;
+}
+.player-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.player-table-main {
+  flex: 999 1 420px;
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.player-table-log {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.player-table-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.player-table-id {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.player-table-id strong {
+  font-family: var(--font-head);
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+.player-table-mode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.table-roll-groups {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.table-roll-groups button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.table-roll-groups button.on {
+  border-color: var(--accent-strong, var(--accent));
+  background: var(--accent-soft, var(--surface-2));
+  color: var(--text);
+  font-weight: 600;
+}
+.table-roll-rows {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px;
+}
+.table-roll-rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.table-roll-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.table-roll-name small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.table-roll-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.table-roll-chips .roll-chip {
+  min-height: 40px;
+}
+.table-roll-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.table-roll-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.table-roll-line.nat20 {
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+}
+.table-roll-time {
+  flex: none;
+  width: 44px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.table-roll-who {
+  flex: none;
+  width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  min-width: 0;
+}
+.table-roll-who span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-roll-what {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.table-roll-what small {
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.table-roll-tag {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+.table-roll-line.nat20 .table-roll-tag,
+.table-roll-line.crit .table-roll-tag {
+  color: var(--gold);
+  font-weight: 600;
+}
+.table-roll-line.nat1 .table-roll-tag {
+  color: var(--err);
+  font-weight: 600;
+}
+.table-roll-total {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--font-head);
+  font-size: 22px;
+}
+.table-roll-line.nat20 .table-roll-total,
+.table-roll-line.crit .table-roll-total {
+  color: var(--gold);
+}
+.table-roll-line.nat1 .table-roll-total {
+  color: var(--err);
+}
+.table-roll-list.compact .table-roll-line {
+  padding: 8px 10px;
+  gap: 8px;
+}
+.table-roll-list.compact .table-roll-total {
+  font-size: 18px;
+}
+.host-rolls {
+  display: grid;
+  gap: 14px;
+}
+.host-rolls-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.host-rolls-filter button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.host-rolls-filter button.on {
+  border-color: var(--gold);
+  background: var(--gold-soft, color-mix(in srgb, var(--gold) 14%, transparent));
+}
+.host-rolls-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.host-rolls-who {
+  flex: 1 1 180px;
+  display: grid;
+  gap: 2px;
+}
+.host-rolls-stats {
+  display: flex;
+  gap: 22px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.host-rolls-stats span {
+  display: grid;
+  justify-items: center;
+}
+.host-rolls-stats strong {
+  font-size: 20px;
+  color: var(--text);
+}
+.host-rolls-stats .nat20 strong {
+  color: var(--gold);
+}
+.host-rolls-stats .nat1 strong {
+  color: var(--err);
+}
+@media (max-width: 640px) {
+  .table-roll-who {
+    width: auto;
+    max-width: 110px;
+  }
+  .table-roll-who span {
+    display: none;
+  }
+  .table-roll-time {
+    width: 38px;
+  }
+  .table-roll-line:not(.nat20):not(.nat1):not(.crit) .table-roll-tag {
+    display: none;
+  }
+}
+
+/* DM's view (2026-11-24): the character ring is a thin health ring, green / yellow / red (Crest `hp`). */
+.crest-hp .crest-track,
+.crest-hp .crest-fill {
+  stroke-width: 2.5;
+}
+.crest-hp.hp-ok .crest-fill {
+  stroke: var(--ok);
+}
+.crest-hp.hp-warn .crest-fill {
+  stroke: var(--warn);
+}
+.crest-hp.hp-low .crest-fill {
+  stroke: var(--err);
+}
+.crest-hp .crest-fill {
+  transition: stroke-dashoffset 0.4s ease, stroke 0.3s;
+}
+
+/* A new roll slides in from the top and pushes the list down, like a new message (2026-11-24). */
+.table-roll-line.arrive {
+  animation: roll-arrive 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards, roll-arrive-glow 1.2s ease-out;
+  overflow: hidden;
+}
+@keyframes roll-arrive {
+  from {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: -6px;
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    max-height: 120px;
+    margin-top: 0;
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes roll-arrive-glow {
+  from {
+    background: color-mix(in srgb, var(--gold) 16%, var(--surface));
+  }
+  to {
+    background: var(--surface);
+  }
+}
+/* A faint line under a roll that came after a pause of a minute or more. */
+.table-roll-gap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.table-roll-gap::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-roll-line.arrive {
+    animation: none;
+  }
+  .crest-hp .crest-fill {
+    transition: none;
+  }
+}
+
+/* The player's "Your rolls tonight": compact rows in a box that scrolls on its own, so the list
+   never pushes "Who's playing" down (feedback 2026-11-24). */
+.player-table {
+  align-items: flex-start;
+}
+.my-roll-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: grid;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.my-roll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.my-roll-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.my-roll-label {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.my-roll-text small {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.my-roll-total {
+  flex: none;
+  font-family: var(--font-head);
+  font-size: 17px;
+}
+.my-roll.nat20 .my-roll-total,
+.my-roll.crit .my-roll-total {
+  color: var(--gold);
+}
+.my-roll.nat1 .my-roll-total {
+  color: var(--err);
+}
+.player-table-log .side-label {
+  margin: 0;
+}
+.player-table-log > h2,
+.host-rolls > h2 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Player's session page (2026-11-24, feedback): the character and its rolls on the left, tonight's
+   rolls fill the right side: the whole height, newest on top, older ones fade out at the bottom (no
+   scroll box). On phones the column goes under the rest. */
+.player-table {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.player-table-main {
+  flex: 999 1 520px;
+}
+.player-table-log {
+  flex: 1 1 300px;
+  max-width: 420px;
+  position: sticky;
+  top: 12px;
+  align-self: flex-start;
+  height: calc(100vh - 24px);
+  height: calc(100dvh - 24px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent);
+}
+.table-roll-list.mine .table-roll-line {
+  padding: 8px 12px;
+  gap: 10px;
+}
+.table-roll-list.mine .table-roll-total {
+  font-size: 20px;
+}
+@media (max-width: 900px) {
+  .player-table-log {
+    position: static;
+    max-width: none;
+    height: auto;
+    max-height: 70vh;
+  }
+}
+
+/* Result card with a damage animation (components/Dice.tsx + DamageFx `big`; src/damageFx.css): the
+   number on the right, the effect across the whole card, the top edge in the type's colour. */
+.dice-card.has-fx {
+  border-top-color: rgb(var(--lc));
+}
+.dice-card.has-fx .dice-card-lines {
+  border-top: 0;
+  padding-top: 0;
+}
+/* .fx-row would make the card position: relative; it stays anchored to the corner. */
+.dice-card.fx-row {
+  position: absolute;
 }

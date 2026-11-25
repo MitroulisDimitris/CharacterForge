@@ -1,0 +1,3578 @@
+{
+"bg:acolyte14": [
+"PHB14",
+127
+],
+"bg:charlatan14": [
+"PHB14",
+128
+],
+"bg:criminalSpy2014": [
+"PHB14",
+130
+],
+"bg:custom14": [
+"PHB14",
+126
+],
+"bg:entertainer14": [
+"PHB14",
+130
+],
+"bg:folkHero14": [
+"PHB14",
+131
+],
+"bg:gladiator14": [
+"PHB14",
+131
+],
+"bg:guildArtisan14": [
+"PHB14",
+132
+],
+"bg:guildMerchant14": [
+"PHB14",
+133
+],
+"bg:hermit14": [
+"PHB14",
+134
+],
+"bg:knight14": [
+"PHB14",
+136
+],
+"bg:noble14": [
+"PHB14",
+135
+],
+"bg:outlander14": [
+"PHB14",
+136
+],
+"bg:pirate14": [
+"PHB14",
+139
+],
+"bg:sage14": [
+"PHB14",
+137
+],
+"bg:sailor14": [
+"PHB14",
+139
+],
+"bg:soldier14": [
+"PHB14",
+140
+],
+"bg:urchin14": [
+"PHB14",
+141
+],
+"class:artificer": [
+"TCE",
+9
+],
+"class:barbarian": [
+"PHB14",
+46
+],
+"class:bard": [
+"PHB14",
+51
+],
+"class:cleric": [
+"PHB14",
+56
+],
+"class:druid": [
+"PHB14",
+64
+],
+"class:fighter": [
+"PHB14",
+70
+],
+"class:monk": [
+"PHB14",
+76
+],
+"class:paladin": [
+"PHB14",
+82
+],
+"class:ranger": [
+"PHB14",
+89
+],
+"class:rogue": [
+"PHB14",
+94
+],
+"class:sorcerer": [
+"PHB14",
+99
+],
+"class:warlock": [
+"PHB14",
+105
+],
+"class:wizard": [
+"PHB14",
+112
+],
+"cond:blinded": [
+"PHB14",
+290
+],
+"cond:charmed": [
+"PHB14",
+290
+],
+"cond:deafened": [
+"PHB14",
+290
+],
+"cond:exhaustion": [
+"PHB14",
+291
+],
+"cond:frightened": [
+"PHB14",
+290
+],
+"cond:grappled": [
+"PHB14",
+290
+],
+"cond:incapacitated": [
+"PHB14",
+290
+],
+"cond:invisible": [
+"PHB14",
+291
+],
+"cond:paralyzed": [
+"PHB14",
+291
+],
+"cond:petrified": [
+"PHB14",
+291
+],
+"cond:poisoned": [
+"PHB14",
+292
+],
+"cond:prone": [
+"PHB14",
+292
+],
+"cond:restrained": [
+"PHB14",
+292
+],
+"cond:stunned": [
+"PHB14",
+292
+],
+"cond:unconscious": [
+"PHB14",
+292
+],
+"feat:actor": [
+"PHB14",
+165
+],
+"feat:alert": [
+"PHB14",
+165
+],
+"feat:artificerInitiate": [
+"TCE",
+79
+],
+"feat:asi": [
+"PHB14",
+165
+],
+"feat:athlete": [
+"PHB14",
+165
+],
+"feat:bountifulLuck": [
+"XGE",
+73
+],
+"feat:charger": [
+"PHB14",
+165
+],
+"feat:chef": [
+"TCE",
+79
+],
+"feat:crossbowExpert": [
+"PHB14",
+165
+],
+"feat:crusher": [
+"TCE",
+79
+],
+"feat:defensiveDuelist": [
+"PHB14",
+165
+],
+"feat:dragonFear": [
+"XGE",
+74
+],
+"feat:dragonHide": [
+"XGE",
+74
+],
+"feat:drowHighMagic": [
+"XGE",
+74
+],
+"feat:dualWielder": [
+"PHB14",
+165
+],
+"feat:dungeonDelver": [
+"PHB14",
+166
+],
+"feat:durable": [
+"PHB14",
+166
+],
+"feat:dwarvenFortitude": [
+"XGE",
+74
+],
+"feat:eldritchAdept": [
+"TCE",
+79
+],
+"feat:elementalAdept": [
+"PHB14",
+166
+],
+"feat:elvenAccuracy": [
+"XGE",
+74
+],
+"feat:fadeAway": [
+"XGE",
+74
+],
+"feat:feyTeleportation": [
+"XGE",
+74
+],
+"feat:feyTouched": [
+"TCE",
+79
+],
+"feat:fightingInitiate": [
+"TCE",
+80
+],
+"feat:flamesOfPhlegethos": [
+"XGE",
+74
+],
+"feat:grappler": [
+"PHB14",
+167
+],
+"feat:greatWeaponMaster": [
+"PHB14",
+167
+],
+"feat:gunner": [
+"TCE",
+80
+],
+"feat:healer": [
+"PHB14",
+167
+],
+"feat:heavilyArmored": [
+"PHB14",
+167
+],
+"feat:heavyArmorMaster": [
+"PHB14",
+167
+],
+"feat:infernalConstitution": [
+"XGE",
+75
+],
+"feat:inspiringLeader": [
+"PHB14",
+167
+],
+"feat:keenMind": [
+"PHB14",
+167
+],
+"feat:lightlyArmored": [
+"PHB14",
+167
+],
+"feat:linguist": [
+"PHB14",
+167
+],
+"feat:lucky": [
+"PHB14",
+167
+],
+"feat:mageSlayer": [
+"PHB14",
+168
+],
+"feat:magicInitiate": [
+"PHB14",
+168
+],
+"feat:martialAdept": [
+"PHB14",
+168
+],
+"feat:mediumArmorMaster": [
+"PHB14",
+168
+],
+"feat:metamagicAdept": [
+"TCE",
+80
+],
+"feat:mobile": [
+"PHB14",
+168
+],
+"feat:moderatelyArmored": [
+"PHB14",
+168
+],
+"feat:mountedCombatant": [
+"PHB14",
+168
+],
+"feat:observant": [
+"PHB14",
+168
+],
+"feat:orcishFury": [
+"XGE",
+75
+],
+"feat:piercer": [
+"TCE",
+80
+],
+"feat:poisoner": [
+"TCE",
+80
+],
+"feat:polearmMaster": [
+"PHB14",
+168
+],
+"feat:prodigy": [
+"XGE",
+75
+],
+"feat:resilient": [
+"PHB14",
+168
+],
+"feat:ritualCaster": [
+"PHB14",
+169
+],
+"feat:savageAttacker": [
+"PHB14",
+169
+],
+"feat:secondChance": [
+"XGE",
+75
+],
+"feat:sentinel": [
+"PHB14",
+169
+],
+"feat:shadowTouched": [
+"TCE",
+80
+],
+"feat:sharpshooter": [
+"PHB14",
+170
+],
+"feat:shieldMaster": [
+"PHB14",
+170
+],
+"feat:skillExpert": [
+"TCE",
+80
+],
+"feat:skilled": [
+"PHB14",
+170
+],
+"feat:skulker": [
+"PHB14",
+170
+],
+"feat:slasher": [
+"TCE",
+81
+],
+"feat:spellSniper": [
+"PHB14",
+170
+],
+"feat:squatNimbleness": [
+"XGE",
+75
+],
+"feat:tavernBrawler": [
+"PHB14",
+170
+],
+"feat:telekinetic": [
+"TCE",
+81
+],
+"feat:telepathic": [
+"TCE",
+81
+],
+"feat:tough": [
+"PHB14",
+170
+],
+"feat:warCaster": [
+"PHB14",
+170
+],
+"feat:weaponMaster": [
+"PHB14",
+170
+],
+"feat:woodElfMagic": [
+"XGE",
+75
+],
+"item:adamantine-armor": [
+"DMG",
+150
+],
+"item:amulet-of-health": [
+"DMG",
+150
+],
+"item:amulet-of-proof-against-detection-and-location": [
+"DMG",
+150
+],
+"item:amulet-of-the-planes": [
+"DMG",
+150
+],
+"item:animated-shield": [
+"DMG",
+151
+],
+"item:apparatus-of-the-crab": [
+"DMG",
+151
+],
+"item:armor-of-invulnerability": [
+"DMG",
+152
+],
+"item:armor-of-resistance": [
+"DMG",
+152
+],
+"item:armor-of-vulnerability": [
+"DMG",
+152
+],
+"item:arrow-catching-shield": [
+"DMG",
+152
+],
+"item:arrow-of-slaying": [
+"DMG",
+152
+],
+"item:bag-of-beans": [
+"DMG",
+152
+],
+"item:bag-of-devouring": [
+"DMG",
+153
+],
+"item:bag-of-holding": [
+"DMG",
+153
+],
+"item:bag-of-tricks": [
+"DMG",
+154
+],
+"item:bead-of-force": [
+"DMG",
+154
+],
+"item:belt-of-dwarvenkind": [
+"DMG",
+155
+],
+"item:belt-of-giant-strength": [
+"DMG",
+155
+],
+"item:berserker-axe": [
+"DMG",
+155
+],
+"item:boots-of-elvenkind": [
+"DMG",
+155
+],
+"item:boots-of-levitation": [
+"DMG",
+155
+],
+"item:boots-of-speed": [
+"DMG",
+155
+],
+"item:boots-of-striding-and-springing": [
+"DMG",
+156
+],
+"item:boots-of-the-winterlands": [
+"DMG",
+156
+],
+"item:bowl-of-commanding-water-elementals": [
+"DMG",
+156
+],
+"item:bracers-of-archery": [
+"DMG",
+156
+],
+"item:bracers-of-defense": [
+"DMG",
+156
+],
+"item:brazier-of-commanding-fire-elementals": [
+"DMG",
+156
+],
+"item:brooch-of-shielding": [
+"DMG",
+156
+],
+"item:broom-of-flying": [
+"DMG",
+156
+],
+"item:candle-of-invocation": [
+"DMG",
+157
+],
+"item:cape-of-the-mountebank": [
+"DMG",
+157
+],
+"item:carpet-of-flying": [
+"DMG",
+157
+],
+"item:censer-of-controlling-air-elementals": [
+"DMG",
+158
+],
+"item:chime-of-opening": [
+"DMG",
+158
+],
+"item:circlet-of-blasting": [
+"DMG",
+158
+],
+"item:cloak-of-arachnida": [
+"DMG",
+158
+],
+"item:cloak-of-displacement": [
+"DMG",
+158
+],
+"item:cloak-of-elvenkind": [
+"DMG",
+158
+],
+"item:cloak-of-protection": [
+"DMG",
+159
+],
+"item:cloak-of-the-bat": [
+"DMG",
+159
+],
+"item:cloak-of-the-manta-ray": [
+"DMG",
+159
+],
+"item:crystal-ball": [
+"DMG",
+159
+],
+"item:cube-of-force": [
+"DMG",
+159
+],
+"item:cubic-gate": [
+"DMG",
+160
+],
+"item:dagger-of-venom": [
+"DMG",
+160
+],
+"item:dancing-sword": [
+"DMG",
+161
+],
+"item:decanter-of-endless-water": [
+"DMG",
+161
+],
+"item:deck-of-illusions": [
+"DMG",
+161
+],
+"item:deck-of-many-things": [
+"DMG",
+162
+],
+"item:defender": [
+"DMG",
+164
+],
+"item:demon-armor": [
+"DMG",
+165
+],
+"item:dimensional-shackles": [
+"DMG",
+165
+],
+"item:dmg-alchemy-jug": [
+"DMG",
+150
+],
+"item:dmg-ammunition-1": [
+"DMG",
+150
+],
+"item:dmg-ammunition-2": [
+"DMG",
+150
+],
+"item:dmg-ammunition-3": [
+"DMG",
+150
+],
+"item:dmg-armor-1": [
+"DMG",
+152
+],
+"item:dmg-armor-2": [
+"DMG",
+152
+],
+"item:dmg-armor-3": [
+"DMG",
+152
+],
+"item:dmg-axe-of-the-dwarvish-lords": [
+"DMG",
+221
+],
+"item:dmg-blackrazor": [
+"DMG",
+216
+],
+"item:dmg-book-of-exalted-deeds": [
+"DMG",
+222
+],
+"item:dmg-book-of-vile-darkness": [
+"DMG",
+222
+],
+"item:dmg-cloak-of-invisibility": [
+"DMG",
+158
+],
+"item:dmg-driftglobe": [
+"DMG",
+166
+],
+"item:dmg-efreeti-chain": [
+"DMG",
+167
+],
+"item:dmg-elixir-of-health": [
+"DMG",
+168
+],
+"item:dmg-eye-and-hand-of-vecna": [
+"DMG",
+224
+],
+"item:dmg-gloves-of-thievery": [
+"DMG",
+172
+],
+"item:dmg-instrument-of-the-bards-anstruth-harp": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-canaith-mandolin": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-cli-lyre": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-doss-lute": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-fochlucan-bandore": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-mac-fuirmidh-cittern": [
+"DMG",
+176
+],
+"item:dmg-instrument-of-the-bards-ollamh-harp": [
+"DMG",
+176
+],
+"item:dmg-mariner-s-armor": [
+"DMG",
+181
+],
+"item:dmg-moonblade": [
+"DMG",
+217
+],
+"item:dmg-potion-of-fire-breath": [
+"DMG",
+187
+],
+"item:dmg-potion-of-invulnerability": [
+"DMG",
+188
+],
+"item:dmg-potion-of-longevity": [
+"DMG",
+188
+],
+"item:dmg-potion-of-vitality": [
+"DMG",
+188
+],
+"item:dmg-rod-of-the-pact-keeper-1": [
+"DMG",
+197
+],
+"item:dmg-rod-of-the-pact-keeper-2": [
+"DMG",
+197
+],
+"item:dmg-rod-of-the-pact-keeper-3": [
+"DMG",
+197
+],
+"item:dmg-saddle-of-the-cavalier": [
+"DMG",
+199
+],
+"item:dmg-scroll-of-protection": [
+"DMG",
+199
+],
+"item:dmg-sending-stones": [
+"DMG",
+199
+],
+"item:dmg-sentinel-shield": [
+"DMG",
+199
+],
+"item:dmg-shield-1": [
+"DMG",
+200
+],
+"item:dmg-shield-2": [
+"DMG",
+200
+],
+"item:dmg-shield-3": [
+"DMG",
+200
+],
+"item:dmg-staff-of-the-adder": [
+"DMG",
+203
+],
+"item:dmg-sword-of-answering": [
+"DMG",
+206
+],
+"item:dmg-sword-of-kas": [
+"DMG",
+226
+],
+"item:dmg-sword-of-vengeance": [
+"DMG",
+206
+],
+"item:dmg-tentacle-rod": [
+"DMG",
+208
+],
+"item:dmg-tome-of-the-stilled-tongue": [
+"DMG",
+208
+],
+"item:dmg-wand-of-orcus": [
+"DMG",
+227
+],
+"item:dmg-wave": [
+"DMG",
+218
+],
+"item:dmg-weapon-of-warning": [
+"DMG",
+213
+],
+"item:dmg-whelm": [
+"DMG",
+218
+],
+"item:dragon-scale-mail": [
+"DMG",
+165
+],
+"item:dragon-slayer": [
+"DMG",
+166
+],
+"item:dust-of-disappearance": [
+"DMG",
+166
+],
+"item:dust-of-dryness": [
+"DMG",
+166
+],
+"item:dust-of-sneezing-and-choking": [
+"DMG",
+166
+],
+"item:dwarven-plate": [
+"DMG",
+167
+],
+"item:dwarven-thrower": [
+"DMG",
+166
+],
+"item:efficient-quiver": [
+"DMG",
+189
+],
+"item:efreeti-bottle": [
+"DMG",
+166
+],
+"item:elemental-gem": [
+"DMG",
+167
+],
+"item:elven-chain": [
+"DMG",
+168
+],
+"item:eversmoking-bottle": [
+"DMG",
+168
+],
+"item:eyes-of-charming": [
+"DMG",
+168
+],
+"item:eyes-of-minute-seeing": [
+"DMG",
+168
+],
+"item:eyes-of-the-eagle": [
+"DMG",
+168
+],
+"item:feather-token": [
+"DMG",
+189
+],
+"item:figurine-of-wondrous-power": [
+"DMG",
+169
+],
+"item:flame-tongue": [
+"DMG",
+170
+],
+"item:folding-boat": [
+"DMG",
+170
+],
+"item:frost-brand": [
+"DMG",
+170
+],
+"item:gauntlets-of-ogre-power": [
+"DMG",
+171
+],
+"item:gem-of-brightness": [
+"DMG",
+171
+],
+"item:gem-of-seeing": [
+"DMG",
+172
+],
+"item:giant-slayer": [
+"DMG",
+172
+],
+"item:glamoured-studded-leather": [
+"DMG",
+172
+],
+"item:gloves-of-missile-snaring": [
+"DMG",
+172
+],
+"item:gloves-of-swimming-and-climbing": [
+"DMG",
+172
+],
+"item:goggles-of-night": [
+"DMG",
+172
+],
+"item:hammer-of-thunderbolts": [
+"DMG",
+173
+],
+"item:handy-haversack": [
+"DMG",
+174
+],
+"item:hat-of-disguise": [
+"DMG",
+173
+],
+"item:headband-of-intellect": [
+"DMG",
+173
+],
+"item:helm-of-brilliance": [
+"DMG",
+173
+],
+"item:helm-of-comprehending-languages": [
+"DMG",
+173
+],
+"item:helm-of-telepathy": [
+"DMG",
+174
+],
+"item:helm-of-teleportation": [
+"DMG",
+174
+],
+"item:holy-avenger": [
+"DMG",
+174
+],
+"item:horn-of-blasting": [
+"DMG",
+174
+],
+"item:horn-of-valhalla": [
+"DMG",
+175
+],
+"item:horseshoes-of-a-zephyr": [
+"DMG",
+175
+],
+"item:horseshoes-of-speed": [
+"DMG",
+175
+],
+"item:immovable-rod": [
+"DMG",
+175
+],
+"item:instant-fortress": [
+"DMG",
+160
+],
+"item:ioun-stone": [
+"DMG",
+176
+],
+"item:iron-bands-of-binding": [
+"DMG",
+177
+],
+"item:iron-flask": [
+"DMG",
+178
+],
+"item:javelin-of-lightning": [
+"DMG",
+178
+],
+"item:lantern-of-revealing": [
+"DMG",
+179
+],
+"item:luck-blade": [
+"DMG",
+179
+],
+"item:mace-of-disruption": [
+"DMG",
+179
+],
+"item:mace-of-smiting": [
+"DMG",
+179
+],
+"item:mace-of-terror": [
+"DMG",
+180
+],
+"item:mantle-of-spell-resistance": [
+"DMG",
+180
+],
+"item:manual-of-bodily-health": [
+"DMG",
+180
+],
+"item:manual-of-gainful-exercise": [
+"DMG",
+180
+],
+"item:manual-of-golems": [
+"DMG",
+180
+],
+"item:manual-of-quickness-of-action": [
+"DMG",
+181
+],
+"item:marvelous-pigments": [
+"DMG",
+183
+],
+"item:medallion-of-thoughts": [
+"DMG",
+181
+],
+"item:mirror-of-life-trapping": [
+"DMG",
+181
+],
+"item:mithral-armor": [
+"DMG",
+182
+],
+"item:necklace-of-adaptation": [
+"DMG",
+182
+],
+"item:necklace-of-fireballs": [
+"DMG",
+182
+],
+"item:necklace-of-prayer-beads": [
+"DMG",
+182
+],
+"item:nine-lives-stealer": [
+"DMG",
+182
+],
+"item:oathbow": [
+"DMG",
+183
+],
+"item:oil-of-etherealness": [
+"DMG",
+183
+],
+"item:oil-of-sharpness": [
+"DMG",
+184
+],
+"item:oil-of-slipperiness": [
+"DMG",
+184
+],
+"item:orb-of-dragonkind": [
+"DMG",
+225
+],
+"item:pearl-of-power": [
+"DMG",
+184
+],
+"item:periapt-of-health": [
+"DMG",
+184
+],
+"item:periapt-of-proof-against-poison": [
+"DMG",
+184
+],
+"item:periapt-of-wound-closure": [
+"DMG",
+184
+],
+"item:philter-of-love": [
+"DMG",
+184
+],
+"item:pipes-of-haunting": [
+"DMG",
+185
+],
+"item:pipes-of-the-sewers": [
+"DMG",
+185
+],
+"item:plate-armor-of-etherealness": [
+"DMG",
+185
+],
+"item:portable-hole": [
+"DMG",
+185
+],
+"item:potion-of-animal-friendship": [
+"DMG",
+187
+],
+"item:potion-of-clairvoyance": [
+"DMG",
+187
+],
+"item:potion-of-climbing": [
+"DMG",
+187
+],
+"item:potion-of-diminution": [
+"DMG",
+187
+],
+"item:potion-of-flying": [
+"DMG",
+187
+],
+"item:potion-of-gaseous-form": [
+"DMG",
+187
+],
+"item:potion-of-giant-strength": [
+"DMG",
+187
+],
+"item:potion-of-growth": [
+"DMG",
+187
+],
+"item:potion-of-healing": [
+"DMG",
+187
+],
+"item:potion-of-heroism": [
+"DMG",
+188
+],
+"item:potion-of-invisibility": [
+"DMG",
+188
+],
+"item:potion-of-mind-reading": [
+"DMG",
+188
+],
+"item:potion-of-poison": [
+"DMG",
+188
+],
+"item:potion-of-resistance": [
+"DMG",
+188
+],
+"item:potion-of-speed": [
+"DMG",
+188
+],
+"item:potion-of-water-breathing": [
+"DMG",
+188
+],
+"item:restorative-ointment": [
+"DMG",
+179
+],
+"item:ring-of-animal-influence": [
+"DMG",
+189
+],
+"item:ring-of-djinni-summoning": [
+"DMG",
+190
+],
+"item:ring-of-elemental-command": [
+"DMG",
+190
+],
+"item:ring-of-evasion": [
+"DMG",
+191
+],
+"item:ring-of-feather-falling": [
+"DMG",
+191
+],
+"item:ring-of-free-action": [
+"DMG",
+191
+],
+"item:ring-of-invisibility": [
+"DMG",
+191
+],
+"item:ring-of-jumping": [
+"DMG",
+191
+],
+"item:ring-of-mind-shielding": [
+"DMG",
+191
+],
+"item:ring-of-protection": [
+"DMG",
+191
+],
+"item:ring-of-regeneration": [
+"DMG",
+191
+],
+"item:ring-of-resistance": [
+"DMG",
+192
+],
+"item:ring-of-shooting-stars": [
+"DMG",
+192
+],
+"item:ring-of-spell-storing": [
+"DMG",
+192
+],
+"item:ring-of-spell-turning": [
+"DMG",
+193
+],
+"item:ring-of-swimming": [
+"DMG",
+193
+],
+"item:ring-of-telekinesis": [
+"DMG",
+193
+],
+"item:ring-of-the-ram": [
+"DMG",
+193
+],
+"item:ring-of-three-wishes": [
+"DMG",
+193
+],
+"item:ring-of-warmth": [
+"DMG",
+193
+],
+"item:ring-of-water-walking": [
+"DMG",
+193
+],
+"item:ring-of-x-ray-vision": [
+"DMG",
+193
+],
+"item:robe-of-eyes": [
+"DMG",
+193
+],
+"item:robe-of-scintillating-colors": [
+"DMG",
+194
+],
+"item:robe-of-stars": [
+"DMG",
+194
+],
+"item:robe-of-the-archmagi": [
+"DMG",
+194
+],
+"item:robe-of-useful-items": [
+"DMG",
+195
+],
+"item:rod-of-absorption": [
+"DMG",
+195
+],
+"item:rod-of-alertness": [
+"DMG",
+196
+],
+"item:rod-of-lordly-might": [
+"DMG",
+196
+],
+"item:rod-of-rulership": [
+"DMG",
+197
+],
+"item:rod-of-security": [
+"DMG",
+197
+],
+"item:rope-of-climbing": [
+"DMG",
+197
+],
+"item:rope-of-entanglement": [
+"DMG",
+197
+],
+"item:scarab-of-protection": [
+"DMG",
+199
+],
+"item:scimitar-of-speed": [
+"DMG",
+199
+],
+"item:shield-of-missile-attraction": [
+"DMG",
+200
+],
+"item:slippers-of-spider-climbing": [
+"DMG",
+200
+],
+"item:sovereign-glue": [
+"DMG",
+200
+],
+"item:spell-scroll": [
+"DMG",
+200
+],
+"item:spellguard-shield": [
+"DMG",
+201
+],
+"item:sphere-of-annihilation": [
+"DMG",
+201
+],
+"item:srd_abacus": [
+"PHB",
+150
+],
+"item:srd_acid": [
+"PHB",
+148
+],
+"item:srd_acid-vial": [
+"PHB",
+150
+],
+"item:srd_alchemists-fire-flask": [
+"PHB",
+148
+],
+"item:srd_alchemists-supplies": [
+"PHB",
+154
+],
+"item:srd_amulet": [
+"PHB",
+150
+],
+"item:srd_antitoxin-vial": [
+"PHB",
+150
+],
+"item:srd_arrow-bow": [
+"PHB",
+150
+],
+"item:srd_assassins-blood": [
+"DMG",
+257
+],
+"item:srd_backpack": [
+"PHB",
+150
+],
+"item:srd_bagpipes": [
+"PHB",
+154
+],
+"item:srd_ball-bearings-bag-of-1000": [
+"PHB",
+150
+],
+"item:srd_barrel": [
+"PHB",
+150
+],
+"item:srd_basket": [
+"PHB",
+150
+],
+"item:srd_battleaxe": [
+"PHB",
+149
+],
+"item:srd_bedroll": [
+"PHB",
+150
+],
+"item:srd_bell": [
+"PHB",
+150
+],
+"item:srd_blanket": [
+"PHB",
+150
+],
+"item:srd_block-and-tackle": [
+"PHB",
+151
+],
+"item:srd_blowgun": [
+"PHB",
+149
+],
+"item:srd_blowgun-needles": [
+"PHB",
+150
+],
+"item:srd_book": [
+"PHB",
+151
+],
+"item:srd_bottle-glass": [
+"PHB",
+150
+],
+"item:srd_breastplate": [
+"PHB",
+145
+],
+"item:srd_brewers-supplies": [
+"PHB",
+154
+],
+"item:srd_bucket": [
+"PHB",
+150
+],
+"item:srd_burnt-othur-fumes": [
+"DMG",
+257
+],
+"item:srd_calligraphers-supplies": [
+"PHB",
+154
+],
+"item:srd_caltrops-bag-of-20": [
+"PHB",
+150
+],
+"item:srd_candle": [
+"PHB",
+151
+],
+"item:srd_canvas": [
+"PHB",
+153
+],
+"item:srd_carpenters-tools": [
+"PHB",
+154
+],
+"item:srd_carriage": [
+"PHB",
+157
+],
+"item:srd_cart": [
+"PHB",
+154
+],
+"item:srd_cartographers-tools": [
+"PHB",
+154
+],
+"item:srd_case-crossbow-bolt": [
+"PHB",
+150
+],
+"item:srd_case-map-or-scroll": [
+"PHB",
+151
+],
+"item:srd_chain-10-feet": [
+"PHB",
+150
+],
+"item:srd_chain-mail": [
+"PHB",
+145
+],
+"item:srd_chain-shirt": [
+"PHB",
+144
+],
+"item:srd_chalk-1-piece": [
+"PHB",
+150
+],
+"item:srd_chariot": [
+"PHB",
+157
+],
+"item:srd_chest": [
+"PHB",
+150
+],
+"item:srd_chicken": [
+"PHB",
+157
+],
+"item:srd_cinnamon": [
+"PHB",
+157
+],
+"item:srd_climbers-kit": [
+"PHB",
+151
+],
+"item:srd_clothes-common": [
+"PHB",
+150
+],
+"item:srd_clothes-costume": [
+"PHB",
+150
+],
+"item:srd_clothes-fine": [
+"PHB",
+150
+],
+"item:srd_clothes-travelers": [
+"PHB",
+150
+],
+"item:srd_cloves": [
+"PHB",
+157
+],
+"item:srd_club": [
+"PHB",
+149
+],
+"item:srd_cobblers-tools": [
+"PHB",
+154
+],
+"item:srd_component-pouch": [
+"PHB",
+151
+],
+"item:srd_cooks-utensils": [
+"PHB",
+154
+],
+"item:srd_copper": [
+"PHB",
+143
+],
+"item:srd_copper-piece": [
+"PHB",
+143
+],
+"item:srd_cotton-cloth": [
+"PHB",
+157
+],
+"item:srd_cow": [
+"PHB",
+157
+],
+"item:srd_crawler-mucus": [
+"DMG",
+258
+],
+"item:srd_crossbow-bolt": [
+"PHB",
+150
+],
+"item:srd_crossbow-hand": [
+"PHB",
+149
+],
+"item:srd_crossbow-heavy": [
+"PHB",
+149
+],
+"item:srd_crossbow-light": [
+"PHB",
+149
+],
+"item:srd_crowbar": [
+"PHB",
+151
+],
+"item:srd_crystal": [
+"PHB",
+150
+],
+"item:srd_dagger": [
+"PHB",
+149
+],
+"item:srd_dart": [
+"PHB",
+149
+],
+"item:srd_dice-set": [
+"PHB",
+154
+],
+"item:srd_disguise-kit": [
+"PHB",
+154
+],
+"item:srd_drow-poison": [
+"DMG",
+258
+],
+"item:srd_drum": [
+"PHB",
+154
+],
+"item:srd_dulcimer": [
+"PHB",
+154
+],
+"item:srd_electrum-piece": [
+"PHB",
+143
+],
+"item:srd_emblem": [
+"PHB",
+150
+],
+"item:srd_essense-of-either": [
+"DMG",
+258
+],
+"item:srd_fishing-tackle": [
+"PHB",
+151
+],
+"item:srd_flail": [
+"PHB",
+149
+],
+"item:srd_flask-or-tankard": [
+"PHB",
+150
+],
+"item:srd_flour": [
+"PHB",
+157
+],
+"item:srd_flute": [
+"PHB",
+154
+],
+"item:srd_forgery-kit": [
+"PHB",
+154
+],
+"item:srd_galley": [
+"PHB",
+157
+],
+"item:srd_ginger": [
+"PHB",
+157
+],
+"item:srd_glaive": [
+"PHB",
+149
+],
+"item:srd_glassblowers-tools": [
+"PHB",
+154
+],
+"item:srd_goat": [
+"PHB",
+143
+],
+"item:srd_gold": [
+"PHB",
+143
+],
+"item:srd_gold-piece": [
+"PHB",
+143
+],
+"item:srd_grappling-hook": [
+"PHB",
+150
+],
+"item:srd_greataxe": [
+"PHB",
+149
+],
+"item:srd_greatclub": [
+"PHB",
+149
+],
+"item:srd_greatsword": [
+"PHB",
+149
+],
+"item:srd_halberd": [
+"PHB",
+149
+],
+"item:srd_half-plate": [
+"PHB",
+145
+],
+"item:srd_hammer": [
+"PHB",
+150
+],
+"item:srd_hammer-sledge": [
+"PHB",
+150
+],
+"item:srd_handaxe": [
+"PHB",
+149
+],
+"item:srd_healers-kit": [
+"PHB",
+151
+],
+"item:srd_herbalism-kit": [
+"PHB",
+154
+],
+"item:srd_hide-armor": [
+"PHB",
+144
+],
+"item:srd_holy-water-flask": [
+"PHB",
+150
+],
+"item:srd_horn": [
+"PHB",
+154
+],
+"item:srd_hourglass": [
+"PHB",
+150
+],
+"item:srd_hunting-trap": [
+"PHB",
+152
+],
+"item:srd_ink-1-ounce-bottle": [
+"PHB",
+150
+],
+"item:srd_ink-pen": [
+"PHB",
+150
+],
+"item:srd_iron": [
+"PHB",
+144
+],
+"item:srd_javelin": [
+"PHB",
+149
+],
+"item:srd_jewelers-tools": [
+"PHB",
+154
+],
+"item:srd_jug-or-pitcher": [
+"PHB",
+150
+],
+"item:srd_keelboat": [
+"PHB",
+157
+],
+"item:srd_ladder-10-foot": [
+"PHB",
+150
+],
+"item:srd_lamp": [
+"PHB",
+152
+],
+"item:srd_lamp-oil-flask": [
+"PHB",
+152
+],
+"item:srd_lance": [
+"PHB",
+148
+],
+"item:srd_lantern-bullseye": [
+"PHB",
+152
+],
+"item:srd_lantern-hooded": [
+"PHB",
+152
+],
+"item:srd_leather-armor": [
+"PHB",
+144
+],
+"item:srd_leatherworkers-tools": [
+"PHB",
+154
+],
+"item:srd_light-hammer": [
+"PHB",
+149
+],
+"item:srd_linen": [
+"PHB",
+157
+],
+"item:srd_lock": [
+"PHB",
+152
+],
+"item:srd_longbow": [
+"PHB",
+149
+],
+"item:srd_longship": [
+"PHB",
+157
+],
+"item:srd_longsword": [
+"PHB",
+149
+],
+"item:srd_lute": [
+"PHB",
+154
+],
+"item:srd_lyre": [
+"PHB",
+154
+],
+"item:srd_mace": [
+"PHB",
+149
+],
+"item:srd_magnifying-glass": [
+"PHB",
+152
+],
+"item:srd_malice": [
+"DMG",
+257
+],
+"item:srd_manacles": [
+"PHB",
+152
+],
+"item:srd_masons-tools": [
+"PHB",
+154
+],
+"item:srd_maul": [
+"PHB",
+149
+],
+"item:srd_mess-kit": [
+"PHB",
+152
+],
+"item:srd_midnight-tears": [
+"DMG",
+257
+],
+"item:srd_mirror-steel": [
+"PHB",
+150
+],
+"item:srd_morningstar": [
+"PHB",
+149
+],
+"item:srd_navigators-tools": [
+"PHB",
+154
+],
+"item:srd_net": [
+"PHB",
+148
+],
+"item:srd_oil-of-taggit": [
+"DMG",
+257
+],
+"item:srd_orb": [
+"PHB",
+150
+],
+"item:srd_ox": [
+"PHB",
+150
+],
+"item:srd_padded-armor": [
+"PHB",
+144
+],
+"item:srd_painters-supplies": [
+"PHB",
+154
+],
+"item:srd_pale-tincture": [
+"DMG",
+257
+],
+"item:srd_pan-flute": [
+"PHB",
+154
+],
+"item:srd_paper-one-sheet": [
+"PHB",
+150
+],
+"item:srd_parchment-one-sheet": [
+"PHB",
+150
+],
+"item:srd_pepper": [
+"PHB",
+157
+],
+"item:srd_perfume-vial": [
+"PHB",
+150
+],
+"item:srd_pick-miners": [
+"PHB",
+150
+],
+"item:srd_pig": [
+"PHB",
+157
+],
+"item:srd_pike": [
+"PHB",
+149
+],
+"item:srd_piton": [
+"PHB",
+150
+],
+"item:srd_plate-armor": [
+"PHB",
+145
+],
+"item:srd_platinum": [
+"PHB",
+143
+],
+"item:srd_platinum-piece": [
+"PHB",
+143
+],
+"item:srd_playing-card-set": [
+"PHB",
+154
+],
+"item:srd_poison-basic": [
+"PHB",
+153
+],
+"item:srd_poisoners-kit": [
+"PHB",
+154
+],
+"item:srd_pole-10-foot": [
+"PHB",
+150
+],
+"item:srd_pot-iron": [
+"PHB",
+150
+],
+"item:srd_potters-tools": [
+"PHB",
+154
+],
+"item:srd_pouch": [
+"PHB",
+153
+],
+"item:srd_purple-worm-poison": [
+"DMG",
+257
+],
+"item:srd_quarterstaff": [
+"PHB",
+149
+],
+"item:srd_quiver": [
+"PHB",
+153
+],
+"item:srd_ram-portable": [
+"PHB",
+150
+],
+"item:srd_rapier": [
+"PHB",
+149
+],
+"item:srd_rations-1-day": [
+"PHB",
+150
+],
+"item:srd_reliquary": [
+"PHB",
+150
+],
+"item:srd_ring-mail": [
+"PHB",
+145
+],
+"item:srd_robes": [
+"PHB",
+150
+],
+"item:srd_rod": [
+"PHB",
+150
+],
+"item:srd_rope-hempen-50-feet": [
+"PHB",
+150
+],
+"item:srd_rope-silk-50-feet": [
+"PHB",
+150
+],
+"item:srd_rowboat": [
+"PHB",
+157
+],
+"item:srd_sack": [
+"PHB",
+153
+],
+"item:srd_saffron": [
+"PHB",
+157
+],
+"item:srd_sailing-ship": [
+"PHB",
+157
+],
+"item:srd_salt": [
+"PHB",
+144
+],
+"item:srd_scale-mail": [
+"PHB",
+144
+],
+"item:srd_scale-merchants": [
+"PHB",
+153
+],
+"item:srd_scimitar": [
+"PHB",
+149
+],
+"item:srd_sealing-wax": [
+"PHB",
+150
+],
+"item:srd_serpent-venom": [
+"DMG",
+257
+],
+"item:srd_shawm": [
+"PHB",
+154
+],
+"item:srd_sheep": [
+"PHB",
+157
+],
+"item:srd_shield": [
+"PHB",
+144
+],
+"item:srd_shortbow": [
+"PHB",
+149
+],
+"item:srd_shortsword": [
+"PHB",
+149
+],
+"item:srd_shovel": [
+"PHB",
+150
+],
+"item:srd_sickle": [
+"PHB",
+149
+],
+"item:srd_signal-whistle": [
+"PHB",
+150
+],
+"item:srd_signet-ring": [
+"PHB",
+150
+],
+"item:srd_silk": [
+"PHB",
+150
+],
+"item:srd_silver": [
+"PHB",
+143
+],
+"item:srd_silver-piece": [
+"PHB",
+143
+],
+"item:srd_sled": [
+"PHB",
+150
+],
+"item:srd_sling": [
+"PHB",
+149
+],
+"item:srd_sling-bullets": [
+"PHB",
+150
+],
+"item:srd_smiths-tools": [
+"PHB",
+154
+],
+"item:srd_soap": [
+"PHB",
+150
+],
+"item:srd_spear": [
+"PHB",
+149
+],
+"item:srd_spellbook": [
+"PHB",
+153
+],
+"item:srd_spike-iron": [
+"PHB",
+150
+],
+"item:srd_splint-armor": [
+"PHB",
+145
+],
+"item:srd_sprig-of-mistletoe": [
+"PHB",
+150
+],
+"item:srd_spyglass": [
+"PHB",
+153
+],
+"item:srd_staff": [
+"PHB",
+150
+],
+"item:srd_studded-leather-armor": [
+"PHB",
+144
+],
+"item:srd_tent": [
+"PHB",
+153
+],
+"item:srd_thieves-tools": [
+"PHB",
+154
+],
+"item:srd_tinderbox": [
+"PHB",
+153
+],
+"item:srd_tinkers-tools": [
+"PHB",
+154
+],
+"item:srd_torch": [
+"PHB",
+153
+],
+"item:srd_torpor": [
+"DMG",
+257
+],
+"item:srd_totem": [
+"PHB",
+150
+],
+"item:srd_trident": [
+"PHB",
+149
+],
+"item:srd_truth-serum": [
+"DMG",
+257
+],
+"item:srd_vial": [
+"PHB",
+150
+],
+"item:srd_viol": [
+"PHB",
+154
+],
+"item:srd_wagon": [
+"PHB",
+147
+],
+"item:srd_wand": [
+"PHB",
+150
+],
+"item:srd_war-pick": [
+"PHB",
+149
+],
+"item:srd_warhammer": [
+"PHB",
+149
+],
+"item:srd_warship": [
+"PHB",
+157
+],
+"item:srd_waterskin": [
+"PHB",
+150
+],
+"item:srd_weavers-tools": [
+"PHB",
+154
+],
+"item:srd_wheat": [
+"PHB",
+157
+],
+"item:srd_whetstone": [
+"PHB",
+150
+],
+"item:srd_whip": [
+"PHB",
+149
+],
+"item:srd_woodcarvers-tools": [
+"PHB",
+154
+],
+"item:srd_wooden-staff": [
+"PHB",
+150
+],
+"item:srd_wyvern-poison": [
+"DMG",
+257
+],
+"item:srd_yew-wand": [
+"PHB",
+150
+],
+"item:staff-of-charming": [
+"DMG",
+201
+],
+"item:staff-of-fire": [
+"DMG",
+201
+],
+"item:staff-of-frost": [
+"DMG",
+202
+],
+"item:staff-of-healing": [
+"DMG",
+202
+],
+"item:staff-of-power": [
+"DMG",
+202
+],
+"item:staff-of-striking": [
+"DMG",
+203
+],
+"item:staff-of-swarming-insects": [
+"DMG",
+203
+],
+"item:staff-of-the-magi": [
+"DMG",
+203
+],
+"item:staff-of-the-python": [
+"DMG",
+204
+],
+"item:staff-of-the-woodlands": [
+"DMG",
+204
+],
+"item:staff-of-thunder-and-lightning": [
+"DMG",
+204
+],
+"item:staff-of-withering": [
+"DMG",
+205
+],
+"item:stone-of-controlling-earth-elementals": [
+"DMG",
+205
+],
+"item:stone-of-good-luck-luckstone": [
+"DMG",
+205
+],
+"item:sun-blade": [
+"DMG",
+205
+],
+"item:sword-of-life-stealing": [
+"DMG",
+206
+],
+"item:sword-of-sharpness": [
+"DMG",
+206
+],
+"item:sword-of-wounding": [
+"DMG",
+207
+],
+"item:talisman-of-pure-good": [
+"DMG",
+207
+],
+"item:talisman-of-the-sphere": [
+"DMG",
+207
+],
+"item:talisman-of-ultimate-evil": [
+"DMG",
+207
+],
+"item:tce-absorbing-tattoo": [
+"TCE",
+119
+],
+"item:tce-alchemical-compendium": [
+"TCE",
+119
+],
+"item:tce-all-purpose-tool-1": [
+"TCE",
+119
+],
+"item:tce-all-purpose-tool-2": [
+"TCE",
+119
+],
+"item:tce-all-purpose-tool-3": [
+"TCE",
+119
+],
+"item:tce-amulet-of-the-devout-1": [
+"TCE",
+119
+],
+"item:tce-amulet-of-the-devout-2": [
+"TCE",
+119
+],
+"item:tce-amulet-of-the-devout-3": [
+"TCE",
+119
+],
+"item:tce-arcane-grimoire-1": [
+"TCE",
+120
+],
+"item:tce-arcane-grimoire-2": [
+"TCE",
+120
+],
+"item:tce-arcane-grimoire-3": [
+"TCE",
+120
+],
+"item:tce-astral-shard": [
+"TCE",
+120
+],
+"item:tce-astromancy-archive": [
+"TCE",
+120
+],
+"item:tce-atlas-of-endless-horizons": [
+"TCE",
+120
+],
+"item:tce-baba-yaga-s-mortar-and-pestle": [
+"TCE",
+121
+],
+"item:tce-barrier-tattoo-rare": [
+"TCE",
+122
+],
+"item:tce-barrier-tattoo-uncommon": [
+"TCE",
+122
+],
+"item:tce-barrier-tattoo-very-rare": [
+"TCE",
+122
+],
+"item:tce-bell-branch": [
+"TCE",
+122
+],
+"item:tce-blood-fury-tattoo": [
+"TCE",
+122
+],
+"item:tce-bloodwell-vial-1": [
+"TCE",
+122
+],
+"item:tce-bloodwell-vial-2": [
+"TCE",
+122
+],
+"item:tce-bloodwell-vial-3": [
+"TCE",
+122
+],
+"item:tce-cauldron-of-rebirth": [
+"TCE",
+122
+],
+"item:tce-coiling-grasp-tattoo": [
+"TCE",
+123
+],
+"item:tce-crook-of-rao": [
+"TCE",
+123
+],
+"item:tce-crystalline-chronicle": [
+"TCE",
+124
+],
+"item:tce-demonomicon-of-iggwilv": [
+"TCE",
+125
+],
+"item:tce-devotee-s-censer": [
+"TCE",
+126
+],
+"item:tce-duplicitous-manuscript": [
+"TCE",
+126
+],
+"item:tce-eldritch-claw-tattoo": [
+"TCE",
+126
+],
+"item:tce-elemental-essence-shard": [
+"TCE",
+127
+],
+"item:tce-far-realm-shard": [
+"TCE",
+127
+],
+"item:tce-feywild-shard": [
+"TCE",
+127
+],
+"item:tce-fulminating-treatise": [
+"TCE",
+128
+],
+"item:tce-ghost-step-tattoo": [
+"TCE",
+128
+],
+"item:tce-guardian-emblem": [
+"TCE",
+128
+],
+"item:tce-heart-weaver-s-primer": [
+"TCE",
+128
+],
+"item:tce-illuminator-s-tattoo": [
+"TCE",
+129
+],
+"item:tce-libram-of-souls-and-flesh": [
+"TCE",
+129
+],
+"item:tce-lifewell-tattoo": [
+"TCE",
+129
+],
+"item:tce-luba-s-tarokka-of-souls": [
+"TCE",
+129
+],
+"item:tce-lyre-of-building": [
+"TCE",
+131
+],
+"item:tce-masquerade-tattoo": [
+"TCE",
+131
+],
+"item:tce-mighty-servant-of-leuk-o": [
+"TCE",
+131
+],
+"item:tce-moon-sickle-1": [
+"TCE",
+133
+],
+"item:tce-moon-sickle-2": [
+"TCE",
+133
+],
+"item:tce-moon-sickle-3": [
+"TCE",
+133
+],
+"item:tce-nature-s-mantle": [
+"TCE",
+133
+],
+"item:tce-outer-essence-shard": [
+"TCE",
+133
+],
+"item:tce-planecaller-s-codex": [
+"TCE",
+134
+],
+"item:tce-prosthetic-limb": [
+"TCE",
+134
+],
+"item:tce-protective-verses": [
+"TCE",
+134
+],
+"item:tce-reveler-s-concertina": [
+"TCE",
+134
+],
+"item:tce-rhythm-maker-s-drum-1": [
+"TCE",
+134
+],
+"item:tce-rhythm-maker-s-drum-2": [
+"TCE",
+134
+],
+"item:tce-rhythm-maker-s-drum-3": [
+"TCE",
+134
+],
+"item:tce-shadowfell-brand-tattoo": [
+"TCE",
+134
+],
+"item:tce-shadowfell-shard": [
+"TCE",
+127
+],
+"item:tce-spellwrought-tattoo": [
+"TCE",
+135
+],
+"item:tce-teeth-of-dahlver-nar": [
+"TCE",
+135
+],
+"item:tome-of-clear-thought": [
+"DMG",
+208
+],
+"item:tome-of-leadership-and-influence": [
+"DMG",
+208
+],
+"item:tome-of-understanding": [
+"DMG",
+208
+],
+"item:trident-of-fish-command": [
+"DMG",
+209
+],
+"item:universal-solvent": [
+"DMG",
+209
+],
+"item:vicious-weapon": [
+"DMG",
+208
+],
+"item:vorpal-sword": [
+"DMG",
+209
+],
+"item:wand-of-binding": [
+"DMG",
+209
+],
+"item:wand-of-enemy-detection": [
+"DMG",
+210
+],
+"item:wand-of-fear": [
+"DMG",
+210
+],
+"item:wand-of-fireballs": [
+"DMG",
+210
+],
+"item:wand-of-lightning-bolts": [
+"DMG",
+211
+],
+"item:wand-of-magic-detection": [
+"DMG",
+211
+],
+"item:wand-of-magic-missiles": [
+"DMG",
+211
+],
+"item:wand-of-paralysis": [
+"DMG",
+211
+],
+"item:wand-of-polymorph": [
+"DMG",
+211
+],
+"item:wand-of-secrets": [
+"DMG",
+211
+],
+"item:wand-of-the-war-mage-1-2-or-3": [
+"DMG",
+212
+],
+"item:wand-of-web": [
+"DMG",
+212
+],
+"item:wand-of-wonder": [
+"DMG",
+212
+],
+"item:weapon-1-2-or-3": [
+"DMG",
+213
+],
+"item:well-of-many-worlds": [
+"DMG",
+213
+],
+"item:wind-fan": [
+"DMG",
+213
+],
+"item:winged-boots": [
+"DMG",
+214
+],
+"item:wings-of-flying": [
+"DMG",
+214
+],
+"item:xge-armor-of-gleaming": [
+"XGE",
+136
+],
+"item:xge-bead-of-nourishment": [
+"XGE",
+136
+],
+"item:xge-bead-of-refreshment": [
+"XGE",
+136
+],
+"item:xge-boots-of-false-tracks": [
+"XGE",
+140
+],
+"item:xge-candle-of-the-deep": [
+"XGE",
+136
+],
+"item:xge-cast-off-armor": [
+"XGE",
+136
+],
+"item:xge-charlatan-s-die": [
+"XGE",
+136
+],
+"item:xge-cloak-of-billowing": [
+"XGE",
+136
+],
+"item:xge-cloak-of-many-fashions": [
+"XGE",
+140
+],
+"item:xge-clockwork-amulet": [
+"XGE",
+137
+],
+"item:xge-clothes-of-mending": [
+"XGE",
+137
+],
+"item:xge-dark-shard-amulet": [
+"XGE",
+137
+],
+"item:xge-dread-helm": [
+"XGE",
+137
+],
+"item:xge-ear-horn-of-hearing": [
+"XGE",
+137
+],
+"item:xge-enduring-spellbook": [
+"XGE",
+137
+],
+"item:xge-ersatz-eye": [
+"XGE",
+137
+],
+"item:xge-hat-of-vermin": [
+"XGE",
+137
+],
+"item:xge-hat-of-wizardry": [
+"XGE",
+137
+],
+"item:xge-heward-s-handy-spice-pouch": [
+"XGE",
+137
+],
+"item:xge-horn-of-silent-alarm": [
+"XGE",
+137
+],
+"item:xge-instrument-of-illusions": [
+"XGE",
+137
+],
+"item:xge-instrument-of-scribing": [
+"XGE",
+138
+],
+"item:xge-lock-of-trickery": [
+"XGE",
+138
+],
+"item:xge-moon-touched-sword": [
+"XGE",
+138
+],
+"item:xge-mystery-key": [
+"XGE",
+138
+],
+"item:xge-orb-of-direction": [
+"XGE",
+138
+],
+"item:xge-orb-of-time": [
+"XGE",
+138
+],
+"item:xge-perfume-of-bewitching": [
+"XGE",
+138
+],
+"item:xge-pipe-of-smoke-monsters": [
+"XGE",
+138
+],
+"item:xge-pole-of-angling": [
+"XGE",
+138
+],
+"item:xge-pole-of-collapsing": [
+"XGE",
+138
+],
+"item:xge-pot-of-awakening": [
+"XGE",
+138
+],
+"item:xge-rope-of-mending": [
+"XGE",
+138
+],
+"item:xge-ruby-of-the-war-mage": [
+"XGE",
+138
+],
+"item:xge-shield-of-expression": [
+"XGE",
+139
+],
+"item:xge-smoldering-armor": [
+"XGE",
+139
+],
+"item:xge-staff-of-adornment": [
+"XGE",
+139
+],
+"item:xge-staff-of-birdcalls": [
+"XGE",
+139
+],
+"item:xge-staff-of-flowers": [
+"XGE",
+139
+],
+"item:xge-talking-doll": [
+"XGE",
+139
+],
+"item:xge-tankard-of-sobriety": [
+"XGE",
+139
+],
+"item:xge-unbreakable-arrow": [
+"XGE",
+139
+],
+"item:xge-veteran-s-cane": [
+"XGE",
+139
+],
+"item:xge-walloping-ammunition": [
+"XGE",
+139
+],
+"item:xge-wand-of-conducting": [
+"XGE",
+140
+],
+"item:xge-wand-of-pyrotechnics": [
+"XGE",
+140
+],
+"item:xge-wand-of-scowls": [
+"XGE",
+140
+],
+"item:xge-wand-of-smiles": [
+"XGE",
+140
+],
+"lineage:customLineage:darkvision": [
+"TCE",
+8
+],
+"lineage:customLineage:skill": [
+"TCE",
+8
+],
+"lineage:dragonborn14:black": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:blue": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:brass": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:bronze": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:copper": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:gold": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:green": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:red": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:silver": [
+"PHB14",
+32
+],
+"lineage:dragonborn14:white": [
+"PHB14",
+32
+],
+"lineage:dwarf14:hill": [
+"PHB14",
+20
+],
+"lineage:dwarf14:mountain": [
+"PHB14",
+20
+],
+"lineage:elf14:drow": [
+"PHB14",
+24
+],
+"lineage:elf14:high": [
+"PHB14",
+23
+],
+"lineage:elf14:wood": [
+"PHB14",
+24
+],
+"lineage:gnome14:forest": [
+"PHB14",
+37
+],
+"lineage:gnome14:rock": [
+"PHB14",
+37
+],
+"lineage:halfling14:lightfoot": [
+"PHB14",
+28
+],
+"lineage:halfling14:stout": [
+"PHB14",
+28
+],
+"race:customLineage": [
+"TCE",
+8
+],
+"race:dragonborn14": [
+"PHB14",
+32
+],
+"race:dwarf14": [
+"PHB14",
+18
+],
+"race:elf14": [
+"PHB14",
+21
+],
+"race:gnome14": [
+"PHB14",
+35
+],
+"race:halfElf": [
+"PHB14",
+38
+],
+"race:halfOrc14": [
+"PHB14",
+40
+],
+"race:halfling14": [
+"PHB14",
+26
+],
+"race:human14": [
+"PHB14",
+29
+],
+"race:humanVariant14": [
+"PHB14",
+31
+],
+"race:tiefling14": [
+"PHB14",
+42
+],
+"rule:actions": [
+"PHB14",
+192
+],
+"rule:advantage": [
+"PHB14",
+173
+],
+"rule:checks": [
+"PHB14",
+173
+],
+"rule:concentration": [
+"PHB14",
+203
+],
+"rule:cover": [
+"PHB14",
+196
+],
+"rule:dying": [
+"PHB14",
+197
+],
+"rule:grapple": [
+"PHB14",
+195
+],
+"rule:opportunity": [
+"PHB14",
+195
+],
+"rule:resting": [
+"PHB14",
+186
+],
+"sub:artificer:alchemist": [
+"TCE",
+14
+],
+"sub:artificer:armorer": [
+"TCE",
+15
+],
+"sub:artificer:artillerist": [
+"TCE",
+17
+],
+"sub:artificer:battleSmith": [
+"TCE",
+18
+],
+"sub:barbarian:ancestralGuardian": [
+"XGE",
+9
+],
+"sub:barbarian:beast": [
+"TCE",
+24
+],
+"sub:barbarian:berserker": [
+"PHB14",
+49
+],
+"sub:barbarian:stormHerald": [
+"XGE",
+10
+],
+"sub:barbarian:totemWarrior": [
+"PHB14",
+50
+],
+"sub:barbarian:wildMagic": [
+"TCE",
+25
+],
+"sub:barbarian:zealot": [
+"XGE",
+11
+],
+"sub:bard:creation": [
+"TCE",
+28
+],
+"sub:bard:eloquence": [
+"TCE",
+29
+],
+"sub:bard:glamour": [
+"XGE",
+14
+],
+"sub:bard:lore": [
+"PHB14",
+54
+],
+"sub:bard:swords": [
+"XGE",
+15
+],
+"sub:bard:valor": [
+"PHB14",
+55
+],
+"sub:bard:whispers": [
+"XGE",
+16
+],
+"sub:cleric:forge": [
+"XGE",
+18
+],
+"sub:cleric:grave": [
+"XGE",
+19
+],
+"sub:cleric:knowledge": [
+"PHB14",
+59
+],
+"sub:cleric:life": [
+"PHB14",
+60
+],
+"sub:cleric:light": [
+"PHB14",
+60
+],
+"sub:cleric:nature": [
+"PHB14",
+61
+],
+"sub:cleric:order": [
+"TCE",
+31
+],
+"sub:cleric:peace": [
+"TCE",
+32
+],
+"sub:cleric:tempest": [
+"PHB14",
+62
+],
+"sub:cleric:trickery": [
+"PHB14",
+62
+],
+"sub:cleric:twilight": [
+"TCE",
+34
+],
+"sub:cleric:war": [
+"PHB14",
+63
+],
+"sub:druid:dreams": [
+"XGE",
+22
+],
+"sub:druid:land": [
+"PHB14",
+68
+],
+"sub:druid:moon": [
+"PHB14",
+69
+],
+"sub:druid:shepherd": [
+"XGE",
+23
+],
+"sub:druid:spores": [
+"TCE",
+36
+],
+"sub:druid:stars": [
+"TCE",
+38
+],
+"sub:druid:wildfire": [
+"TCE",
+39
+],
+"sub:fighter:arcaneArcher": [
+"XGE",
+28
+],
+"sub:fighter:battleMaster": [
+"PHB14",
+73
+],
+"sub:fighter:cavalier": [
+"XGE",
+30
+],
+"sub:fighter:champion": [
+"PHB14",
+72
+],
+"sub:fighter:eldritchKnight": [
+"PHB14",
+74
+],
+"sub:fighter:psiWarrior": [
+"TCE",
+42
+],
+"sub:fighter:runeKnight": [
+"TCE",
+44
+],
+"sub:fighter:samurai": [
+"XGE",
+31
+],
+"sub:monk:astralSelf": [
+"TCE",
+50
+],
+"sub:monk:drunkenMaster": [
+"XGE",
+33
+],
+"sub:monk:fourElements": [
+"PHB14",
+80
+],
+"sub:monk:kensei": [
+"XGE",
+34
+],
+"sub:monk:mercy": [
+"TCE",
+49
+],
+"sub:monk:openHand": [
+"PHB14",
+79
+],
+"sub:monk:shadow": [
+"PHB14",
+80
+],
+"sub:monk:sunSoul": [
+"XGE",
+35
+],
+"sub:paladin:ancients": [
+"PHB14",
+86
+],
+"sub:paladin:conquest": [
+"XGE",
+37
+],
+"sub:paladin:devotion": [
+"PHB14",
+85
+],
+"sub:paladin:glory": [
+"TCE",
+53
+],
+"sub:paladin:redemption": [
+"XGE",
+38
+],
+"sub:paladin:vengeance": [
+"PHB14",
+87
+],
+"sub:paladin:watchers": [
+"TCE",
+54
+],
+"sub:ranger:beastMaster": [
+"PHB14",
+93
+],
+"sub:ranger:feyWanderer": [
+"TCE",
+58
+],
+"sub:ranger:gloomStalker": [
+"XGE",
+41
+],
+"sub:ranger:horizonWalker": [
+"XGE",
+42
+],
+"sub:ranger:hunter": [
+"PHB14",
+93
+],
+"sub:ranger:monsterSlayer": [
+"XGE",
+43
+],
+"sub:ranger:swarmkeeper": [
+"TCE",
+59
+],
+"sub:rogue:arcaneTrickster": [
+"PHB14",
+97
+],
+"sub:rogue:assassin": [
+"PHB14",
+97
+],
+"sub:rogue:inquisitive": [
+"XGE",
+45
+],
+"sub:rogue:mastermind": [
+"XGE",
+46
+],
+"sub:rogue:phantom": [
+"TCE",
+62
+],
+"sub:rogue:scout": [
+"XGE",
+47
+],
+"sub:rogue:soulknife": [
+"TCE",
+63
+],
+"sub:rogue:swashbuckler": [
+"XGE",
+47
+],
+"sub:rogue:thief": [
+"PHB14",
+97
+],
+"sub:sorcerer:aberrant": [
+"TCE",
+66
+],
+"sub:sorcerer:clockwork": [
+"TCE",
+68
+],
+"sub:sorcerer:divineSoul": [
+"XGE",
+50
+],
+"sub:sorcerer:draconic": [
+"PHB14",
+102
+],
+"sub:sorcerer:shadow": [
+"XGE",
+50
+],
+"sub:sorcerer:storm": [
+"XGE",
+51
+],
+"sub:sorcerer:wild": [
+"PHB14",
+103
+],
+"sub:warlock:archfey": [
+"PHB14",
+108
+],
+"sub:warlock:celestial": [
+"XGE",
+54
+],
+"sub:warlock:fathomless": [
+"TCE",
+72
+],
+"sub:warlock:fiend": [
+"PHB14",
+109
+],
+"sub:warlock:genie": [
+"TCE",
+73
+],
+"sub:warlock:greatOldOne": [
+"PHB14",
+109
+],
+"sub:warlock:hexblade": [
+"XGE",
+55
+],
+"sub:wizard:abjuration": [
+"PHB14",
+115
+],
+"sub:wizard:bladesinging": [
+"TCE",
+76
+],
+"sub:wizard:conjuration": [
+"PHB14",
+116
+],
+"sub:wizard:divination": [
+"PHB14",
+116
+],
+"sub:wizard:enchantment": [
+"PHB14",
+117
+],
+"sub:wizard:evocation": [
+"PHB14",
+117
+],
+"sub:wizard:illusion": [
+"PHB14",
+118
+],
+"sub:wizard:necromancy": [
+"PHB14",
+118
+],
+"sub:wizard:scribes": [
+"TCE",
+77
+],
+"sub:wizard:transmutation": [
+"PHB14",
+119
+],
+"sub:wizard:warMagic": [
+"XGE",
+59
+]
+}

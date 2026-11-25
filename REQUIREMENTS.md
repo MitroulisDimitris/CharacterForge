@@ -212,16 +212,29 @@ and the ones you play in).
 ### 4.2a One character, several sessions (D2)
 - Joining stores a **session copy** of the character (taken at the moment of joining). Leveling,
   spending slots and rests in that session change only that copy.
-- (Removed 2026-11-22, rework later) A version dropdown to open each session's copy. Now the copy
-  follows the character; the player's session page shows the DM's state for it, read-only.
-- **Joining asks how** (user, 2026-11-22): **Use the same character** (every session it's in
-  follows it) or **Join with a copy** (a separate character "Name (Session)" in the library that
-  levels on its own). A copy is picked first when the character already plays elsewhere.
+- **Per-session versions** (user, 2026-11-24; replaces the removed version dropdown). A seat either
+  follows the character (every change shows in the session) or is the character's own **version**
+  for that session (`session_members.version`): level, spells, items, books and to-dos changed there
+  stay there; HP and trackers are kept per version too (privately, `versionPlay` on the character).
+  The character page has a **Version** dropdown (My character + one per session version) and a gold
+  strip "<Session> version · changes here stay in this session" with what differs from My character.
+- **Joining asks how only when the character already plays in another session** (user, 2026-11-24):
+  **Join and make a copy** (a separate character "Name (Session)" in the library that levels on its
+  own) or **Make a version** (picked by default). A character's first session just uses it, no question.
 - **The session's level:** the DM sets the characters' level when creating the session (and changes it
   under the session name in the side panel). Joining with another level leaves a suggestion on the character: "Level up to
   N" (a to-do) or "Lower to level N?" (Lower / Keep). Nothing changes the character by itself.
 - "My character" is the original; it's what new sessions copy when the character joins them.
 - (later) "Copy this version over My character" for players who want to carry progress over.
+
+### 4.2b Dice at the table (user, 2026-11-24)
+- On the player's session page: the character (its session version when the seat is one) with
+  Normal / Advantage / Disadvantage and five groups: Checks and saves, Skills, Attacks, Spells,
+  Class dice. Every roll throws the 3D dice and is shared with the DM ("Sent to your DM").
+  Rolls made anywhere else (the character page, the Wiki, the free roller elsewhere) stay private.
+- The DM's **Rolls** tab: Everyone, or one player (with rolls tonight, natural 20s, natural 1s);
+  a gold dot on the tab when new rolls come in. No hidden rolls.
+- **No history** (user): only tonight's rolls (the last 12 hours); older ones are deleted.
 
 ### 4.3 Being in a session (player)
 The session page for a player is simple:

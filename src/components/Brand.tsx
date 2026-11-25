@@ -1,4 +1,4 @@
-import type { Theme } from "../storage";
+import { markThemePicked, type Theme } from "../storage";
 import { SKINS } from "../skins";
 
 export function Brand({ onClick }: { onClick?: () => void }) {
@@ -25,7 +25,13 @@ export function SkinPicker({ theme, onChange }: { theme: Theme; onChange: (t: Th
   return (
     <label className="skin-pick" title="Change how the app looks">
       <span>Skin</span>
-      <select value={theme} onChange={(e) => onChange(e.target.value as Theme)}>
+      <select
+        value={theme}
+        onChange={(e) => {
+          markThemePicked();
+          onChange(e.target.value as Theme);
+        }}
+      >
         {SKINS.map((s) => (
           <option key={s.id} value={s.id} title={s.description}>
             {s.name}

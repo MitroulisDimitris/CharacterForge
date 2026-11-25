@@ -25,6 +25,7 @@
     "@tiptap/pm": "3.33.1",
     "@tiptap/react": "3.33.1",
     "@tiptap/starter-kit": "3.33.1",
+    "gsap": "3.13.0",
     "pdf-lib": "^1.17.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

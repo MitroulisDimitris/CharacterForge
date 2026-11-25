@@ -32,6 +32,7 @@ The user picked style **"D · Hero Sidebar"** for the whole app (mockups: the "S
 Tree" canvas artifact, artboards StyleD / AppLibrary / AppSheet / AppCreate).
 
 **Skins** (`src/skins.ts`): Hero, Dark, Parchment, picked from the "Skin" menu; more may be added.
+**Hero is the default** (user, 2026-11-24; `DEFAULT_SKIN`; a saved "dark" counts only if picked by hand, `markThemePicked`).
 A skin = CSS tokens under `:root[data-theme="<id>"]` + a layout (`data-layout`): "classic" (top bar)
 or "hero" (left sidebar: `Editor.tsx` / `Library.tsx` hero branches, `components/Hero.tsx`).
 Creation in Hero uses `CreationStepper`'s `hero` prop (the character taking shape on the left).
@@ -161,7 +162,7 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 - Player tracker (2026-11-22): rules in `src/play.ts` (tests `play.test.ts`), UI `components/InPlay.tsx`
   (`PlayHp` in the hero sidebar, `InPlayPanel` on the Sheet), stored as `play` in the character and stripped
   from session copies (`sessionData` in `sessions.ts`). Feature trackers: `systems/dnd5e/resources.ts`
-  (`parseUses` reads the data's "uses" text). Session copies follow the character (App.tsx); no version picker.
+  (`parseUses` reads the data's "uses" text). Session seats follow the character unless the seat is a per-session version (below).
 - Greek (2026-11-21): `src/text.ts` (`fold` = case/accent-free, length-keeping; Greek keyboard → Latin for
   invite codes); fonts via `scripts/fetchFonts.py` (Inter Greek subsets, EB Garamond Greek as the fallback
   for Cinzel/Crimson Pro); PDFs switch to Noto TTFs in `public/fonts/pdf` + `@pdf-lib/fontkit` when
@@ -173,12 +174,43 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
   (`dnd5e/rollSpecs.ts`; one d20 chip per spell, on its row); Wiki/Lookup spell text from
   `spellTextRolls` (`src/dice/rollText.ts`). The Wiki spell list = SRD file + the 2014 book spells it
   lacks (`withBookSpells`, `bookSpell` in `src/lookup.ts`).
+- Per-session versions (2026-11-24): `session_members.version` (migration `20261124_session_versions.sql`;
+  `selectMembers` in `sessions.ts` falls back when the column is missing). A version seat's `data`/`pending`/
+  `books` are its own sheet; the player's trackers for it live in `character.versionPlay[seatId]` (stripped by
+  `sessionData`). App.tsx builds the shown record and routes saves; UI `components/Versions.tsx`
+  (`VersionPicker` in the hero sidebar / classic bar, `VersionStrip` above the tabs). Join asks copy/version only
+  when the character already plays elsewhere (`JoinDialog`, `setSeatVersion`).
+- Dice at the table (2026-11-24): table `session_rolls` (migration `20261124_session_rolls.sql`; a new roll deletes
+  that session's rolls older than 12 h), helpers `src/rolls.ts`. `DiceProvider.share()` (Dice.tsx) hands every
+  finished roll to the player's session page while it's open; UI `components/TableDice.tsx` (`PlayerTable`,
+  `HostRolls`, `useTableRolls` polls every 5 s); per system `GameSystem.TableRolls` (dnd5e `components/TableRolls.tsx`).
+- Damage animations (2026-11-25, replaced the CSS/SVG version): GSAP stories + one shared WebGL context.
+  `src/dice/fxEngine.ts` (`runFx`: waits for the host's full size, plays or shows the held picture; one WebGL
+  context draws every effect and copies it onto each host's 2D canvas), `fxShaders.ts` (GLSL; never reversed
+  `smoothstep`, use `sstep`; never `distance * step(…)`), `fxStories.ts` (one per type, `"fire:melee"`-style
+  keys for how it was dealt), component `components/DamageFx.tsx` (`fxTypeOf`), styles `src/damageFx.css`
+  (type colours `.lf-<type>`). Copied from the mockup canvas (page "Damage animations", boards "Every damage
+  type" / "How it was dealt"; their files `project/DamageAll.dc.html`, `DamageDeliv.dc.html` hold the same code).
+  How damage was dealt: `RollSpec.via` (`Via` in `dice/roll.ts`; `viaOfText` in `rollText.ts`, `Attack.via`
+  in derive, `spellVia`), sent as `session_rolls.via` (migration `20261125_session_rolls_via.sql`;
+  `rolls.ts` falls back without it). Used by `RollLine` (TableDice.tsx, `FX_ROWS`) and the result card (Dice.tsx).
+  Check animations by recording them (web-motion skill) before showing the user.
 - Sessions (2026-11-22): `sessions.level` (host picks it; join/swap set `level_award` when it differs);
   name and level edit in place in the session side panel (`SessionName`, `SessionLevel` in `Sessions.tsx`).
 - Sheet tab layout (2026-11-23): `GameSystem.SheetNumbers` (dnd5e: `SheetNumbers` in `Summary.tsx`) shows the key
   numbers at the top; `Summary` with `inSheet` leaves them out and merges saving throws into the ability tiles.
   Conditions / exhaustion / concentration live in `StatusDialog` (`InPlay.tsx`), opened from the Status line.
   Phones: `.char-side` (hero sidebar) scrolls away, `.char-main > .tabs` is sticky.
+- **Book text, page by page** (2026-11-24): `reference/books/<PHB|XGE|TCE|MM|DMG>.md` (and `.pages.json`) hold
+  every page's cleaned OCR text under its printed page number (`python scripts/bookextract.py`). Look things up
+  there first, not in the PDFs. Not hand-checked: confirm tables and numbers on the page image before using them.
+  Pages: XGE/TCE/MM = PDF page − 1, DMG = PDF page; the PHB scan lacks 22 art pages, offsets in `PHB_OFFSETS`.
+- Full spell text (2026-11-23): `src/spellText.ts` loads `public/spell-text-2014.json` (254 spells; SRD
+  spells = SRD text, the 90 others = the books, OCR cleaned + hand fixes checked on the page images;
+  PHB pages unknown: the scan lacks ~28 pages and prints no numbers). Rendered by
+  `components/SpellParts.tsx` (paragraphs, bullets, tables, stat blocks) in the Spells tab (2014) and Wiki.
+- Spells with no effect on a monster (2026-11-23): `src/spellImmunity.ts` (rules from each spell's text,
+  plus the condition-immunity rule), shown folded on the monster page (`NoEffectSpells`).
 - **No regex lookbehind** (`(?<=…)`, `(?<!…)`) in app code: Safari before 16.4 fails to parse the
   whole module. Use `\b` or capture groups.
 - Portraits (2026-11-20): `portrait` on every character = a 256 px JPEG data URL (`src/portrait.ts`, crop dialog
@@ -206,14 +238,16 @@ it would log them out. Use the test account (`CF_TEST_EMAIL` / `CF_TEST_PASSWORD
 - Rules data provenance:
   - Pathfinder 2e: checked against Archives of Nethys.
   - D&D 3.5: written from memory of the SRD (unverified; SRD sites blocked automated reads).
-  - D&D 5e: summaries in our own words. 2014 data checked against the SRD 5.1 (CC-BY-4.0) on
+  - D&D 5e: short summaries (`desc`) plus, for 2014 spells, the full book text. 2014 data checked against the SRD 5.1 (CC-BY-4.0) on
     2026-11-10: `npx vite-node scripts/dump2014.ts > app.json`, then
     `python scripts/srdcheck.py srd_raw.txt app.json` (srd_raw.txt = `pdftotext SRD_CC_v5.1.pdf`).
     Spells, spell lists, classes (levels 1-5), races, weapons and armor matched after fixes.
     Shillelagh / Plant Growth flags are known false positives. Xanathar's/Tasha's content is unverified.
     Watch out: 2014 spells built with `from()` inherit 2024 values; override where 2014 differs.
   - The user's own copies of PHB 2014, Xanathar's and Tasha's are in `reference/books/` (PDF + text,
-    git-ignored; never copy their text into the app). They're scans: the text has OCR typos
+    git-ignored). **Book text may go into the app** (user, 2026-11-23: legally bought copies, a private
+    app that makes no money): e.g. full spell text in `public/spell-text-2014.json`
+    (`scripts/spelltext.py` + `spelltextclean.py` + hand fixes `spelltext-fixes.json`). They're scans: the text has OCR typos
     ("ld6" = 1d6, "ll" = 1d10, split words), so check mismatches against the PDF page.
     `npx vite-node scripts/bookcoverage.ts` confirms every app item exists in its book (663/663).
     `python scripts/bookcheck.py app.json` compares spell stat lines with the books. 2026-11-10: all

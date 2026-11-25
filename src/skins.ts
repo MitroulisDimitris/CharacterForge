@@ -20,5 +20,6 @@ export const SKINS: Skin[] = [
   { id: "parchment", name: "Parchment", description: "Light, like a paper sheet", layout: "classic" },
 ];
 
-export const DEFAULT_SKIN: SkinId = "dark";
+// Hero is the default look (user, 2026-11-24).
+export const DEFAULT_SKIN: SkinId = "hero";
 export const skinOf = (id: string | null | undefined): Skin => SKINS.find((s) => s.id === id) ?? SKINS.find((s) => s.id === DEFAULT_SKIN)!;

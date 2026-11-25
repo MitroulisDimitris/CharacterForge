@@ -2,7 +2,25 @@
 
 What's built and what's next, in order. `[x]` = done and checked, `[ ]` = not done yet.
 Details for each item are in `REQUIREMENTS.md` (section numbers in brackets).
-Last updated: 2026-11-23 (built: calmer Sheet tab on phones, from the "UI is cramped" feedback).
+Last updated: 2026-11-24 (built: book and page on every Wiki entry; unverified-account cleanup script; per-session versions; dice at the table).
+
+---
+
+## Waiting for your check (built 2026-11-24, not committed yet)
+Tick each one once you've looked at it in the app. Until then they count as built, not verified.
+- [ ] Portrait feedback item marked fixed; the sender sees "every character has a portrait; tap the circle on the character (or ⋯ → Add a portrait)" (11 feedback items still open)
+- [ ] Wiki: every entry shows its book and page ("Player's Handbook, page 46"): open a few in each section (classes, subclasses, races, backgrounds, feats, conditions, rules, items, spells, monsters) and compare with your books
+- [ ] Monsters: the 33 that had no Monster Manual page now have one (Adult Red Dragon, Imp 69, Frost Giant 151…). Some pages are where the monster's section starts, not its stat block
+- [ ] Run `supabase/migrations/20261124_unverified_cleanup.sql` in the Supabase SQL editor (removes "kpalandreou", nightly removal after 3 days; safe to run twice). Then tick the item in §3
+- [ ] **Per-session versions** (built 2026-11-24, mockup approved; `supabase/migrations/20261124_session_versions.sql` has run). Check: joining with a character that's already in another session asks **Join and make a copy** or **Make a version** (a first session joins without asking); a version opens from the session's "Open sheet"; the **Version** dropdown at the top of the character page switches between My character and each session version; the gold strip shows "<Session> version · changes here stay in this session" and "Different from My character"; a level, spell or item changed in a version doesn't change My character (and the reverse); HP and trackers are separate per version. Not tested in a browser yet (needs two accounts in one session)
+- [ ] **Dice at the table** (built 2026-11-24, mockup page "Dice at the table"): first run `supabase/migrations/20261124_session_rolls.sql` in the Supabase SQL editor (safe to run twice). Then check: the player's session page shows the character with Normal / Advantage / Disadvantage and five groups (Checks and saves, Skills, Attacks, Spells, Class dice); every chip throws the 3D dice and the result window says "Sent to your DM"; "Your rolls tonight" lists them; the DM's new **Rolls** tab (gold dot when new rolls come in) shows **Everyone** or one player, with that player's rolls, natural 20s and natural 1s; natural 20s gold, natural 1s red. No history (your call): only the last 12 hours show, older rolls are deleted. A version seat rolls with its own numbers. Not tested in a browser yet (needs the SQL and two accounts in one session)
+- [ ] Host removes a player again (fixed 2026-11-24): Party tab → a player's ⋯ → **Remove from session…** (the button had been in the "Who's playing" list, which the host's tabbed page no longer shows)
+- [ ] DM's Rolls tab (2026-11-24, your notes): a new roll slides in at the top and pushes the list down (gold flash that fades); one faint gold line marked **New** under the newest group of rolls (at the first pause of a minute or more from the top; only one line); the character circles the DM sees (Rolls, Party cards, a player's page) show a thin health ring, green above half, yellow above a quarter, red below
+- [ ] Hero is the default skin (2026-11-24): new devices, and devices that only had the old default Dark saved, open in Hero; a skin picked by hand in the Skin menu stays
+- [ ] Player's session page (2026-11-24): "Your rolls tonight" fills the right side (full height, newest on top, older ones fade out at the bottom, no scroll box) and new rolls slide in like on the DM's list; HP and "Who's playing" stay under the dice on the left. Phones: the rolls go under the rest
+- [ ] Damage animations, new version (2026-11-25, mockup page "Damage animations", boards "Every damage type" and "How it was dealt"): every damage / healing type tells a short story (a bolt flies in, the hammer swings and rests, an arrow thunks in and quivers, frost spreads…) while a WebGL effect runs across the whole roll line or result card (nothing on the left, full at the number). In the DM's Rolls list and "Your rolls tonight" a roll that comes in plays once it has slid in, slows to a stop over ~3 s and holds with the number whole; rolls already there show the held picture; past the newest 20, just the coloured banner. The result card (rolling anywhere) does the same, bigger. The old CSS animations are gone. Fire and piercing open by how the damage was dealt: ranged (bolt / arrow), melee (fiery swing / blade thrust), area or save (the line erupts / a hail of points); unknown plays as area. Natural 20/1 not yet (user will look again). Check on a phone, iPhone Safari, and in Parchment
+- [ ] Run `supabase/migrations/20261125_session_rolls_via.sql` (2026-11-25): saves how each damage roll was dealt, so the DM's list opens fire and piercing the right way. Until it runs, rolls still send and show, as "area"
+- [ ] Sign-up "Check your email" screen shows: "An account that isn't verified within 3 days is removed, so you can sign up again." (3 days or 1 day: your call)
 
 ---
 
@@ -54,7 +72,7 @@ Last updated: 2026-11-23 (built: calmer Sheet tab on phones, from the "UI is cra
 - [x] Forgot password → email → choose a new password
 - [x] Change password while logged in (⋯ → Name and password)
 - [x] Edit display name
-- [ ] Don't keep accounts whose email was never verified (a mistyped email left a dead "The man" account
+- [ ] Don't keep accounts whose email was never verified: script ready (2026-11-24) `supabase/migrations/20261124_unverified_cleanup.sql` removes the one waiting account and every night deletes accounts still unverified 3 days after sign-up (never one that owns characters or sessions); the sign-up screen says so. Tick when the SQL has run. Was: Don't keep accounts whose email was never verified (a mistyped email left a dead "The man" account
       on 2026-11-17). Supabase always makes the login at sign-up, so: make the profile only once the
       email is verified, and remove unverified sign-ups automatically after a day
 - [ ] Offline copy + sync when back online (keep both if changed on two devices)
@@ -90,7 +108,7 @@ Last updated: 2026-11-23 (built: calmer Sheet tab on phones, from the "UI is cra
 - [x] Join with a code or link (the link is remembered through login, with a hint on the login page)
 - [x] Character picker: eligible vs greyed with the reason (rules / books) + Books tip
 - [x] Session copy of the character on join (D2)
-- [x] Version dropdown on the sheet: "My character" + one per session (D2)
+- [x] Version dropdown on the sheet: "My character" + one per session (D2; removed 2026-11-22, back as per-session versions 2026-11-24, see the top)
 - [x] Session note on the sheet ("Playing in …") and "In <session>" tag on library cards
 - [x] Player session page: name, rules, who's playing (summary only, D4), Open sheet
 - [x] Host session page: invite code, who's playing (name + player)
@@ -203,11 +221,15 @@ Last updated: 2026-11-23 (built: calmer Sheet tab on phones, from the "UI is cra
 - [x] Wiki / Lookup spell list adds the 90 2014 book spells the SRD leaves out (Chromatic Orb, Hex, Toll the Dead, Mind Sliver…) from the characters' spell data, with a "Book" line; 409 spells (2026-11-22; `withBookSpells` in `src/lookup.ts`). Their text is the short write-up, no "At higher levels" yet
 - [x] Wiki / Lookup spell pages roll: dice in the text and "At higher levels" are gold chips; each reads its sentence (fire damage in orange, "half on a save" line, healing, temporary hit points, a plain roll like Bless's d4) (2026-11-22; `spellTextRolls` in `src/dice/rollText.ts`)
 - [x] Equipment step: Next puts the picked kit (or gold) in; no equipment at level 1 is a to-do
+- [x] Spells tab right after Sheet on characters (2026-11-23, feedback)
+- [x] Wiki / Lookup on phones: searching (or picking a filter chip) while a spell, monster, item or entry is open closes it so the results show; on wide screens the page stays beside the list (2026-11-23, feedback; `pageHidesList` in `Lookup.tsx`)
+- [x] Attacks on phones: the name on its own line, the roll buttons under it, the same for every attack (2026-11-23, feedback)
+- [x] Full spell text (2026-11-23, feedback; book text now allowed by the user): all 254 2014 spells in the app, on the character's Spells tab and in the Wiki: every paragraph, "At Higher Levels", tables (Chaos Bolt, Summon Lesser Demons) and stat blocks (Tiny Servant, Summon Beast/Fey/Shadowspawn/Undead), with the book line ("Xanathar's Guide to Everything, page 151"; PHB pages unknown: the scan lacks ~28 pages). `public/spell-text-2014.json`, made by `scripts/spelltext.py` + `spelltextclean.py` + `spelltext-fixes.json`
+- [x] Monster pages: "Spells with no effect" (2026-11-23, feedback on the Wight and Sleep): 44 spell rules from the spells' own text (Sleep: undead and charm-immune; healing: undead and constructs; humanoid / beast only; Intelligence limits; no language; shapechangers; Power Word hit point limits) plus the condition-immunity rule, grouped by reason (`src/spellImmunity.ts`); under a line, "Works only in part" (Wrathful Smite, Phantasmal Killer, Thunderous Smite… where the immunity removes one effect); every spell name opens the spell, "‹ Back" returns to the monster
+- [x] Every Wiki entry has its book and page (2026-11-24): classes and subclasses, races and subraces, backgrounds, feats, conditions, rule pages, items (`src/data/wikiRefs.json`, `scripts/wikirefs.py`), SRD spells (`public/spell-pages-2014.json`), all 322 monsters (`scripts/mm-pages-fill.py` filled the 33 missing). Found in the extracted books (PHB index, chapter headings), 894 entries, the doubtful ones checked on the page
 - [x] Skills step shows the real weapon / armor / tool proficiencies; a hill dwarf can take the warhammer; the dwarf's tool is asked (and a to-do until picked)
 
 ## Later
-- [ ] Rework: one character, a different version per session (the old version picker; removed 2026-11-22)
-- [ ] Dice at the table: a player rolls inside a session and the DM sees the results (user, 2026-11-22; details to work out later: which rolls, hidden rolls, a shared log?)
 - [ ] Maybe: point out beginner-friendly classes in the class list (Barbarian, Cleric, Fighter, Paladin, Rogue: "For beginners: Easy" in `data2014/profiles.ts`). Tried as a green tag on each card on 2026-11-17 and removed (too much clutter for 5 of 13 cards); a single "Tip ·" line above the list was the other idea. Today it shows only in the class details ("For beginners").
 - [ ] Monster pictures, typo-tolerant search, search inside abilities
 - [ ] Custom monsters

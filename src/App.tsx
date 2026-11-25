@@ -35,7 +35,8 @@ import type { Place } from "./components/MainMenu";
 type View =
   | { kind: "library" }
   | { kind: "new"; forSession?: { preview: Preview; code: string } }
-  | { kind: "edit"; id: string }
+  /** `version`: a session seat that is this character's own version (Membership.version). */
+  | { kind: "edit"; id: string; version?: string }
   | { kind: "session"; id: string }
   | { kind: "sessions" }
   | { kind: "wiki" };
@@ -282,9 +283,10 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
     upsert(copy);
     return copy;
   };
-  // A session shows the character itself (its copies follow it; user, 2026-11-22).
-  const openSheet = (characterId: string, _memberId: string) => {
-    setView({ kind: "edit", id: characterId });
+  // A session opens the character, at its version for that session when the seat is one (2026-11-24).
+  const openSheet = (characterId: string, memberId: string) => {
+    const seat = memberships.find((m) => m.id === memberId);
+    setView({ kind: "edit", id: characterId, ...(seat?.version ? { version: memberId } : {}) });
   };
 
   if (view.kind === "new") {
@@ -350,10 +352,22 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
 
   const open = view.kind === "edit" ? lib.find((r) => r.id === view.id) : undefined;
   if (open) {
-    // Session copies follow the character (user, 2026-11-22: the version picker is gone for now).
+    // Seats that follow the character get its changes; a version seat has its own sheet
+    // (per-session versions, user 2026-11-24). The page shows "My character" or one version.
     const mine = memberships.filter((m) => m.character_id === open.id);
-    const awards = mine.map((m) => ({ m, award: hostSide[m.id] ? hostSide[m.id].level_award : m.level_award })).filter((x) => x.award);
-    const nowLevel = (open.data as { level?: number }).level ?? 1;
+    const following = mine.filter((m) => !m.version);
+    const versions = mine.filter((m) => m.version);
+    const seat = view.kind === "edit" && view.version ? versions.find((m) => m.id === view.version) : undefined;
+    const awardOf = (m: Membership) => (hostSide[m.id] ? hostSide[m.id].level_award : m.level_award);
+    const awards = (seat ? [seat] : following).map((m) => ({ m, award: awardOf(m) })).filter((x) => x.award);
+    type VersionPlay = Record<string, { play?: unknown; spent?: unknown }>;
+    const openData = open.data as { level?: number; versionPlay?: VersionPlay };
+    // The version's sheet: the seat's data plus the player's own trackers for it (kept privately
+    // on the character, never sent to the session).
+    const shown: StoredCharacter = seat
+      ? { ...open, books: seat.books, pending: seat.pending, data: { ...(seat.data as object), ...(openData.versionPlay?.[seat.id] ?? {}) } }
+      : open;
+    const nowLevel = (shown.data as { level?: number }).level ?? 1;
     const pending = awards.find((x) => x.award !== nowLevel);
     const levelReady = pending ? { level: pending.award!, session: sessionName(pending.m.session_id) } : null;
     const dropAward = (memberId: string) => {
@@ -361,27 +375,61 @@ function Account({ session, userId, email, theme, setTheme }: { session: Session
       const mm = mine.find((x) => x.id === memberId);
       setHostSide((h) => ({ ...h, [memberId]: { live: h[memberId]?.live ?? mm?.live ?? {}, level_award: null } }));
     };
+    // Reached the suggested level (or went past it in that direction): that to-do is done.
+    const settleAwards = (lvl: number) => {
+      for (const { m, award } of awards)
+        if (award && (lvl === award || (award > nowLevel && lvl > award) || (award < nowLevel && lvl < award))) dropAward(m.id);
+    };
+    const pickVersion = (id: string | null) => setView({ kind: "edit", id: open.id, ...(id ? { version: id } : {}) });
     return (
       <Editor
-        key={open.id}
-        rec={open}
+        key={`${open.id}:${seat?.id ?? "main"}`}
+        rec={shown}
         theme={theme}
         save={save}
         onTheme={setTheme}
         levelReady={levelReady}
         onKeepLevel={pending ? () => dropAward(pending.m.id) : undefined}
+        versions={
+          versions.length
+            ? {
+                current: seat?.id ?? null,
+                options: versions.map((m) => ({ id: m.id, session: sessionName(m.session_id), level: (m.data as { level?: number }).level ?? 1 })),
+                mainLevel: openData.level ?? 1,
+                base: seat ? { data: open.data, books: open.books } : undefined,
+                onPick: pickVersion,
+                onOpenSession: seat ? () => setView({ kind: "session", id: seat.session_id }) : undefined,
+              }
+            : undefined
+        }
         onUpdate={(patch) => {
+          if (seat) {
+            // A version: the sheet goes to the seat, the trackers stay on the character.
+            const stamp = new Date().toISOString();
+            const nextData = patch.data ? (patch.data as Record<string, unknown>) : undefined;
+            if (nextData) {
+              settleAwards((nextData.level as number) ?? 0);
+              const vp: VersionPlay = { ...(openData.versionPlay ?? {}), [seat.id]: { play: nextData.play, spent: nextData.spent } };
+              upsert({ ...open, data: { ...(open.data as object), versionPlay: vp }, updated: Date.now() });
+            }
+            setMemberships((list) =>
+              list!.map((x) => {
+                if (x.id !== seat.id) return x;
+                const data = nextData ? sessionData(nextData) : x.data;
+                const books = patch.books ?? x.books;
+                return { ...x, data, books, pending: patch.pending ?? x.pending, summary: summarize(open.system, books, data), updated_at: stamp };
+              }),
+            );
+            return;
+          }
           const next = { ...open, ...patch, updated: Date.now() };
           upsert(next);
-          if (!mine.length || (!patch.data && !patch.pending)) return;
+          if (!following.length || (!patch.data && !patch.pending)) return;
           const data = sessionData(next.data);
           const pending = next.pending ?? [];
-          // Reached the suggested level (or went past it in that direction): that to-do is done.
-          const lvl = (data as { level?: number }).level ?? 0;
-          for (const { m, award } of awards)
-            if (award && (lvl === award || (award > nowLevel && lvl > award) || (award < nowLevel && lvl < award))) dropAward(m.id);
+          settleAwards((data as { level?: number }).level ?? 0);
           setMemberships((list) =>
-            list!.map((x) => (x.character_id === open.id ? { ...x, data, pending, summary: summarize(open.system, x.books, data), updated_at: new Date().toISOString() } : x)),
+            list!.map((x) => (x.character_id === open.id && !x.version ? { ...x, data, pending, summary: summarize(open.system, x.books, data), updated_at: new Date().toISOString() } : x)),
           );
         }}
         onBack={() => setView({ kind: "library" })}

@@ -1,29 +1,65 @@
 // Dice on the screen (REQUIREMENTS 4.6): the 3D table over the whole page, the result window, the
 // gold roll chips, "Next roll: Normal · Advantage · Disadvantage" and the free roller.
-// Rolls show on your own screen only. Dice fade 2 s after they land; the result window stays
+// Rolls show on your own screen only, except on a player's session page, which shares them with the
+// DM (`share`, src/rolls.ts). Dice fade 2 s after they land; the result window stays
 // ~8 s and holds while the pointer, a finger or the keyboard focus is on it.
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { DiceTable } from "../dice/engine";
-import { diceFor, parseDice, randomFace, resultOf, usesD20, type Advantage, type DiceGroup, type RollResult, type RollSpec } from "../dice/roll";
+import {
+  diceFor,
+  parseDice,
+  randomFace,
+  resultOf,
+  usesD20,
+  type Advantage,
+  type DiceGroup,
+  type RollResult,
+  type RollSpec,
+} from "../dice/roll";
 import { quipFor } from "../dice/quips";
+import { DamageFx, fxTypeOf } from "./DamageFx";
 
 const CARD_MS = 8000;
 const CARD_AFTER_HOLD_MS = 3000;
+
+/** Where finished rolls also go (a session page sends them to the DM), and the line the result window shows. */
+export interface RollShare {
+  note: string;
+  send: (spec: RollSpec, res: RollResult) => void;
+}
 
 interface DiceApi {
   roll: (spec: RollSpec) => void;
   next: Advantage;
   setNext: (a: Advantage) => void;
+  /** While set, every finished roll is also handed to it; returns the way to stop. */
+  share: (s: RollShare) => () => void;
 }
 const DiceCtx = createContext<DiceApi | null>(null);
 /** Chips only roll where rolling makes sense (a character's tabs, monster pages, the wiki). */
 const ScopeCtx = createContext(false);
 
 export const useDice = () => useContext(DiceCtx);
-export const RollScope = ({ children, on = true }: { children: ReactNode; on?: boolean }) => <ScopeCtx.Provider value={on}>{children}</ScopeCtx.Provider>;
+export const RollScope = ({
+  children,
+  on = true,
+}: {
+  children: ReactNode;
+  on?: boolean;
+}) => <ScopeCtx.Provider value={on}>{children}</ScopeCtx.Provider>;
 
 const isCompact = () => window.innerWidth < 720;
-const reducedMotion = () => !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const reducedMotion = () =>
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export function DiceProvider({ children }: { children: ReactNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,7 +70,14 @@ export function DiceProvider({ children }: { children: ReactNode }) {
   const hold = useRef(false);
   /** Dice on the table or a result showing (Esc clears them). */
   const busy = useRef(false);
-  const [card, setCard] = useState<{ id: number; spec: RollSpec; res: RollResult; quip: string } | null>(null);
+  const [card, setCard] = useState<{
+    id: number;
+    spec: RollSpec;
+    res: RollResult;
+    quip: string;
+    shared?: string;
+  } | null>(null);
+  const sharing = useRef<RollShare | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [next, setNext] = useState<Advantage>("normal");
   const nextRef = useRef(next);
@@ -72,7 +115,11 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       if (!cv) return;
       if (!table.current) table.current = new DiceTable(cv);
       let spec = spec0;
-      if (usesD20(spec.kind) && spec.adv == null && nextRef.current !== "normal") {
+      if (
+        usesD20(spec.kind) &&
+        spec.adv == null &&
+        nextRef.current !== "normal"
+      ) {
         spec = { ...spec, adv: nextRef.current };
         setNext("normal");
       }
@@ -85,13 +132,25 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       const dice = diceFor(spec);
       const reduced = reducedMotion();
       table.current
-        .throw(dice, { compact: isCompact(), reduced, faces: reduced ? dice.map((d) => randomFace(d.sides)) : undefined })
+        .throw(dice, {
+          compact: isCompact(),
+          reduced,
+          faces: reduced ? dice.map((d) => randomFace(d.sides)) : undefined,
+        })
         .then((faces) => {
           if (id !== rollId.current) return;
           const res = resultOf(spec, dice, faces);
           table.current?.setDropped(res.dropped);
-          setCard({ id, spec, res, quip: quipFor(spec, dice, faces, res) });
+          const share = sharing.current;
+          setCard({
+            id,
+            spec,
+            res,
+            quip: quipFor(spec, dice, faces, res),
+            shared: share?.note,
+          });
           spec.onDone?.(res, faces);
+          share?.send(spec, res);
           arm(CARD_MS);
         });
     },
@@ -100,7 +159,8 @@ export function DiceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onResize = () => table.current?.resize();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && busy.current && close();
+    const onKey = (e: KeyboardEvent) =>
+      e.key === "Escape" && busy.current && close();
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKey);
     return () => {
@@ -111,7 +171,16 @@ export function DiceProvider({ children }: { children: ReactNode }) {
     };
   }, [close]);
 
-  const api = useMemo(() => ({ roll, next, setNext }), [roll, next]);
+  const share = useCallback((s: RollShare) => {
+    sharing.current = s;
+    return () => {
+      if (sharing.current === s) sharing.current = null;
+    };
+  }, []);
+  const api = useMemo(
+    () => ({ roll, next, setNext, share }),
+    [roll, next, share],
+  );
   const holdOn = () => {
     hold.current = true;
     clearTimers();
@@ -127,62 +196,134 @@ export function DiceProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="dice-layer">
         <canvas ref={canvasRef} className="dice-canvas" aria-hidden="true" />
-        {card && (
-          <div
-            key={card.id}
-            className={`dice-card ${leaving ? "leaving" : ""} ${card.res.gold ? "gold" : ""}`}
-            role="status"
-            aria-live="polite"
-            onMouseEnter={holdOn}
-            onMouseLeave={holdOff}
-            onFocus={holdOn}
-            onBlur={holdOff}
-            onTouchStart={holdOn}
-            onTouchEnd={holdOff}
-          >
-            <div className="dice-card-top">
-              <span className="dice-card-label">{card.spec.label}</span>
-              <button type="button" className="dice-card-x" onClick={close} aria-label="Close the result">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-            <div className="dice-card-total">
-              <strong>{card.res.total}</strong>
-              {card.res.unit && <span>{card.res.unit}</span>}
-            </div>
-            {card.res.note && <p className="dice-card-note">{card.res.note}</p>}
-            {card.quip && <p className="dice-card-quip">{card.quip}</p>}
-            {card.res.lines.length > 0 && (
-              <dl className="dice-card-lines">
-                {card.res.lines.map((l, i) => (
-                  <div key={i}>
-                    <dt>{l.k}</dt>
-                    <dd>{l.v}</dd>
+        {card &&
+          (() => {
+            // A damage or healing roll with a type gets its animation (user, 2026-11-25; mockup boards
+            // "Every damage type" / "How it was dealt"): the number on the right, the effect across the card.
+            const fx = card.res.gold ? null : fxTypeOf(card.res.unit);
+            return (
+              <div
+                key={card.id}
+                className={`dice-card ${leaving ? "leaving" : ""} ${card.res.gold ? "gold" : ""} ${fx ? `fx-row has-fx lf-${fx}` : ""}`}
+                role="status"
+                aria-live="polite"
+                onMouseEnter={holdOn}
+                onMouseLeave={holdOff}
+                onFocus={holdOn}
+                onBlur={holdOff}
+                onTouchStart={holdOn}
+                onTouchEnd={holdOff}
+              >
+                <div className="dice-card-top">
+                  <span className="dice-card-label">{card.spec.label}</span>
+                  <button
+                    type="button"
+                    className="dice-card-x"
+                    onClick={close}
+                    aria-label="Close the result"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                </div>
+                {fx ? (
+                  <DamageFx
+                    type={fx}
+                    via={card.spec.via}
+                    word={card.res.unit}
+                    total={card.res.total}
+                    big
+                  />
+                ) : (
+                  <div className="dice-card-total">
+                    <strong>{card.res.total}</strong>
+                    {card.res.unit && <span>{card.res.unit}</span>}
                   </div>
-                ))}
-              </dl>
-            )}
-            {card.res.sub && <p className="dice-card-sub">{card.res.sub}</p>}
-            <div className="dice-card-actions">
-              <button type="button" className="btn ghost small dice-again" onClick={() => roll({ ...card.spec, onDone: undefined })}>
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M20 11a8 8 0 1 0-2.3 5.7" />
-                  <path d="M20 4v7h-7" />
-                </svg>
-                Roll again
-              </button>
-            </div>
-          </div>
-        )}
+                )}
+                {card.res.note && (
+                  <p className="dice-card-note">{card.res.note}</p>
+                )}
+                {card.quip && <p className="dice-card-quip">{card.quip}</p>}
+                {card.res.lines.length > 0 && (
+                  <dl className="dice-card-lines">
+                    {card.res.lines.map((l, i) => (
+                      <div key={i}>
+                        <dt>{l.k}</dt>
+                        <dd>{l.v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {card.res.sub && (
+                  <p className="dice-card-sub">{card.res.sub}</p>
+                )}
+                {card.shared && (
+                  <p className="dice-card-shared">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12l5 5 9-10" />
+                    </svg>
+                    {card.shared}
+                  </p>
+                )}
+                <div className="dice-card-actions">
+                  <button
+                    type="button"
+                    className="btn ghost small dice-again"
+                    onClick={() => roll({ ...card.spec, onDone: undefined })}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="15"
+                      height="15"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+                      <path d="M20 4v7h-7" />
+                    </svg>
+                    Roll again
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
       </div>
     </DiceCtx.Provider>
   );
 }
 
 export const DieIcon = ({ size = 12 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M12 2l9 5v10l-9 5-9-5V7z" />
     <path d="M12 7l5 9H7z" />
   </svg>
@@ -240,7 +381,13 @@ export function NextRoll() {
       <span className="next-roll-label">Next roll</span>
       <div className="seg" role="group" aria-label="Next roll">
         {opts.map(([k, l]) => (
-          <button key={k} type="button" className={`seg-btn ${k} ${dice.next === k ? "on" : ""}`} aria-pressed={dice.next === k} onClick={() => dice.setNext(k)}>
+          <button
+            key={k}
+            type="button"
+            className={`seg-btn ${k} ${dice.next === k ? "on" : ""}`}
+            aria-pressed={dice.next === k}
+            onClick={() => dice.setNext(k)}
+          >
             {l}
           </button>
         ))}
@@ -257,8 +404,15 @@ export function FreeRoller({ onThrown }: { onThrown?: () => void }) {
   const [counts, setCounts] = useState<Record<number, number>>({ 20: 1 });
   if (!dice) return null;
   const total = FREE_DICE.reduce((s, d) => s + (counts[d] ?? 0), 0);
-  const bump = (d: number, by: number) => setCounts((c) => ({ ...c, [d]: Math.max(0, Math.min(20, (c[d] ?? 0) + by)) }));
-  const groups: DiceGroup[] = FREE_DICE.filter((d) => counts[d]).map((d) => ({ n: counts[d], sides: d }));
+  const bump = (d: number, by: number) =>
+    setCounts((c) => ({
+      ...c,
+      [d]: Math.max(0, Math.min(20, (c[d] ?? 0) + by)),
+    }));
+  const groups: DiceGroup[] = FREE_DICE.filter((d) => counts[d]).map((d) => ({
+    n: counts[d],
+    sides: d,
+  }));
   return (
     <div className="free-roller">
       <ul className="free-dice">
@@ -266,11 +420,20 @@ export function FreeRoller({ onThrown }: { onThrown?: () => void }) {
           <li key={d} className={counts[d] ? "on" : ""}>
             <span className="free-die">d{d}</span>
             <span className="free-count">
-              <button type="button" onClick={() => bump(d, -1)} disabled={!counts[d]} aria-label={`One less d${d}`}>
+              <button
+                type="button"
+                onClick={() => bump(d, -1)}
+                disabled={!counts[d]}
+                aria-label={`One less d${d}`}
+              >
                 −
               </button>
               <output aria-label={`d${d} count`}>{counts[d] ?? 0}</output>
-              <button type="button" onClick={() => bump(d, 1)} aria-label={`One more d${d}`}>
+              <button
+                type="button"
+                onClick={() => bump(d, 1)}
+                aria-label={`One more d${d}`}
+              >
                 +
               </button>
             </span>
@@ -278,7 +441,12 @@ export function FreeRoller({ onThrown }: { onThrown?: () => void }) {
         ))}
       </ul>
       <div className="free-actions">
-        <button type="button" className="link" onClick={() => setCounts({})} disabled={!total}>
+        <button
+          type="button"
+          className="link"
+          onClick={() => setCounts({})}
+          disabled={!total}
+        >
           Clear
         </button>
         <button
@@ -286,7 +454,12 @@ export function FreeRoller({ onThrown }: { onThrown?: () => void }) {
           className="btn primary"
           disabled={!total}
           onClick={() => {
-            dice.roll({ label: `Free roll · ${groups.map((g) => `${g.n}d${g.sides}`).join(" + ")}`, kind: "free", groups, tone: "player" });
+            dice.roll({
+              label: `Free roll · ${groups.map((g) => `${g.n}d${g.sides}`).join(" + ")}`,
+              kind: "free",
+              groups,
+              tone: "player",
+            });
             onThrown?.();
           }}
         >
@@ -304,7 +477,8 @@ export function DiceButton() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const away = (e: MouseEvent) =>
+      !ref.current?.contains(e.target as Node) && setOpen(false);
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("mousedown", away);
     window.addEventListener("keydown", esc);
@@ -316,7 +490,13 @@ export function DiceButton() {
   if (!dice) return null;
   return (
     <div className="dice-btn-wrap" ref={ref}>
-      <button type="button" className={`btn dice-btn ${open ? "on" : ""}`} aria-expanded={open} aria-label="Dice" onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className={`btn dice-btn ${open ? "on" : ""}`}
+        aria-expanded={open}
+        aria-label="Dice"
+        onClick={() => setOpen((o) => !o)}
+      >
         <DieIcon size={18} />
         <span className="dice-btn-label">Dice</span>
       </button>
@@ -324,8 +504,21 @@ export function DiceButton() {
         <div className="dice-pop" role="dialog" aria-label="Throw dice">
           <div className="dice-pop-head">
             <strong>Throw dice</strong>
-            <button type="button" className="dice-card-x" onClick={() => setOpen(false)} aria-label="Close">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <button
+              type="button"
+              className="dice-card-x"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
@@ -338,14 +531,41 @@ export function DiceButton() {
 }
 
 /** A dice expression in text as a chip ("2d10 + 6" → damage roll). Falls back to plain text. */
-export function DiceText({ text, label, unit, tone, half, fire, kind = "damage" }: { text: string; label: string; unit?: string; tone: "monster" | "player"; half?: boolean; fire?: boolean; kind?: RollSpec["kind"] }) {
+export function DiceText({
+  text,
+  label,
+  unit,
+  tone,
+  half,
+  fire,
+  kind = "damage",
+}: {
+  text: string;
+  label: string;
+  unit?: string;
+  tone: "monster" | "player";
+  half?: boolean;
+  fire?: boolean;
+  kind?: RollSpec["kind"];
+}) {
   const p = parseDice(text);
   if (!p) return <>{text}</>;
   return (
     <RollChip
       fire={fire}
       label={`Roll ${text}${unit ? ` ${unit}` : ""}`}
-      spec={{ label, kind, groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit, tone, half }}
+      spec={{
+        label,
+        kind,
+        groups: p.groups.map((g) => ({
+          ...g,
+          tone: fire ? "fire" : undefined,
+        })),
+        bonus: p.bonus,
+        unit,
+        tone,
+        half,
+      }}
     >
       {text}
     </RollChip>

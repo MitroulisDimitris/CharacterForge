@@ -22,17 +22,43 @@ const ICONS: [RegExp, string, string][] = [
 const SPARK = "M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z";
 
 /** Class crest with a ring showing how far along levels 1–max the character is. */
-export function Crest({ identity, level, maxLevel, size = 132, badge = true, portrait }: { identity: string; level: number; maxLevel: number; size?: number; badge?: boolean; portrait?: string }) {
+/** Health colour for a share of hit points: green above half, yellow above a quarter, red below. */
+export const hpTone = (frac: number) => (frac > 0.5 ? "ok" : frac > 0.25 ? "warn" : "low");
+
+export function Crest({
+  identity,
+  level,
+  maxLevel,
+  size = 132,
+  badge = true,
+  portrait,
+  hp,
+}: {
+  identity: string;
+  level: number;
+  maxLevel: number;
+  size?: number;
+  badge?: boolean;
+  portrait?: string;
+  /**
+   * The DM's view (user, 2026-11-24): the ring shows current hit points instead of the level, thin,
+   * green / yellow / red. Unknown maximum (0): an empty track.
+   */
+  hp?: { cur: number; max: number };
+}) {
   const hit = ICONS.find(([re]) => re.test(identity));
   const icon = hit?.[1] ?? SPARK;
-  const r = size / 2 - 5;
+  const r = size / 2 - (hp ? 2 : 5);
   const len = 2 * Math.PI * r;
-  const filled = Math.max(0.03, Math.min(1, level / Math.max(1, maxLevel)));
+  const frac = hp ? (hp.max > 0 ? Math.max(0, Math.min(1, hp.cur / hp.max)) : 0) : 0;
+  const filled = hp ? frac : Math.max(0.03, Math.min(1, level / Math.max(1, maxLevel)));
   return (
-    <div className="crest" style={{ width: size, height: size, ...(hit ? { ["--crest-color" as string]: hit[2] } : {}) }}>
+    <div className={`crest ${hp ? `crest-hp hp-${hpTone(frac)}` : ""}`} style={{ width: size, height: size, ...(hit ? { ["--crest-color" as string]: hit[2] } : {}) }}>
       <svg aria-hidden="true" width={size} height={size} className="crest-ring">
         <circle cx={size / 2} cy={size / 2} r={r} className="crest-track" />
-        <circle cx={size / 2} cy={size / 2} r={r} className="crest-fill" strokeDasharray={len} strokeDashoffset={len * (1 - filled)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+        {filled > 0 && (
+          <circle cx={size / 2} cy={size / 2} r={r} className="crest-fill" strokeDasharray={len} strokeDashoffset={len * (1 - filled)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+        )}
       </svg>
       <div className="crest-core" style={{ width: size * 0.76, height: size * 0.76 }}>
         {validPortrait(portrait) ? (

@@ -4,10 +4,12 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { addRecent, isFavorite, toggleFavorite } from "../lookup";
 import { KIND_LABEL, RARITIES, loadItems, loadedItems, rarityOf, type Item, type ItemKind, type Rarity } from "../items";
 import type { StoredCharacter } from "../storage";
-import { segmentsOf } from "../dice/rollText";
+import { segmentsOf, viaOfText } from "../dice/rollText";
 import { parseDice } from "../dice/roll";
 import { RollChip } from "./Dice";
 import { AddItem } from "./AddToCharacter";
+import { pageHidesList } from "./Lookup";
+import { refOf } from "../wikiRefs";
 
 export const itemIndex = () => loadedItems();
 
@@ -88,7 +90,7 @@ export function ItemsBrowse({ lib, onSave, start }: { lib: StoredCharacter[]; on
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-4-4" />
         </svg>
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search items, or words inside them (cloak, fire, invisible)" aria-label="Search items" />
+        <input type="search" value={q} onChange={(e) => (setQ(e.target.value), pageHidesList() && setOpenId(null))} placeholder="Search items, or words inside them (cloak, fire, invisible)" aria-label="Search items" />
       </label>
       <div className="lk-filters item-kinds" role="group" aria-label="Kind">
         <button type="button" className={chip(!kind)} aria-pressed={!kind} onClick={() => setKind("")}>
@@ -246,6 +248,9 @@ function ItemStar({ it }: { it: Item }) {
 
 /** Item text with its dice as roll chips (Potion of Healing 2d4 + 2, Flame Tongue 2d6 fire). */
 function ItemText({ it, text }: { it: Item; text: string }) {
+  // How its damage lands: what the text says, else a weapon strikes (or shoots), anything else bursts.
+  const weapon = /weapon/i.test(it.sub);
+  const via = viaOfText(text) ?? (weapon ? (/ranged|ammunition|\b(bow|crossbow|sling|dart)s?\b/i.test(`${it.sub} ${it.name}`) ? "ranged" : "melee") : "area");
   return (
     <>
       {segmentsOf(text).map((s, i) => {
@@ -254,7 +259,7 @@ function ItemText({ it, text }: { it: Item; text: string }) {
         if (!p) return <Fragment key={i}>{s.text}</Fragment>;
         const fire = s.unit === "fire";
         return (
-          <RollChip key={i} fire={fire} label={`Roll ${s.dice}`} spec={{ label: `${it.name} · ${s.dice}`, kind: "damage", groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit: s.unit, tone: "player" }}>
+          <RollChip key={i} fire={fire} label={`Roll ${s.dice}`} spec={{ label: `${it.name} · ${s.dice}`, kind: "damage", groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit: s.unit, via, tone: "player" }}>
             {s.text}
           </RollChip>
         );
@@ -299,7 +304,7 @@ function ItemPage({ it, lib, onSave, onBack }: { it: Item; lib: StoredCharacter[
           </p>
         ))}
       </div>
-      <p className="muted wiki-book">Source · {SOURCE[it.source]}</p>
+      <p className="muted wiki-book">{refOf(`item:${it.id}`) ?? SOURCE[it.source]}</p>
       <AddItem item={it} lib={lib} onSave={onSave} />
     </article>
   );

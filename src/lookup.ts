@@ -5,6 +5,7 @@
 // from the characters' own spell data (user, 2026-11-22).
 import { RULES } from "./systems/dnd5e/rules";
 import type { Spell as BookSpell } from "./systems/dnd5e/data/spells";
+import { bookRef, loadSpellTexts, plainText, type FullSpellText, type SpellPart, type SpellTexts } from "./spellText";
 
 export interface Named {
   name: string;
@@ -69,8 +70,10 @@ export interface Spell {
   level_int: number;
   school: string;
   dnd_class: string;
-  /** Spells from the characters' data (not in the SRD): the book it's from. */
+  /** Spells from the characters' data (not in the SRD): the book it's from ("…, page 157"). */
   book?: string;
+  /** Their full book text, with tables and stat blocks (src/spellText.ts). */
+  parts?: SpellPart[];
 }
 
 const files = new Map<string, Promise<unknown>>();
@@ -95,13 +98,14 @@ const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 
 export const spellSlug = (name: string) => name.toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /** A spell from the characters' 2014 data, in the Lookup's shape. */
-export function bookSpell(a: BookSpell, slug = spellSlug(a.name)): Spell {
+export function bookSpell(a: BookSpell, slug = spellSlug(a.name), full?: FullSpellText): Spell {
   const classes = [...new Set([...(a.lists ?? []).map((l) => l.split("@")[0]), ...(a.sorcerer ? ["sorcerer"] : [])])].map((c) => c.charAt(0).toUpperCase() + c.slice(1)).sort();
   return {
     slug,
     name: a.name,
-    desc: a.desc,
-    higher_level: "",
+    desc: full ? plainText(full) : a.desc,
+    higher_level: full?.higher ?? "",
+    parts: full?.text,
     range: a.range,
     components: a.components.replace(/,/g, ", "),
     material: a.material ?? "",
@@ -113,27 +117,32 @@ export function bookSpell(a: BookSpell, slug = spellSlug(a.name)): Spell {
     level_int: a.level,
     school: a.school,
     dnd_class: classes.join(", "),
-    book: BOOK_NAMES[a.book] ?? a.book,
+    book: full ? bookRef(full) : (BOOK_NAMES[a.book] ?? a.book),
   };
 }
 
 /** The SRD spells plus the 2014 book spells it leaves out. */
-export function withBookSpells(srd: Spell[], book: BookSpell[]): Spell[] {
+export function withBookSpells(srd: Spell[], book: BookSpell[], texts: SpellTexts = {}): Spell[] {
   const names = new Set(srd.map((s) => s.name.toLowerCase()));
   const slugs = new Set(srd.map((s) => s.slug));
   const extra = book
     .filter((a) => !names.has(a.name.toLowerCase()))
     .map((a) => {
       const slug = spellSlug(a.name);
-      return bookSpell(a, slugs.has(slug) ? `${slug}-book` : slug);
+      return bookSpell(a, slugs.has(slug) ? `${slug}-book` : slug, texts[a.name]);
     });
   return [...srd, ...extra];
 }
 
 let spellsAll: Promise<Spell[]> | null = null;
 const spellsFile = () =>
-  (spellsAll ??= load<Spell[]>("srd-spells.json").then(
-    (srd) => withBookSpells(srd, RULES["2014"].spells),
+  (spellsAll ??= Promise.all([
+    load<Spell[]>("srd-spells.json"),
+    loadSpellTexts().catch(() => ({}) as SpellTexts),
+    load<Record<string, number>>("spell-pages-2014.json").catch(() => ({}) as Record<string, number>),
+  ]).then(
+    // Every SRD spell is in the 2014 Player's Handbook (pages: scripts/spellpages.py).
+    ([srd, texts, pages]) => withBookSpells(srd.map((x) => (pages[x.name] ? { ...x, book: `Player's Handbook, page ${pages[x.name]}` } : x)), RULES["2014"].spells, texts),
     (e) => {
       spellsAll = null;
       throw e;

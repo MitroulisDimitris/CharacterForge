@@ -1,0 +1,54 @@
+/* Damage animations (components/DamageFx.tsx, src/dice/fxEngine.ts; mockup canvas "Session Versions and
+   Table Dice", page "Damage animations"). The roll line or result card is the host: classes
+   `fx-row lf-<type>`. The WebGL effect draws into .fx-gl, the story's pieces (bolt, hammer, arrow,
+   sparks) live in .fx-layer, and the type word + total in .fx-end ("lit" from the hit on). */
+
+/* Each type's colours: --lc the banner (r,g,b), --lt the type word, --nc / --ng the number and its glow */
+.lf-fire{--lc:255,110,40;--lt:#ffb27a;--nc:#fff0cc;--ng:rgba(255,120,30,.9)}
+.lf-cold{--lc:170,225,245;--lt:#d2f0fb;--nc:#e4f6ff;--ng:rgba(120,190,255,.95)}
+.lf-lightning{--lc:40,140,255;--lt:#9cc6ff;--nc:#f2f6ff;--ng:rgba(140,170,255,1)}
+.lf-thunder{--lc:100,90,210;--lt:#b4acf0;--nc:#ece9ff;--ng:rgba(160,150,255,.95)}
+.lf-acid{--lc:200,235,40;--lt:#e2f57a;--nc:#efffc4;--ng:rgba(160,235,40,.9)}
+.lf-poison{--lc:100,165,50;--lt:#a9d47e;--nc:#dcf5c4;--ng:rgba(120,200,60,.85)}
+.lf-necrotic{--lc:140,140,140;--lt:#b8b8b8;--nc:#cbd8c6;--ng:rgba(130,90,170,.95)}
+.lf-radiant{--lc:255,205,80;--lt:#ffe08a;--nc:#fff7dc;--ng:rgba(255,210,110,1)}
+.lf-psychic{--lc:240,90,190;--lt:#f7a6df;--nc:#ffe2f6;--ng:rgba(240,100,200,.95)}
+.lf-force{--lc:175,100,255;--lt:#d1b0ff;--nc:#f0e6ff;--ng:rgba(180,130,255,.95)}
+.lf-slashing{--lc:230,55,70;--lt:#ff9ca4;--nc:#ffe8ea;--ng:rgba(255,80,100,.85)}
+.lf-piercing{--lc:175,190,210;--lt:#dbe3ee;--nc:#eef2fa;--ng:rgba(200,215,240,.85)}
+.lf-bludgeoning{--lc:185,135,80;--lt:#e3bd8f;--nc:#f2e6d2;--ng:rgba(210,170,110,.75)}
+.lf-healing{--lc:50,235,80;--lt:#8dff9c;--nc:#e2ffe7;--ng:rgba(50,235,80,.95)}
+
+/* The host clips the effect; its own content sits above the effect, the story's pieces above that. */
+.fx-row{position:relative;overflow:hidden;isolation:isolate}
+.fx-row > :not(.fx-gl):not(.fx-layer):not(.fx-tint){position:relative;z-index:3}
+.fx-tint{position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(90deg,rgba(var(--lc),0) 0%,rgba(var(--lc),.05) 40%,rgba(var(--lc),.2) 100%);
+  box-shadow:inset 0 0 0 1px rgba(var(--lc),.38)}
+.fx-gl{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.fx-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.fx-layer > *{position:absolute;left:0;top:0;opacity:0}
+.fx-layer .fx-orb,.fx-layer .fx-flash,.fx-layer .fx-spark{border-radius:50%}
+.fx-layer .fx-trail{transform-origin:100% 50%;border-radius:3px;filter:blur(1.5px)}
+
+/* The type word and the total, on the right of a roll line */
+.fx-end{flex:none;display:flex;align-items:center;gap:12px}
+.fx-tag{display:inline-block;font-size:12px;font-weight:600;color:var(--lt);
+  text-shadow:0 0 2px #000,0 0 6px rgba(0,0,0,.95),0 1px 2px #000}
+.fx-num{display:inline-block;min-width:28px;text-align:center;font-family:var(--font-head);font-weight:700;font-size:22px;line-height:1;
+  color:#ede4d4;text-shadow:0 0 2px #000,0 1px 3px rgba(0,0,0,.9);transition:color .35s,text-shadow .35s}
+.fx-end.lit .fx-num{color:var(--nc);text-shadow:0 0 2px #000,0 1px 3px rgba(0,0,0,.9),0 0 12px var(--ng)}
+.table-roll-list.compact .fx-num{font-size:18px}
+
+/* The result card: the same, bigger, the number on the right */
+.fx-end.big{justify-content:flex-end;gap:14px;height:76px;margin:-4px 6px 0 0}
+.fx-end.big .fx-tag{font-size:14px}
+.fx-end.big .fx-num{font-size:60px}
+@media (max-width:720px){.fx-end.big .fx-num{font-size:52px}}
+/* the card's buttons stay readable over the effect */
+.dice-card.fx-row .dice-card-actions .btn{background:var(--surface)}
+
+/* Parchment: a dark patch under the right end keeps the glowing effect and number readable */
+:root[data-theme="parchment"] .fx-row .fx-tint{background:linear-gradient(90deg,rgba(36,28,22,0) 55%,rgba(36,28,22,.92) 82%);box-shadow:inset 0 0 0 1px rgba(var(--lc),.5)}
+
+@media (prefers-reduced-motion: reduce){.fx-num{transition:none}}

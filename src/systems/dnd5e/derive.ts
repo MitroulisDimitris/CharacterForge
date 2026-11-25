@@ -86,6 +86,9 @@ export interface Attack {
   dmgParts?: { label: string; value: number }[];
   /** Extra damage dice from the weapon's magic (some only "while lit", "against undead"). */
   extra?: ExtraDamage[];
+  /** How it deals damage (the damage animation opens with it): a weapon shot or thrown at range, a melee
+   *  strike, or a saving throw (a save cantrip). */
+  via?: "ranged" | "melee" | "area";
 }
 
 export interface FeatEntry {
@@ -627,18 +630,19 @@ export function deriveCharacter(c: Character, books: string[] = ALL_BOOKS[c.edit
       parts,
       dmgParts,
       extra: isOn(x) ? x.r.effect!.extra : undefined,
+      via: w.ranged ? "ranged" : "melee",
     });
   }
   if (maDie) {
     const ab: Ability = mods.DEX >= mods.STR ? "DEX" : "STR";
-    attacks.push({ name: "Unarmed Strike", bonus: signed(mods[ab] + pb), damage: `${maDie}${mods[ab] ? signed(mods[ab]) : ""} Bludgeoning`, notes: "Martial Arts; one more as a Bonus Action after the Attack action" });
+    attacks.push({ name: "Unarmed Strike", bonus: signed(mods[ab] + pb), damage: `${maDie}${mods[ab] ? signed(mods[ab]) : ""} Bludgeoning`, notes: "Martial Arts; one more as a Bonus Action after the Attack action", via: "melee" });
   }
   for (const r of spellRows) {
     if (r.level !== 0 || !r.spell?.damage || seen.has(r.name)) continue;
     seen.add(r.name);
     const dmg = cantripDamage(r.spell, level)!;
     const hit = r.spell.attack ? signed(r.attackBonus) : r.spell.save ? `${r.spell.save} ${r.saveDc}` : "—";
-    attacks.push({ name: r.name, bonus: hit, damage: dmg, notes: `${r.spell.range}, ${r.spell.components}` });
+    attacks.push({ name: r.name, bonus: hit, damage: dmg, notes: `${r.spell.range}, ${r.spell.components}`, via: r.spell.attack ?? (r.spell.save ? "area" : undefined) });
   }
 
   // ---------- features ----------

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getSystem } from "../systems/registry";
 import type { TableCard } from "../systems/types";
-import { awardLevel, sessionError, setLive, type Membership, type RosterRow } from "../sessions";
+import { awardLevel, removeMember, sessionError, setLive, type Membership, type RosterRow } from "../sessions";
 import {
   applyDamage,
   applyHealing,
@@ -138,7 +138,7 @@ export function PartyTab({
           return (
             <article key={m.id} className="roster-card party-card">
               <button type="button" className="party-open" onClick={() => onOpen(m.id)} aria-label={`Open ${name}'s sheet`}>
-                <Crest identity={identity} level={level} maxLevel={sys?.maxLevel ?? 20} size={60} badge={false} portrait={portrait} />
+                <Crest identity={identity} level={level} maxLevel={sys?.maxLevel ?? 20} size={60} badge={false} portrait={portrait} hp={card ? { cur: currentHp(m.live ?? {}, card.hpMax), max: card.hpMax } : { cur: 0, max: 0 }} />
                 <span className="roster-text">
                   <strong>{name}</strong>
                   <span className="muted">
@@ -185,6 +185,16 @@ export function PartyTab({
                 <MoreMenu label={`More for ${name}`}>
                   <button type="button" onClick={() => act(() => awardLevel(sessionId, m.id))}>
                     Award a level
+                  </button>
+                  {/* The host's way to remove a player (the old "Who's playing" list isn't on the host's page). */}
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() =>
+                      confirm(`Remove ${name} (${player}) from the session?`) && act(() => removeMember(m.id))
+                    }
+                  >
+                    Remove from session…
                   </button>
                 </MoreMenu>
               </div>
@@ -243,7 +253,7 @@ export function MemberView({ member, system, player, onBack, onChanged }: { memb
         ‹ Party
       </button>
       <header className="member-head">
-        <Crest identity={d.identity} level={c.level} maxLevel={sys.maxLevel} size={72} badge={false} portrait={c.portrait} />
+        <Crest identity={d.identity} level={c.level} maxLevel={sys.maxLevel} size={72} badge={false} portrait={c.portrait} hp={{ cur: currentHp(live, max), max }} />
         <div>
           <h2>{c.name || "Unnamed"}</h2>
           <span className="muted">

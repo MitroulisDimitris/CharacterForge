@@ -1,7 +1,7 @@
 // Finds the rolls inside stat block text (REQUIREMENTS 4.6, "Monster rolls"):
 // "+10 to hit" → an attack roll; "17 (2d10 + 6) piercing damage" → a damage roll on the dice in
 // brackets; "(Recharge 5–6)" → a d6 recharge roll. Everything else stays plain text.
-import { parseDice, type RollSpec } from "./roll";
+import { parseDice, type RollSpec, type Via } from "./roll";
 
 export type Segment =
   | { kind: "text"; text: string }
@@ -40,6 +40,15 @@ export function segmentsOf(text: string): Segment[] {
   }, []);
 }
 
+/** How a stat block or spell text deals its damage: "Melee Weapon Attack" (also "Melee or Ranged…"),
+ *  "make a ranged spell attack", or a saving throw (area). Undefined when it doesn't say. */
+export function viaOfText(text: string): Via | undefined {
+  const m = /\b(melee|ranged)(?: or ranged)? (?:weapon |spell )?attack/i.exec(text);
+  if (m) return m[1].toLowerCase() as Via;
+  if (/saving throw|\bsave\b/i.test(text)) return "area";
+  return undefined;
+}
+
 /** "…or half as much damage on a successful one": damage in this text is halved on a save. */
 export const halfOnSave = (text: string) => /half as much damage on a successful/i.test(text);
 
@@ -60,6 +69,7 @@ export interface TextRoll {
 export function spellTextRolls(text: string, name: string): TextRoll[] {
   const out: TextRoll[] = [];
   const halfText = halfOnSave(text) || /half as much damage|half damage/i.test(text);
+  const via = viaOfText(text);
   let at = 0;
   // "8d6", "1d4 + 1", and a bare die ("roll a d4").
   for (const m of text.matchAll(/\b\d*d\d+(?:\s*[+−-]\s*\d+(?![\dd]))?(?![\w])/g)) {
@@ -87,6 +97,7 @@ export function spellTextRolls(text: string, name: string): TextRoll[] {
         bonus: p.bonus,
         unit: heal ? "hit points back" : temp ? "temporary hit points" : damage ? type || "damage" : undefined,
         half: damage && halfText,
+        via: damage ? via : undefined,
         tone: "player",
       },
     });

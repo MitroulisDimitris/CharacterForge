@@ -259,7 +259,8 @@ Spells: levels 0–3 only (enough for character level 5).
 
 ## 4. Rules data: where it came from and how it was checked
 
-- 2014 data is written in our own words (never copy book text into the app).
+- 2014 data: short summaries plus the full book text for spells. Book text may go into the app
+  (user, 2026-11-23: legally bought copies, private app, no money made).
 - The user's own copies of **PHB 2014, Xanathar's, Tasha's** are in `reference/books/`
   (PDF + `.raw.txt`/`.txt`, **git-ignored**, never commit or upload). They are scans: OCR typos
   ("ld6" = 1d6, "ll" = 1d10, split words), so confirm mismatches on the page image

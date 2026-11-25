@@ -182,7 +182,7 @@ export function Login() {
         }
       >
         <div className="auth-form">
-          <p className="auth-tip">Tip · Can't find it? Look in the spam folder.</p>
+          <p className="auth-tip">Tip · Can't find it? Look in the spam folder. An account that isn't verified within 3 days is removed, so you can sign up again.</p>
           <ErrorLine text={error} />
           {info && <p className="auth-info">{info}</p>}
           <button type="button" className="btn auth-submit" disabled={busy || cooldown > 0} onClick={resend}>

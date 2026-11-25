@@ -36,6 +36,11 @@ export interface Membership {
   live: Live;
   /** The host awarded this level ("Level up ready"). */
   level_award: number | null;
+  /**
+   * This seat is the character's own version for this session (user, 2026-11-24): its sheet changes
+   * only here. False (or missing, before 20261124_session_versions.sql ran): it follows the character.
+   */
+  version?: boolean;
 }
 
 /** What other players see of a character (D4). */
@@ -70,7 +75,20 @@ export interface RosterRow {
 }
 
 const SESSION_COLS = "id, host_id, name, system, books, joining_locked, status, created_at, level";
-const MEMBER_COLS = "id, session_id, character_id, books, data, pending, summary, joined_at, updated_at, live, level_award";
+const BASE_MEMBER_COLS = "id, session_id, character_id, books, data, pending, summary, joined_at, updated_at, live, level_award";
+// `version` exists once supabase/migrations/20261124_session_versions.sql has run; until then the
+// select falls back to the columns without it (Postgres error 42703 = no such column).
+let hasVersionCol = true;
+const memberCols = () => (hasVersionCol ? `${BASE_MEMBER_COLS}, version` : BASE_MEMBER_COLS);
+async function selectMembers<T>(run: (cols: string) => PromiseLike<{ data: unknown; error: { code?: string } | null }>): Promise<T[]> {
+  let { data, error } = await run(memberCols());
+  if (error?.code === "42703" && hasVersionCol) {
+    hasVersionCol = false;
+    ({ data, error } = await run(memberCols()));
+  }
+  if (error) throw error;
+  return (data ?? []) as T[];
+}
 
 /** "k7p2qx", "K7P 2QX" → "K7P-2QX". */
 export function normalizeCode(raw: string): string {
@@ -87,7 +105,8 @@ export const inviteLink = (code: string) => `${window.location.origin}${window.l
  */
 export function sessionData(data: unknown): unknown {
   if (!data || typeof data !== "object") return data;
-  const { play: _play, spent: _spent, ...rest } = data as Record<string, unknown>;
+  // versionPlay: the player's own trackers for each session version (private, like play).
+  const { play: _play, spent: _spent, versionPlay: _vp, ...rest } = data as Record<string, unknown>;
   return rest;
 }
 
@@ -129,9 +148,7 @@ export async function loadSessions(): Promise<SessionInfo[]> {
 }
 
 export async function loadMemberships(userId: string): Promise<Membership[]> {
-  const { data, error } = await supabase.from("session_members").select(MEMBER_COLS).eq("user_id", userId);
-  if (error) throw error;
-  return data as Membership[];
+  return selectMembers<Membership>((cols) => supabase.from("session_members").select(cols).eq("user_id", userId));
 }
 
 export async function createSession(name: string, system: SystemId, books: string[], level: number | null = null): Promise<SessionInfo> {
@@ -168,8 +185,8 @@ export async function previewSession(code: string): Promise<Preview | null> {
   return ((data as Preview[])[0] as Preview | undefined) ?? null;
 }
 
-export async function joinSession(code: string, rec: StoredCharacter): Promise<void> {
-  const { error } = await supabase.rpc("join_session", {
+export async function joinSession(code: string, rec: StoredCharacter): Promise<string> {
+  const { data, error } = await supabase.rpc("join_session", {
     code,
     char_id: rec.id,
     copy: sessionData(rec.data),
@@ -177,6 +194,16 @@ export async function joinSession(code: string, rec: StoredCharacter): Promise<v
     copy_summary: summarize(rec.system, rec.books, rec.data),
   });
   if (error) throw error;
+  return data as string;
+}
+
+/** Make my seat in a session the character's own version (true) or follow the character (false). */
+export async function setSeatVersion(sessionId: string, version: boolean): Promise<void> {
+  // Row rules let a player update only their own seat, so the session id is enough.
+  const { error } = await supabase.from("session_members").update({ version }).eq("session_id", sessionId);
+  if (error && !(error.code === "42703" && !version)) {
+    throw error.code === "42703" ? new Error("Versions need a database update first (supabase/migrations/20261124_session_versions.sql).") : error;
+  }
 }
 
 export async function swapCharacter(sessionId: string, rec: StoredCharacter): Promise<void> {
@@ -204,10 +231,9 @@ export async function removeMember(memberId: string): Promise<void> {
 
 export async function saveMemberships(list: Membership[]): Promise<void> {
   for (const m of list) {
-    const { error } = await supabase
-      .from("session_members")
-      .update({ data: m.data, pending: m.pending, summary: m.summary, updated_at: m.updated_at })
-      .eq("id", m.id);
+    // A version keeps its own books; a following seat's books are set by joining.
+    const patch = { data: m.data, pending: m.pending, summary: m.summary, updated_at: m.updated_at, ...(m.version ? { books: m.books } : {}) };
+    const { error } = await supabase.from("session_members").update(patch).eq("id", m.id);
     if (error) throw error;
   }
 }
@@ -262,9 +288,7 @@ export function clearPendingJoin() {
 
 /** Every member's full row: the host may read them (read-only sheets, D3). */
 export async function loadHostMembers(sessionId: string): Promise<(Membership & { user_id: string })[]> {
-  const { data, error } = await supabase.from("session_members").select(`${MEMBER_COLS}, user_id`).eq("session_id", sessionId).order("joined_at");
-  if (error) throw error;
-  return data as (Membership & { user_id: string })[];
+  return selectMembers<Membership & { user_id: string }>((cols) => supabase.from("session_members").select(`${cols}, user_id`).eq("session_id", sessionId).order("joined_at"));
 }
 
 export async function setLive(memberId: string, live: Live): Promise<void> {

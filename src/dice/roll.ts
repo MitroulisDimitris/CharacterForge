@@ -5,6 +5,9 @@
 export type Tone = "monster" | "player" | "fire" | "tens";
 export type RollKind = "attack" | "check" | "save" | "damage" | "heal" | "recharge" | "free";
 export type Advantage = "normal" | "adv" | "dis";
+/** How damage was dealt: a ranged attack, a melee attack, or an area / saving-throw effect. The damage
+ *  animation opens with it (src/dice/fxEngine.ts); unknown plays like "area". */
+export type Via = "ranged" | "melee" | "area";
 
 export interface DiceGroup {
   n: number;
@@ -35,6 +38,8 @@ export interface RollSpec {
   critOn?: number;
   /** "Half on a successful save" (damage). */
   half?: boolean;
+  /** How the damage was dealt (damage rolls). */
+  via?: Via;
   /** Recharge: the lowest d6 that recharges it. */
   need?: number;
   tone: "monster" | "player";

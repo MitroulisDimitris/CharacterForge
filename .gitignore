@@ -7,3 +7,7 @@ sample.pdf
 reference/books/
 feedback/
 backups/
+
+# spell text extraction (scripts/spelltext.py): intermediate files
+scripts/out/
+__pycache__/

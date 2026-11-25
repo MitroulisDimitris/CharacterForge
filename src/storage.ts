@@ -19,6 +19,9 @@ const LIB_KEY = "character-forge:library:v2";
 const OLD_KEY = "character-forge:character";
 const LAST_KEY = "character-forge:last-open";
 const THEME_KEY = "character-forge:theme";
+// Set once the skin was picked by hand (Skin menu). Before 2026-11-24 the old default "dark" was saved
+// on every visit, so a saved "dark" without this mark was never a choice: those devices move to Hero.
+const THEME_PICKED_KEY = "character-forge:theme-picked";
 
 export type Theme = SkinId;
 
@@ -83,9 +86,13 @@ export const loadLastOpen = () => safeGet(LAST_KEY);
 export const saveLastOpen = (id: string | null) => (id ? safeSet(LAST_KEY, id) : safeSet(LAST_KEY, ""));
 
 export function loadTheme(): Theme {
-  return skinOf(safeGet(THEME_KEY)).id;
+  const saved = safeGet(THEME_KEY);
+  if (saved === "dark" && !safeGet(THEME_PICKED_KEY)) return skinOf(null).id;
+  return skinOf(saved).id;
 }
 export const saveTheme = (t: Theme) => safeSet(THEME_KEY, t);
+/** The user picked a skin in the Skin menu: keep it, whatever the default. */
+export const markThemePicked = () => safeSet(THEME_PICKED_KEY, "1");
 
 // Letters of any language (Greek too) stay; only characters file systems dislike go.
 export const fileSafe = (s: string) => s.normalize("NFC").replace(/[^\p{L}\p{N}\p{M}_\- ]+/gu, "").trim().replace(/\s+/g, "_") || "character";

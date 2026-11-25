@@ -2,7 +2,7 @@
 // save, skill, initiative or attack throws, with the bonus split into named parts.
 import { ABILITY_NAMES, type Ability } from "./data/core";
 import type { Attack, Derived } from "./derive";
-import { parseDice, type BonusPart, type RollSpec } from "../../dice/roll";
+import { parseDice, type BonusPart, type RollSpec, type Via } from "../../dice/roll";
 
 const D20 = [{ n: 1, sides: 20 }];
 
@@ -91,6 +91,7 @@ export function attackRolls(d: Derived, a: Attack): AttackRolls {
       groups: dice.groups.map((g) => ({ ...g, tone: out.fire ? "fire" : undefined })),
       ...(a.dmgParts ? { parts: a.dmgParts } : { bonus: dice.bonus }),
       unit: type,
+      via: a.via,
       tone: "player",
     });
     out.damage = spec(p, `${a.name} · damage`);
@@ -108,7 +109,7 @@ export function attackRolls(d: Derived, a: Attack): AttackRolls {
     const fire = x.type === "fire";
     return [
       {
-        spec: { label: `${a.name} · extra ${x.type}`, kind: "damage" as const, groups: p2.groups.map((g) => ({ ...g, tone: fire ? ("fire" as const) : undefined })), bonus: p2.bonus, unit: x.type, tone: "player" as const },
+        spec: { label: `${a.name} · extra ${x.type}`, kind: "damage" as const, groups: p2.groups.map((g) => ({ ...g, tone: fire ? ("fire" as const) : undefined })), bonus: p2.bonus, unit: x.type, via: a.via, tone: "player" as const },
         text: `+ ${x.dice} ${x.type}${x.when ? ` ${x.when}` : ""}`,
         fire,
       },
@@ -155,7 +156,7 @@ export function classRolls(d: Derived): ClassRoll[] {
     d.slots.forEach((n, i) => {
       if (!n) return;
       const dice = Math.min(5, 2 + i);
-      out.push({ name: `Divine Smite (level ${i + 1} slot)`, note: "On a melee weapon hit; +1d8 against undead and fiends", text: `${dice}d8 radiant`, spec: dmg(`Divine Smite (level ${i + 1})`, dice, 8, "radiant") });
+      out.push({ name: `Divine Smite (level ${i + 1} slot)`, note: "On a melee weapon hit; +1d8 against undead and fiends", text: `${dice}d8 radiant`, spec: { ...dmg(`Divine Smite (level ${i + 1})`, dice, 8, "radiant"), via: "melee" } });
     });
   if (id === "monk" && L >= 3) {
     const p = [{ label: "Dexterity", value: d.mods.DEX }, { label: "Monk level", value: L }];
@@ -165,10 +166,10 @@ export function classRolls(d: Derived): ClassRoll[] {
     if (sub === "hunter") out.push({ name: "Colossus Slayer", note: "Once per turn, against a creature below its hit point maximum", text: "1d8", spec: dmg("Colossus Slayer", 1, 8, "extra damage") });
   }
   if (id === "cleric") {
-    if (sub === "tempest") out.push({ name: "Wrath of the Storm", note: "Reaction when hit within 5 ft (DEX save for half)", text: "2d8 lightning or thunder", spec: { ...dmg("Wrath of the Storm", 2, 8, "lightning or thunder"), half: true } });
+    if (sub === "tempest") out.push({ name: "Wrath of the Storm", note: "Reaction when hit within 5 ft (DEX save for half)", text: "2d8 lightning or thunder", spec: { ...dmg("Wrath of the Storm", 2, 8, "lightning or thunder"), half: true, via: "area" } });
     if (sub === "light" && L >= 2) {
       const p = [{ label: "Cleric level", value: L }];
-      out.push({ name: "Radiance of the Dawn", note: "Channel Divinity: foes within 30 ft (CON save for half)", text: withParts("2d10", p) + " radiant", spec: { ...dmg("Radiance of the Dawn", 2, 10, "radiant", p), half: true } });
+      out.push({ name: "Radiance of the Dawn", note: "Channel Divinity: foes within 30 ft (CON save for half)", text: withParts("2d10", p) + " radiant", spec: { ...dmg("Radiance of the Dawn", 2, 10, "radiant", p), half: true, via: "area" } });
     }
     if (sub === "peace" && L >= 2) {
       const p = [{ label: "Wisdom", value: d.mods.WIS }];
@@ -190,6 +191,9 @@ export const spellAttackRoll = (d: Derived, name: string, total: number, ability
   tone: "player",
 });
 
+/** How a spell deals its damage: its attack (melee / ranged), else a saving throw or area. */
+export const spellVia = (s: { attack?: "melee" | "ranged"; save?: string }): Via => s.attack ?? "area";
+
 const DAMAGE_TYPES = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
 
 /** A piece of a spell's damage text: plain, or dice that roll. */
@@ -203,7 +207,7 @@ export interface SpellDiceBit {
  * Spell damage or healing text → pieces with rolls: "3d8 (chosen type)", "1d4 + mod healing"
  * ("mod" becomes the casting modifier), "2d4+4 Temp HP", "1d10 Piercing + 2d6 Cold" (two rolls).
  */
-export function spellDiceBits(text: string, o: { label: string; mod: number; half?: boolean }): SpellDiceBit[] {
+export function spellDiceBits(text: string, o: { label: string; mod: number; half?: boolean; via?: Via }): SpellDiceBit[] {
   const t = text.replace(/\+\s*mod\b/gi, o.mod < 0 ? `− ${Math.abs(o.mod)}` : `+ ${o.mod}`);
   const out: SpellDiceBit[] = [];
   let at = 0;
@@ -228,6 +232,7 @@ export function spellDiceBits(text: string, o: { label: string; mod: number; hal
         bonus: p.bonus,
         unit: heal ? "hit points back" : temp ? "temporary hit points" : type || "damage",
         half: !!o.half && !heal && !temp,
+        via: heal || temp ? undefined : o.via,
         tone: "player",
       },
     });

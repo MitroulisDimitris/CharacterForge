@@ -11,7 +11,8 @@ import type { Spell as LookupSpell } from "../lookup";
 import { skinOf } from "../skins";
 import type { StoredCharacter, Theme } from "../storage";
 import { Brand, SkinPicker } from "./Brand";
-import { Lookup } from "./Lookup";
+import { Lookup, pageHidesList } from "./Lookup";
+import { entryKey, refOf } from "../wikiRefs";
 import { DrawerHead, DrawerScrim, MainNav, MenuButton, type Place } from "./MainMenu";
 import { RollScope } from "./Dice";
 import { ItemsBrowse } from "./Items";
@@ -322,12 +323,12 @@ function LocalBrowse({ sec, start }: { sec: WikiSection; start?: string }) {
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-4-4" />
         </svg>
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${S.label.toLowerCase()}, or browse below`} aria-label={`Search ${S.label.toLowerCase()}`} />
+        <input type="search" value={q} onChange={(e) => (setQ(e.target.value), pageHidesList() && setOpenId(null))} placeholder={`Search ${S.label.toLowerCase()}, or browse below`} aria-label={`Search ${S.label.toLowerCase()}`} />
       </label>
       {chips && (
         <div className="lk-filters" role="group" aria-label="Filter">
           {chips.map(([id, label]) => (
-            <button key={id} type="button" className={`lk-kind ${chip === id ? "on" : ""}`} aria-pressed={chip === id} onClick={() => setChip(id)}>
+            <button key={id} type="button" className={`lk-kind ${chip === id ? "on" : ""}`} aria-pressed={chip === id} onClick={() => (setChip(id), pageHidesList() && setOpenId(null))}>
               {label}
             </button>
           ))}
@@ -429,7 +430,7 @@ function EntryBody({ e }: { e: WikiEntry }) {
           ]}
         />
         <h3>{c.subclassLabel} (level {c.subclassLevel})</h3>
-        <Feats items={c.subclasses.map((s) => ({ name: s.name, text: s.summary, sub: bookLabel(s.book) }))} />
+        <Feats items={c.subclasses.map((s) => ({ name: s.name, text: s.summary, sub: refOf(`sub:${c.id}:${s.id}`) ?? bookLabel(s.book) }))} />
         <details className="wiki-levels">
           <summary>What you get at each level (1–5)</summary>
           {[...byLevel].map(([lvl, fs]) => (
@@ -439,7 +440,7 @@ function EntryBody({ e }: { e: WikiEntry }) {
             </div>
           ))}
         </details>
-        <p className="muted wiki-book">Source · {bookLabel(c.book)}</p>
+        <p className="muted wiki-book">{refOf(`class:${c.id}`) ?? bookLabel(c.book)}</p>
       </>
     );
   }
@@ -468,14 +469,19 @@ function EntryBody({ e }: { e: WikiEntry }) {
               items={s.lineages.map((l) => ({
                 name: l.name,
                 text: l.text,
-                sub: Object.entries(l.asi ?? {})
-                  .map(([k, v]) => `+${v} ${k}`)
-                  .join(", "),
+                sub: [
+                  Object.entries(l.asi ?? {})
+                    .map(([k, v]) => `+${v} ${k}`)
+                    .join(", "),
+                  refOf(`lineage:${s.id}:${(l as { id?: string }).id ?? l.name}`),
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
               }))}
             />
           </>
         ) : null}
-        <p className="muted wiki-book">Source · {bookLabel(s.book)}</p>
+        <p className="muted wiki-book">{refOf(`race:${s.id}`) ?? bookLabel(s.book)}</p>
       </>
     );
   }
@@ -503,7 +509,7 @@ function EntryBody({ e }: { e: WikiEntry }) {
             <p>{b.equipment}</p>
           </>
         )}
-        <p className="muted wiki-book">Source · {bookLabel(b.book)}</p>
+        <p className="muted wiki-book">{refOf(`bg:${b.id}`) ?? bookLabel(b.book)}</p>
       </>
     );
   }
@@ -519,7 +525,7 @@ function EntryBody({ e }: { e: WikiEntry }) {
           ]}
         />
         <p className="wiki-lead">{f.text}</p>
-        <p className="muted wiki-book">Source · {bookLabel(f.book)}</p>
+        <p className="muted wiki-book">{refOf(`feat:${f.id}`) ?? bookLabel(f.book)}</p>
       </>
     );
   }
@@ -536,18 +542,27 @@ function EntryBody({ e }: { e: WikiEntry }) {
           ))}
         </ol>
         <p className="muted">A long rest with food and water removes one level.</p>
+        <p className="muted wiki-book">{refOf("cond:exhaustion")}</p>
       </>
     );
   if (e.id.startsWith("cond-")) {
     const c = CONDITIONS.find((x) => `cond-${x.id}` === e.id)!;
-    return <p className="wiki-lead">{c.text}</p>;
+    return (
+      <>
+        <p className="wiki-lead">{c.text}</p>
+        <p className="muted wiki-book">{refOf(entryKey("rules", e.id))}</p>
+      </>
+    );
   }
   const p = RULE_PAGES.find((x) => x.id === e.id)!;
   return (
-    <ul className="wiki-points">
-      {p.points.map((t) => (
-        <li key={t}>{t}</li>
-      ))}
-    </ul>
+    <>
+      <ul className="wiki-points">
+        {p.points.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
+      <p className="muted wiki-book">{refOf(entryKey("rules", e.id))}</p>
+    </>
   );
 }

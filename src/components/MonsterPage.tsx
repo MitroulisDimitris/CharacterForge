@@ -12,8 +12,10 @@ import { sessionError } from "../sessions";
 import { atTheTable, initiative, loadIcons, mmPage, passivePerception, pictureUrl, removePicture, savePicture, signed, typeColor } from "../monsters";
 import { RollChip, RollScope } from "./Dice";
 import { parseDice, type RollSpec } from "../dice/roll";
-import { halfOnSave, segmentsOf, type Segment } from "../dice/rollText";
+import { halfOnSave, segmentsOf, viaOfText, type Segment } from "../dice/rollText";
 import { MoreMenu } from "./Hero";
+import { spellsPartly, spellsWithNoEffect, type NoEffect } from "../spellImmunity";
+import { useSmoothHeight } from "./smooth";
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -66,6 +68,7 @@ export const check = (who: string, label: string, kind: "check" | "save", bonus:
 /** Stat block text with its rolls as gold chips: to hit, damage dice, recharge (REQUIREMENTS 4.6). */
 export function MonsterText({ title, text }: { title: string; text: string }) {
   const half = halfOnSave(text);
+  const via = viaOfText(text);
   const chip = (s: Segment, i: number) => {
     if (s.kind === "text") return <Fragment key={i}>{s.text}</Fragment>;
     if (s.kind === "hit")
@@ -88,7 +91,7 @@ export function MonsterText({ title, text }: { title: string; text: string }) {
         key={i}
         fire={fire}
         label={`Roll ${s.dice}${s.unit ? ` ${s.unit} damage` : ""}`}
-        spec={{ label: `${title} · ${s.unit ? `${s.unit} damage` : s.dice}`, kind: "damage", groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit: s.unit, half: half && !!s.unit, tone: "monster" }}
+        spec={{ label: `${title} · ${s.unit ? `${s.unit} damage` : s.dice}`, kind: "damage", groups: p.groups.map((g) => ({ ...g, tone: fire ? "fire" : undefined })), bonus: p.bonus, unit: s.unit, half: half && !!s.unit, via, tone: "monster" }}
       >
         {s.text}
       </RollChip>
@@ -152,7 +155,7 @@ function AddToEncounter({ sessionId, entry, label = "+ Add to an encounter" }: {
   );
 }
 
-export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string; userId: string; sessionId?: string; onBack: () => void }) {
+export function MonsterPage({ slug, userId, sessionId, onBack, onSpell }: { slug: string; userId: string; sessionId?: string; onBack: () => void; /** Open a spell's page (spells named on this page). */ onSpell?: (name: string) => void }) {
   const [m, setM] = useState<Monster | null>(null);
   const [error, setError] = useState("");
   const [pic, setPic] = useState<string | null>(null);
@@ -432,6 +435,7 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
                 {immune.length > 0 && <span className="mon-tag immune">Immune to: {immune.join(", ")}</span>}
               </div>
             )}
+            <NoEffectSpells m={m} onSpell={onSpell} />
             {traits.length > 0 && <p className="muted">{traits.join(" · ")}</p>}
           </section>
 
@@ -564,4 +568,91 @@ export function MonsterPage({ slug, userId, sessionId, onBack }: { slug: string;
     </article>
     </RollScope>
   );
+}
+
+/** A spell name that opens its page when the page can (Wiki / session Lookup). */
+function SpellLink({ name, onSpell }: { name: string; onSpell?: (name: string) => void }) {
+  if (!onSpell) return <>{name}</>;
+  return (
+    <button type="button" className="link mon-spell-link" onClick={() => onSpell(name)}>
+      {name}
+    </button>
+  );
+}
+
+const linkList = (names: string[], onSpell?: (name: string) => void) =>
+  names.map((n, i) => (
+    <Fragment key={n}>
+      {i > 0 && ", "}
+      <SpellLink name={n} onSpell={onSpell} />
+    </Fragment>
+  ));
+
+/** Spells that do nothing to this monster, grouped by the reason (src/spellImmunity.ts), and under a
+ *  line the ones its condition immunities only weaken. Folded to one line. */
+function NoEffectSpells({ m, onSpell }: { m: Monster; onSpell?: (name: string) => void }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useSmoothHeight(ref);
+  const list = useMemo(() => spellsWithNoEffect(m), [m]);
+  const partly = useMemo(() => spellsPartly(m), [m]);
+  if (!list.length && !partly.length) return null;
+  const groups = new Map<string, NoEffect[]>();
+  for (const x of list) groups.set(x.why, [...(groups.get(x.why) ?? []), x]);
+  const first = (list.length ? list : partly).slice(0, 3).map((x) => x.spell);
+  const more = (list.length ? list : partly).length > first.length;
+  return (
+    <details className="mon-noeffect" ref={ref}>
+      <summary>
+        <span className="mon-tag immune">{list.length ? `Spells with no effect: ${list.length}` : `Spells that work only in part: ${partly.length}`}</span>
+        <span className="muted mon-noeffect-first">
+          {first.join(", ")}
+          {more ? "…" : ""}
+        </span>
+      </summary>
+      {list.length > 0 && (
+        <>
+          <ul>
+            {[...groups].map(([why, xs]) => (
+              <li key={why}>
+                <strong>{linkList(xs.map((x) => x.spell), onSpell)}</strong>
+                <span className="muted"> · {why}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="muted mon-noeffect-ref">{refLine(list)}</p>
+        </>
+      )}
+      {partly.length > 0 && (
+        <div className="mon-partly">
+          <p className="mon-partly-head">Works only in part (the immunity removes one effect):</p>
+          <ul>
+            {partly.map((x) => (
+              <li key={x.spell}>
+                <strong>
+                  <SpellLink name={x.spell} onSpell={onSpell} />
+                </strong>
+                <span className="muted"> · {x.why}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </details>
+  );
+}
+
+/** "Player's Handbook · Xanathar's Guide to Everything, pages 150, 151, 157" */
+function refLine(list: NoEffect[]) {
+  const pages = new Map<string, Set<number>>();
+  for (const x of list) {
+    const [book, page] = x.ref.split(", page ");
+    if (!pages.has(book)) pages.set(book, new Set());
+    if (page) pages.get(book)!.add(Number(page));
+  }
+  return [...pages]
+    .map(([book, ps]) => {
+      const p = [...ps].sort((a, b) => a - b);
+      return p.length ? `${book}, page${p.length > 1 ? "s" : ""} ${p.join(", ")}` : book;
+    })
+    .join(" · ");
 }

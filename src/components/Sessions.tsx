@@ -22,6 +22,7 @@ import {
   sessionError,
   summarize,
   swapCharacter,
+  setSeatVersion,
   updateSession,
   type Membership,
   type Preview,
@@ -37,6 +38,7 @@ import { EncountersTab } from "./Encounters";
 import { cardOf, LiveView, MemberView, OnlyYou, PartyTab } from "./Party";
 import type { Live } from "../live";
 import { NotesTab } from "./NotesTabs";
+import { HostRolls, PlayerTable, useTableRolls } from "./TableDice";
 import { setState as setFeedbackState } from "../trail";
 
 const FOLD_KEY = "character-forge:session-side-folded";
@@ -283,14 +285,16 @@ export function JoinDialog({
     swap ? { ...swap.session, host_name: "", is_host: false, my_character: swap.current } : null,
   );
   const [pick, setPick] = useState("");
-  // "same": both sessions follow this character; "copy": a separate copy for this session.
-  const [how, setHow] = useState<"same" | "copy">("same");
+  // Asked only when the character already plays in another session (user, 2026-11-24):
+  // "version": its own sheet for this session, inside the character; "copy": a separate character.
+  // A character's first session just uses the character.
+  const [how, setHow] = useState<"version" | "copy">("version");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const elsewhereOf = (id: string) => (inSessions?.(id) ?? []).filter((n) => n !== preview?.name);
   const choose = (id: string) => {
     setPick(id);
-    // A copy is the safer pick for a character that already plays elsewhere.
-    setHow(inSessions?.(id).length ? "copy" : "same");
+    setHow("version");
   };
 
   const lookUp = async (c = code) => {
@@ -318,9 +322,13 @@ export function JoinDialog({
     setError("");
     try {
       const name = (picked.data as { name?: string }).name || "Unnamed";
-      const rec = how === "copy" && onCopy ? await onCopy(picked, `${name} (${preview.name})`) : picked;
+      const asked = elsewhereOf(picked.id).length > 0;
+      const mode = asked ? how : null;
+      const rec = mode === "copy" && onCopy ? await onCopy(picked, `${name} (${preview.name})`) : picked;
       if (swap) await swapCharacter(preview.id, rec);
       else await joinSession(code, rec);
+      // A swap may replace a version seat; a new join starts as "follows the character".
+      if (mode === "version" || swap) await setSeatVersion(preview.id, mode === "version");
       onJoined(preview.id);
     } catch (err) {
       setError(sessionError(err));
@@ -444,31 +452,35 @@ export function JoinDialog({
             if (!rec) return null;
             const s = summarize(rec.system, rec.books, rec.data);
             const lvl = s.level ?? 1;
-            const elsewhere = (inSessions?.(rec.id) ?? []).filter((n) => n !== preview.name);
+            const elsewhere = elsewhereOf(rec.id);
             const target = preview.level;
             const copyName = `${s.name} (${preview.name})`;
+            const levelNote = target && target !== lvl;
+            if (!elsewhere.length && !levelNote) return null;
             return (
               <div className="join-how">
-                <span className="join-ask">How do you want to play {s.name} here?</span>
-                <div className="join-how-opts" role="radiogroup" aria-label="Same character or a copy">
-                  <button type="button" role="radio" aria-checked={how === "same"} className={`join-how-opt ${how === "same" ? "on" : ""}`} onClick={() => setHow("same")}>
-                    <strong>Use the same character</strong>
-                    <span className="muted">
-                      {elsewhere.length
-                        ? `It also plays in ${elsewhere.join(", ")}. Changes (a new level, spells, items) show in every session it's in.`
-                        : "Changes you make to it (a new level, spells, items) show in this session too."}
+                {elsewhere.length > 0 && (
+                  <>
+                    <span className="join-ask">
+                      {s.name} already plays in {elsewhere.join(", ")}. How do you want to play {s.name} here?
                     </span>
-                  </button>
-                  <button type="button" role="radio" aria-checked={how === "copy"} className={`join-how-opt ${how === "copy" ? "on" : ""}`} onClick={() => setHow("copy")}>
-                    <strong>Join with a copy</strong>
-                    <span className="muted">A separate character, “{copyName}”, in your list. It levels and changes on its own; the original stays as it is.</span>
-                  </button>
-                </div>
-                {target && target !== lvl && (
+                    <div className="join-how-opts" role="radiogroup" aria-label="A copy or a version">
+                      <button type="button" role="radio" aria-checked={how === "copy"} className={`join-how-opt ${how === "copy" ? "on" : ""}`} onClick={() => setHow("copy")}>
+                        <strong>Join and make a copy</strong>
+                        <span className="muted">A separate character, “{copyName}”, in your list. It levels and changes on its own; the original stays as it is.</span>
+                      </button>
+                      <button type="button" role="radio" aria-checked={how === "version"} className={`join-how-opt ${how === "version" ? "on" : ""}`} onClick={() => setHow("version")}>
+                        <strong>Make a version</strong>
+                        <span className="muted">Still one character, with its own sheet for this session: level, HP, spells and items changed here stay here. Switch versions at the top of {s.name}'s page.</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+                {levelNote && (
                   <p className="join-level" role="note">
                     {target > lvl
                       ? `This session plays at level ${target}; ${s.name} is level ${lvl}. After joining you'll get a “Level up to ${target}” to-do, with the choices to make.`
-                      : `This session plays at level ${target}; ${s.name} is level ${lvl}. After joining you'll get a suggestion to lower it to ${target}.${how === "same" && elsewhere.length ? " Lowering it changes it in its other sessions too: a copy may be better." : ""}`}
+                      : `This session plays at level ${target}; ${s.name} is level ${lvl}. After joining you'll get a suggestion to lower it to ${target}.`}
                   </p>
                 )}
               </div>
@@ -586,7 +598,21 @@ export function SessionPage({
       }
       return !f;
     });
-  const [hostTab, setHostTab] = useState<"lookup" | "party" | "encounters" | "notes">("lookup");
+  const [hostTab, setHostTab] = useState<"lookup" | "party" | "encounters" | "rolls" | "notes">("lookup");
+  // Dice at the table: the players' rolls tonight; a gold dot on "Rolls" when new ones came in.
+  const [rolls] = useTableRolls(session.id, isHost);
+  // Rolls from before the page opened count as seen.
+  const [rollsSeen, setRollsSeen] = useState(() => new Date().toISOString());
+  const newestRoll = rolls?.[0]?.created_at ?? "";
+  useEffect(() => {
+    if (hostTab === "rolls" && newestRoll) setRollsSeen(newestRoll);
+  }, [hostTab, newestRoll]);
+  const unseenRolls = hostTab !== "rolls" && newestRoll > rollsSeen;
+  // Someone rolled who isn't in the roster yet (joined after the page opened): reload it.
+  const rosterMissing = isHost && !!roster && !!rolls && rolls.some((r) => !roster.some((x) => x.member_id === r.member_id));
+  useEffect(() => {
+    if (rosterMissing) setTick((n) => n + 1);
+  }, [rosterMissing]);
   const [members, setMembers] = useState<Awaited<ReturnType<typeof loadHostMembers>>>([]);
   const [viewMember, setViewMember] = useState<string | null>(null);
 
@@ -782,7 +808,7 @@ export function SessionPage({
   const hostBody = (
     <>
       <nav className="tabs" role="tablist">
-        {(["lookup", "party", "encounters", "notes"] as const).map((t) => (
+        {(["lookup", "party", "encounters", "rolls", "notes"] as const).map((t) => (
           <button
             key={t}
             role="tab"
@@ -793,8 +819,9 @@ export function SessionPage({
               setViewMember(null);
             }}
           >
-            {t === "lookup" ? "Lookup" : t === "party" ? "Party" : t === "encounters" ? "Encounters" : "Notes"}
+            {t === "lookup" ? "Lookup" : t === "party" ? "Party" : t === "encounters" ? "Encounters" : t === "rolls" ? "Rolls" : "Notes"}
             {t === "party" && members.length > 0 && <span className="tab-count">{members.length}</span>}
+            {t === "rolls" && unseenRolls && <span className="tab-dot" aria-label="New rolls" />}
           </button>
         ))}
       </nav>
@@ -820,8 +847,25 @@ export function SessionPage({
         {hostTab === "encounters" && (
           <EncountersTab sessionId={session.id} system={session.system} hostMembers={members} onPlayersChanged={() => setTick((n) => n + 1)} />
         )}
+        {hostTab === "rolls" && <HostRolls rolls={rolls} roster={roster ?? []} members={members} systemId={session.system} />}
         {hostTab === "notes" && <NotesTab sessionId={session.id} />}
       </div>
+    </>
+  );
+
+  const playerBody = (
+    <>
+      {membership && !ended ? (
+        <PlayerTable sessionId={session.id} membership={membership} systemId={session.system} onOpenSheet={() => onOpenSheet(membership.character_id, membership.id)}>
+          {myState}
+          {rosterView}
+        </PlayerTable>
+      ) : (
+        <>
+          {myState}
+          {rosterView}
+        </>
+      )}
     </>
   );
 
@@ -886,12 +930,7 @@ export function SessionPage({
         </aside>
         <main className="hero-main">
           <Err text={error} />
-          {isHost ? hostBody : (
-            <>
-              {myState}
-              {rosterView}
-            </>
-          )}
+          {isHost ? hostBody : playerBody}
         </main>
         {dialogs}
       </div>
@@ -926,12 +965,7 @@ export function SessionPage({
             <InviteBox code={code} name={session.name} />
           </div>
         )}
-        {isHost ? hostBody : (
-            <>
-              {myState}
-              {rosterView}
-            </>
-          )}
+        {isHost ? hostBody : playerBody}
       </div>
       {dialogs}
     </div>

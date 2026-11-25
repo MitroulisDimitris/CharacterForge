@@ -9,7 +9,9 @@ import { ResourcePips } from "../../../components/ResourcePips";
 import { resources5e } from "../resources";
 import { PreviewHead, WithPreview, useHover } from "./Preview";
 import { RollChip } from "../../../components/Dice";
-import { spellAttackRoll, spellDiceBits } from "../rollSpecs";
+import { spellAttackRoll, spellDiceBits, spellVia } from "../rollSpecs";
+import { bookRef, useSpellTexts, type FullSpellText } from "../../../spellText";
+import { SpellParts } from "../../../components/SpellParts";
 
 /**
  * Spells tab, two views (UI rules: calm first):
@@ -104,6 +106,8 @@ export function SpellsTab({ c, d, set }: TabProps<Character, Derived>) {
 // ---------- "Your spells": compact rows, details on click ----------
 function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: string; onLearn: (() => void) | null }) {
   const get = (n: string) => d.rules.getSpell(n);
+  // 2014 characters read each spell's full book text (2024: the summaries).
+  const texts = useSpellTexts(c.edition === "2014");
   type Row = { key: string; s?: Spell; name: string; source?: string; note?: string; dc: number; atk: number; granted: boolean; ability: Ability };
   const rows: Row[] = [];
   const seen = new Set<string>();
@@ -144,7 +148,7 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
           {rows
             .filter((r) => levelOf(r) === lvl)
             .map((r) => (
-              <SpellRowItem key={r.key} r={r} level={c.level} core={core} d={d} />
+              <SpellRowItem key={r.key} r={r} level={c.level} core={core} d={d} full={texts?.[r.name]} />
             ))}
         </section>
       ))}
@@ -152,7 +156,7 @@ function MySpells({ c, d, core, onLearn }: { c: Character; d: Derived; core: str
         <details className="spell-group spellbook-rest">
           <summary className="hero-label">In your spellbook, not prepared today ({bookOnly.length})</summary>
           {bookOnly.map((n) => (
-            <SpellRowItem key={"b" + n} r={{ s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false, ability: own }} level={c.level} core={core} d={d} />
+            <SpellRowItem key={"b" + n} r={{ s: get(n), name: n, dc: d.spellDc, atk: d.spellAttack, granted: false, ability: own }} level={c.level} core={core} d={d} full={texts?.[n]} />
           ))}
         </details>
       )}
@@ -175,7 +179,7 @@ function SpellDice({ text, r, d }: { text: string; r: RowInfo; d: Derived }) {
   const half = !!s.save && /half/i.test(s.desc);
   return (
     <>
-      {spellDiceBits(text, { label: r.name, mod: d.mods[r.ability], half }).map((b, i) =>
+      {spellDiceBits(text, { label: r.name, mod: d.mods[r.ability], half, via: spellVia(s) }).map((b, i) =>
         b.spec ? (
           <RollChip key={i} spec={b.spec} fire={b.fire} label={`Roll ${b.text}${b.spec.unit ? ` ${b.spec.unit}` : ""} for ${r.name}`}>
             {b.text}
@@ -224,7 +228,7 @@ function SpellMeta({ r, level, d }: { r: RowInfo; level: number; d: Derived }) {
   );
 }
 
-function SpellRowItem({ r, level, core, d }: { r: RowInfo; level: number; core: string; d: Derived }) {
+function SpellRowItem({ r, level, core, d, full }: { r: RowInfo; level: number; core: string; d: Derived; full?: FullSpellText }) {
   const s = r.s;
   return (
     <details className="spell-row">
@@ -254,15 +258,22 @@ function SpellRowItem({ r, level, core, d }: { r: RowInfo; level: number; core: 
       <div className="spell-row-body">
         {s ? (
           <>
-            <p>
-              <SpellDice text={s.desc} r={r} d={d} />
-            </p>
             <p className="muted">
               {s.school} · {castingTimeLabel(s.time)} · {s.range} · {s.components}
               {s.material ? ` (${s.material})` : ""} · {s.duration}
               {s.save ? ` · ${s.save} save DC ${r.dc}` : ""}
-              {s.book !== core ? ` · ${s.book}` : ""}
+              {!full && s.book !== core ? ` · ${s.book}` : ""}
             </p>
+            {full ? (
+              <div className="spell-full">
+                <SpellParts parts={full.text} higher={full.higher} prose={(t) => <SpellDice text={t} r={r} d={d} />} />
+                <p className="muted spell-ref">{bookRef(full)}</p>
+              </div>
+            ) : (
+              <p>
+                <SpellDice text={s.desc} r={r} d={d} />
+              </p>
+            )}
             {r.granted && r.note && <p className="muted">{r.note}</p>}
           </>
         ) : (

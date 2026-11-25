@@ -180,6 +180,8 @@ export interface GameSystem<C extends BaseCharacter = BaseCharacter, D extends D
   /** The key numbers (AC, speed, initiative...) at the top of the Sheet tab; when set, `Summary`
    *  leaves them out there. */
   SheetNumbers?: FC<{ c: C; d: D }>;
+  /** Dice at the table: everything the character can roll, in groups, on a player's session page. */
+  TableRolls?: FC<{ c: C; d: D }>;
   /** Pools to track in play (shown as tappable pips with Short/Long rest buttons). */
   resources?: (c: C, d: D) => ResourcePool[];
   /** Spells the character can concentrate on (the In play panel's picker). */

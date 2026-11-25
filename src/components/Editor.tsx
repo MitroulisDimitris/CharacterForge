@@ -14,6 +14,7 @@ import { SheetTab, SHEET_TAB } from "./SheetTab";
 import { PlayHp } from "./InPlay";
 import { RollScope } from "./Dice";
 import { JustChanged } from "./JustChanged";
+import { VersionPicker, VersionStrip, type VersionsProp } from "./Versions";
 import { skinOf } from "../skins";
 import type { SaveState } from "../App";
 
@@ -32,6 +33,7 @@ export function Editor({
   onBack,
   levelReady,
   onKeepLevel,
+  versions,
 }: {
   rec: StoredCharacter;
   theme: Theme;
@@ -43,6 +45,8 @@ export function Editor({
   levelReady?: { level: number; session: string } | null;
   /** "Keep level N" on a suggestion to lower the level. */
   onKeepLevel?: () => void;
+  /** Per-session versions of this character, when it has any (components/Versions.tsx). */
+  versions?: VersionsProp;
 }) {
   const system = getSystem(rec.system)!;
   const [char, setChar] = useState<BaseCharacter>(() => system.normalize(rec.data));
@@ -160,6 +164,7 @@ export function Editor({
   };
 
   const canChangeBooks = hasOptionalBooks(system);
+  const versionStrip = versions?.current ? <VersionStrip versions={versions} system={system} d={d} /> : null;
 
   const tabsNav = (
     <nav className="tabs" role="tablist">
@@ -232,6 +237,7 @@ export function Editor({
           <button type="button" className="hero-back" onClick={onBack} aria-label="My characters">
             ‹ <span className="back-label">My characters</span>
           </button>
+          {versions && <VersionPicker versions={versions} />}
           {crestButton()}
           <div className="hero-id">
             <input className="hero-name" value={char.name} onChange={(e) => set({ name: e.target.value })} aria-label="Character name" placeholder="Name your hero" />
@@ -303,6 +309,7 @@ export function Editor({
           </div>
         </aside>
         <main className="hero-main char-main">
+          {versionStrip}
           {tabsNav}
           <div className="tab-body" ref={bodyRef}>
             {body}
@@ -364,6 +371,11 @@ export function Editor({
       <p className="save-status" aria-live="polite">
         {SAVE_TEXT[save]}
       </p>
+      {versions && (
+        <div className="version-bar">
+          <VersionPicker versions={versions} />
+        </div>
+      )}
 
       <div className="layout single">
         <main className="main">
@@ -376,6 +388,7 @@ export function Editor({
             onDismiss={dismiss}
             onChooseNow={waiting.length ? () => setDialog({ kind: "resume", ids: waiting.map((u) => u.id) }) : undefined}
           />
+          {versionStrip}
           {tabsNav}
           <div className="tab-body" ref={bodyRef}>
             {body}

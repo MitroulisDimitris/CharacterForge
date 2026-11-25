@@ -17,14 +17,16 @@ import { SkillsTab } from "./components/SkillsTab";
 import { SpeciesTab } from "./components/SpeciesTab";
 import { SpellsTab } from "./components/SpellsTab";
 import { SheetNumbers, Summary } from "./components/Summary";
+import { TableRolls } from "./components/TableRolls";
 
+// Spells right after Sheet: what players open most in a game (feedback 2026-11-23, phone).
 const tabs = (speciesWord: string) => [
+  { id: "spells", label: "Spells", Component: SpellsTab },
   { id: "class", label: "Class", Component: ClassTab },
   { id: "species", label: speciesWord, Component: SpeciesTab },
   { id: "background", label: "Background", Component: BackgroundTab },
   { id: "abilities", label: "Abilities", Component: AbilitiesTab },
   { id: "skills", label: "Skills & Languages", Component: SkillsTab },
-  { id: "spells", label: "Spells", Component: SpellsTab },
   { id: "equipment", label: "Equipment", Component: EquipmentTab },
   { id: "details", label: "Details", Component: DetailsTab },
 ];
@@ -71,6 +73,7 @@ export const dnd2024: GameSystem<Character, Derived> = {
   tabs: tabs("Species"),
   Summary,
   SheetNumbers,
+  TableRolls,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
@@ -102,6 +105,7 @@ export const dnd2014: GameSystem<Character, Derived> = {
   tabs: tabs("Race"),
   Summary,
   SheetNumbers,
+  TableRolls,
   progression: progression5e,
   resources: resources5e,
   tableCard: tableCard5e,
